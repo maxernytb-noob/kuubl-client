@@ -336,7 +336,7 @@ impl Session {
         let mut tracks = Tracks::default();
         let stop_caps = |caps: Vec<Capture>| caps.into_iter().for_each(Capture::stop);
         if s.game_audio {
-            match Capture::start(Kind::Loopback, &s.game_device, format!(r"\\.\pipe\justiceclips_{id}_game"), video_start.clone()) {
+            match Capture::start(Kind::Loopback, &s.game_device, format!(r"\\.\pipe\kuublclips_{id}_game"), video_start.clone()) {
                 Ok(c) => {
                     caps.push(c);
                     tracks.game = true;
@@ -345,7 +345,7 @@ impl Session {
             }
         }
         if s.mic {
-            match Capture::start(Kind::Mic, &s.mic_device, format!(r"\\.\pipe\justiceclips_{id}_mic"), video_start.clone()) {
+            match Capture::start(Kind::Mic, &s.mic_device, format!(r"\\.\pipe\kuublclips_{id}_mic"), video_start.clone()) {
                 Ok(c) => {
                     caps.push(c);
                     tracks.mic = true;

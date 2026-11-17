@@ -3,6 +3,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { SkinViewer, WalkingAnimation } from "skinview3d";
+import { fixSkinAlpha } from "../skinAlpha";
+import SkinPainter from "../components/SkinPainter";
 import { api, type Account, type Cape, type DeviceCode, type SkinEntry } from "../api";
 import { Icon } from "../icons";
 import { errText, useStore } from "../store";
@@ -91,8 +93,8 @@ export function AddAccount(_props: { compact?: boolean }) {
             <b>{tr("Offline účet", "Offline account")}</b>
             <span className="small muted">
               {tr(
-                "Bez koupeného Minecraftu: singleplayer, LAN, sdílené světy a servery bez ověření. Přátelé a chat fungují s heslem k Justice účtu.",
-                "Without owning Minecraft: singleplayer, LAN, shared worlds and servers without authentication. Friends and chat work with a Justice account password.",
+                "Bez koupeného Minecraftu: singleplayer, LAN, sdílené světy a servery bez ověření. Přátelé a chat fungují s heslem k Kuubl účtu.",
+                "Without owning Minecraft: singleplayer, LAN, shared worlds and servers without authentication. Friends and chat work with a Kuubl account password.",
               )}
             </span>
             <div className="row" style={{ gap: 8 }}>
@@ -141,6 +143,7 @@ function Skin3D({ account }: { account: Account }) {
     v.autoRotate = true;
     v.autoRotateSpeed = 0.6;
     v.zoom = 0.85;
+    fixSkinAlpha(v);
     viewer.current = v;
     return () => v.dispose();
   }, []);
@@ -148,7 +151,7 @@ function Skin3D({ account }: { account: Account }) {
   useEffect(() => {
     const v = viewer.current;
     if (!v) return;
-    // By uuid, offline accounts without a Justice skin get the default skin (by name it'd be a premium player's).
+    // By uuid, offline accounts without a Kuubl skin get the default skin (by name it'd be a premium player's).
     const url = account.skinUrl || `https://mc-heads.net/skin/${account.uuid.replace(/-/g, "")}`;
     api.fetchImage(url)
       .then((data) => v.loadSkin(data, { model: account.skinVariant === "SLIM" ? "slim" : "default" }))
@@ -242,8 +245,8 @@ function SkinEditor({ account }: { account: Account }) {
       {offline && (
         <span className="small muted">
           {tr(
-            "Skin offline účtu uvidíš ty a ostatní hráči s Justice Clientem (když jsi přihlášený do přátel). Ostatní klienti ukazují výchozí skin.",
-            "Your offline skin is shown to you and other Justice Client players (while you're signed in to friends). Other clients show the default skin.",
+            "Skin offline účtu uvidíš ty a ostatní hráči s Kuubl Clientem (když jsi přihlášený do přátel). Ostatní klienti ukazují výchozí skin.",
+            "Your offline skin is shown to you and other Kuubl Client players (while you're signed in to friends). Other clients show the default skin.",
           )}
         </span>
       )}
@@ -299,6 +302,7 @@ function SkinLibrary({ account }: { account: Account }) {
   const { toast, reloadAccounts } = useStore();
   const [skins, setSkins] = useState<SkinEntry[]>([]);
   const [busy, setBusy] = useState(false);
+  const [painting, setPainting] = useState<{ id: string | null; name: string; slim: boolean } | null>(null);
   const reload = () => api.skinlibList().then(setSkins).catch(() => {});
   useEffect(() => { reload(); }, []);
 
@@ -342,6 +346,7 @@ function SkinLibrary({ account }: { account: Account }) {
       <div className="row" style={{ gap: 8 }}>
         <button className="btn sm ghost" onClick={addFile} disabled={busy}><Icon name="upload" size={14} /> {tr("Z PC", "From file")}</button>
         <button className="btn sm ghost" onClick={addPlayer} disabled={busy}><Icon name="user" size={14} /> {tr("Podle jména", "From a name")}</button>
+        <button className="btn sm ghost" onClick={() => setPainting({ id: null, name: tr("Můj skin", "My skin"), slim: false })} disabled={busy}><Icon name="edit" size={14} /> {tr("Nakreslit nový", "Paint new")}</button>
       </div>
       {skins.length === 0 ? (
         <span className="small muted">{tr("Zatím prázdné. Ulož si sem skiny a přepínej mezi nimi jedním klikem.", "Empty for now. Save skins here and switch between them in one click.")}</span>
@@ -353,10 +358,25 @@ function SkinLibrary({ account }: { account: Account }) {
                 <SkinFace file={s.file} />
               </button>
               <div className="skinlib-name ellipsis" onClick={() => rename(s)} title={tr("Přejmenovat", "Rename")}>{s.name}</div>
+              <button className="skinlib-edit" onClick={() => setPainting({ id: s.id, name: s.name, slim: s.variant === "slim" })} disabled={busy} title={tr("Upravit ve 3D editoru", "Edit in the 3D editor")}><Icon name="edit" size={13} /></button>
               <button className="skinlib-del" onClick={() => remove(s)} disabled={busy} title={tr("Smazat", "Delete")}><Icon name="trash" size={13} /></button>
             </div>
           ))}
         </div>
+      )}
+      {painting && (
+        <SkinPainter
+          skinId={painting.id}
+          name={painting.id ? `${painting.name} (${tr("upravený", "edited")})` : painting.name}
+          slim={painting.slim}
+          accountId={account.id}
+          onClose={() => setPainting(null)}
+          onSaved={() => {
+            reload();
+            reloadAccounts();
+            toast(tr("Skin uložen", "Skin saved"), "success");
+          }}
+        />
       )}
     </div>
   );

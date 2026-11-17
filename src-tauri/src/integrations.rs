@@ -105,7 +105,7 @@ fn discord_set(activity: Option<(String, String)>) -> Result<()> {
             "details": details,
             "state": state,
             "timestamps": {"start": chrono::Utc::now().timestamp()},
-            "assets": {"large_image": "https://justiceclient.online/icon.png", "large_text": "Justice Client"}
+            "assets": {"large_image": "https://justiceclient.online/icon.png", "large_text": "Kuubl Client"}
         })
     });
     let clear = act.is_none();

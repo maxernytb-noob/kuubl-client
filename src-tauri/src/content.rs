@@ -187,24 +187,25 @@ async fn search_mr(q: SearchQuery<'_>) -> Result<SearchResult> {
     Ok(SearchResult { hits, total: v["total_hits"].as_u64().unwrap_or(0) })
 }
 
-/// Key baked in at build time (src-tauri/cf_key.txt); a key set in Settings overrides it.
-pub const BUILTIN_CF_KEY: &str = env!("JC_CF_KEY");
+/// Without a key of the user's own, CurseForge goes through our server, which holds the key — so
+/// the key is never inside the launcher, where anyone could pull it out.
+const CF_PROXY: &str = "https://justiceclient.online/social/cf";
 
+/// CurseForge always works: with the user's key from Settings, or through the proxy.
 pub fn has_cf_key() -> bool {
-    !settings::get().curseforge_key.trim().is_empty() || !BUILTIN_CF_KEY.is_empty()
-}
-
-fn cf_key() -> Result<String> {
-    let k = settings::get().curseforge_key;
-    let k = if k.trim().is_empty() { BUILTIN_CF_KEY.to_string() } else { k.trim().to_string() };
-    if k.is_empty() {
-        bail!(l!("CurseForge potřebuje API klíč — vlož ho v Nastavení.", "CurseForge needs an API key — add it in Settings."));
-    }
-    Ok(k)
+    true
 }
 
 async fn cf_get(path: &str) -> Result<Value> {
-    let r = CLIENT.get(format!("{CF}{path}")).header("x-api-key", cf_key()?).send().await?;
+    let own = settings::get().curseforge_key.trim().to_string();
+    let r = if own.is_empty() {
+        CLIENT.get(format!("{CF_PROXY}{path}")).send().await?
+    } else {
+        CLIENT.get(format!("{CF}{path}")).header("x-api-key", own).send().await?
+    };
+    if r.status().as_u16() == 429 {
+        bail!(l!("CurseForge: moc požadavků najednou, zkus to za pár minut.", "CurseForge: too many requests, try again in a few minutes."));
+    }
     if r.status().as_u16() == 403 && path.starts_with("/mods/search") {
         bail!(l!(
             "CurseForge zatím nepovolil vyhledávání pro tenhle API klíč. Instalace a aktualizace z CurseForge fungují — mody zatím hledej na Modrinthu.",
@@ -437,7 +438,7 @@ pub struct Tracked {
 }
 
 fn meta_path(inst_id: &str) -> PathBuf {
-    instances::game_dir(inst_id).join(".justice").join("content.json")
+    instances::game_dir(inst_id).join(".kuubl").join("content.json")
 }
 
 pub fn load_meta(inst_id: &str) -> BTreeMap<String, Tracked> {
@@ -1081,9 +1082,10 @@ pub fn performance_slugs(loader: &str) -> Vec<&'static str> {
                 // Measured 2026-10-29 (walking through new terrain, 1.21.11): with these the 1% lows
                 // went up by half and hitches over 50 ms dropped five times, level with OneClient,
                 // whose performance bundle they come from. Ones without a build for the game version
-                // are skipped.
-                "c2me-fabric", "scalablelux", "ixeris", "gnetum", "vmp-fabric", "asynclogger",
-                "particle-core", "cull-fewer-leaves", "structure-layout-optimizer", "zfastnoise",
+                // are skipped. c2me and zfastnoise are left out: their current builds pull in
+                // natives that need Java 25, and instances run Java 21 on 1.21.11.
+                "scalablelux", "ixeris", "gnetum", "vmp-fabric", "asynclogger",
+                "particle-core", "cull-fewer-leaves", "structure-layout-optimizer",
                 "fastquit", "forcecloseworldloadingscreen", "better-mipmaps", "optipainting-reloaded",
                 "sciophobia", "obe",
             ];

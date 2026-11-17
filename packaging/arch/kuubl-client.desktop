@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Kuubl Client
+GenericName=Minecraft Launcher
+Comment=Minecraft launcher pro hraní i natáčení — mody z Modrinthu a CurseForge
+Exec=kuubl-client
+Icon=kuubl-client
+Terminal=false
+Categories=Game;
+Keywords=minecraft;launcher;modrinth;curseforge;flashback;
+StartupWMClass=kuubl-client

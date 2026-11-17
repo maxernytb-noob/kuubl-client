@@ -209,7 +209,7 @@ pub const HEAVY_MODS: &[&str] = &[
 /// so mods the player switched off by hand stay off.
 pub fn apply_light_mode(inst_id: &str, on: bool) -> Result<Vec<String>> {
     let mods = instances::game_dir(inst_id).join("mods");
-    let state = instances::game_dir(inst_id).join(".justice").join("light-mode.json");
+    let state = instances::game_dir(inst_id).join(".kuubl").join("light-mode.json");
     let mut disabled: Vec<String> = net::read_json(&state).ok().and_then(|v| serde_json::from_value(v).ok()).unwrap_or_default();
     let mut changed = vec![];
     if on {

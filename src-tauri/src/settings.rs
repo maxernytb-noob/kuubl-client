@@ -3,12 +3,12 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::RwLock;
 
-/// Azure app registered for Justice Client (personal MS accounts, public client flows).
+/// Azure app registered for Kuubl Client (personal MS accounts, public client flows).
 pub const DEFAULT_MS_CLIENT_ID: &str = "1d78c41d-dee8-40da-8516-194ccd654143";
-/// Discord app registered for Justice Client, shown as "Playing Justice Client".
+/// Discord app registered for Kuubl Client, shown as "Playing Kuubl Client".
 pub const DEFAULT_DISCORD_APP_ID: &str = "1553031868969128057";
 
-/// The Discord app for Rich Presence: the user's own if they set one, otherwise Justice Client's.
+/// The Discord app for Rich Presence: the user's own if they set one, otherwise Kuubl Client's.
 pub fn discord_app_id() -> String {
     let id = get().discord_app_id.trim().to_string();
     if id.is_empty() { DEFAULT_DISCORD_APP_ID.into() } else { id }
@@ -46,8 +46,9 @@ pub struct Settings {
     pub bg_style: String,
     /// Quick-join button id ("justicesmp", "ertenix") -> instance id to launch it with.
     pub quick_servers: std::collections::BTreeMap<String, String>,
-    /// Justice Mod (in-game menu) in supported Fabric instances; each instance can still opt out.
-    pub justice_mod: bool,
+    /// Kuubl Mod (in-game menu) in supported Fabric instances; each instance can still opt out.
+    #[serde(alias = "justiceMod")]
+    pub kuubl_mod: bool,
     /// Pop a standalone live-log window when a game launches (Lunar-style). On by default.
     pub log_window_on_launch: bool,
     /// Look & layout preferences owned by the UI (background, radius, sidebar order, shortcuts…).
@@ -79,10 +80,10 @@ impl Default for Settings {
             obs_auto_record: false,
             obs_scene: String::new(),
             onboarded: false,
-            accent_color: "#e11d38".into(),
+            accent_color: "#f0661f".into(),
             bg_style: "void".into(),
             quick_servers: Default::default(),
-            justice_mod: true,
+            kuubl_mod: true,
             log_window_on_launch: true,
             ui: serde_json::Value::Null,
         }
@@ -112,7 +113,7 @@ pub fn cpu_threads() -> usize {
 fn settings_path() -> PathBuf {
     dirs::config_dir()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join("JusticeClient")
+        .join("KuublClient")
         .join("settings.json")
 }
 
@@ -158,7 +159,7 @@ pub fn free_space(path: &std::path::Path) -> Option<u64> {
 
 /// Default data folder: AppData, unless that drive is nearly full and another fixed drive has room.
 fn default_data_dir() -> PathBuf {
-    let appdata = dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("JusticeClient");
+    let appdata = dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("KuublClient");
     const GB: u64 = 1 << 30;
     // Only Windows has several drive letters worth probing; on Linux ~/.local/share is the place.
     if !cfg!(windows) || appdata.exists() || free_space(&appdata).unwrap_or(u64::MAX) >= 20 * GB {
@@ -170,6 +171,6 @@ fn default_data_dir() -> PathBuf {
         .filter_map(|r| free_space(&r).map(|f| (r, f)))
         .filter(|(_, f)| *f >= 20 * GB)
         .max_by_key(|(_, f)| *f)
-        .map(|(r, _)| r.join("JusticeClient"))
+        .map(|(r, _)| r.join("KuublClient"))
         .unwrap_or(appdata)
 }

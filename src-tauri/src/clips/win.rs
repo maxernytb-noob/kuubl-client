@@ -96,7 +96,7 @@ pub fn foreground() -> Foreground {
 
 fn game_name(exe: &str, title: &str) -> String {
     let lower = exe.to_lowercase();
-    if lower.is_empty() || ["explorer", "justice-clips", "searchhost", "shellexperiencehost"].contains(&lower.as_str()) {
+    if lower.is_empty() || ["explorer", "kuubl-clips", "searchhost", "shellexperiencehost"].contains(&lower.as_str()) {
         return "Desktop".into();
     }
     // Window titles are usually the nicest name ("Counter-Strike 2", "Minecraft 1.21.4 - Multiplayer").

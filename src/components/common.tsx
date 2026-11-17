@@ -27,13 +27,13 @@ function skinFace(data: string): Promise<string> {
 export function Avatar({ account, size = 22 }: { account: Pick<Account, "uuid" | "username" | "kind"> & { skinUrl?: string }; size?: number }) {
   const [broken, setBroken] = useState(false);
   const [face, setFace] = useState<string | null>(null);
-  // Offline accounts: the face of their Justice skin (by name it would be a premium player's head).
-  const justiceSkin = account.kind !== "msa" ? account.skinUrl : undefined;
+  // Offline accounts: the face of their Kuubl skin (by name it would be a premium player's head).
+  const kuublSkin = account.kind !== "msa" ? account.skinUrl : undefined;
   useEffect(() => {
     setFace(null);
-    if (!justiceSkin) return;
-    api.fetchImage(justiceSkin).then(skinFace).then(setFace).catch(() => {});
-  }, [justiceSkin]);
+    if (!kuublSkin) return;
+    api.fetchImage(kuublSkin).then(skinFace).then(setFace).catch(() => {});
+  }, [kuublSkin]);
   const id = account.kind === "msa" ? account.uuid : account.username;
   if (face) return <img className="avatar" style={{ width: size, height: size, imageRendering: "pixelated" }} src={face} alt="" />;
   if (broken) return <span className="avatar" style={{ width: size, height: size }} />;

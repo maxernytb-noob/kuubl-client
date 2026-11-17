@@ -1,11 +1,13 @@
 # Maintainer: maxem <maxernytb@gmail.com>
-pkgname=justice-client
-pkgver=0.8.1
+pkgname=kuubl-client
+pkgver=1.0.0
 pkgrel=1
-pkgdesc="Minecraft launcher pro natáčení — Flashback, max FPS, mody z Modrinthu a CurseForge"
+pkgdesc="Minecraft launcher pro hraní i natáčení — mody z Modrinthu a CurseForge"
 arch=('x86_64')
-url="https://www.youtube.com/@maxernMC"
-license=('LicenseRef-custom')
+url="https://ertenix.net/kuubl/"
+license=('MIT')
+conflicts=('justice-client')
+replaces=('justice-client')
 depends=(
   'webkit2gtk-4.1' 'gtk3' 'hicolor-icon-theme'
   # Minecraft (LWJGL/GLFW + OpenAL) needs these at runtime; Java is downloaded by the launcher.
@@ -17,17 +19,17 @@ makedepends=('rust' 'cargo' 'nodejs' 'npm' 'pkgconf')
 optdepends=(
   'xorg-xrandr: older Minecraft versions (1.12 and below)'
   'libpulse: sound through PulseAudio/PipeWire'
-  'discord: "Playing Justice Client" status'
+  'discord: "Playing Kuubl Client" status'
   'obs-studio: automatic recording when the game starts'
-  'gpu-screen-recorder: Justice Clips (replay buffer, AUR)'
-  'ffmpeg: Justice Clips thumbnails and trimming'
-  'libnotify: Justice Clips notifications'
+  'gpu-screen-recorder: Kuubl Clips (replay buffer, AUR)'
+  'ffmpeg: Kuubl Clips thumbnails and trimming'
+  'libnotify: Kuubl Clips notifications'
 )
 options=('!lto' '!debug')
 source=("$pkgname-$pkgver.tar.gz"
         "$pkgname.desktop")
-sha256sums=('250ac10243a715c6a2c54802fa089761e9dea9fc4349e70af84c0dee6564ad21'
-            'd6814564181fff3cee300de29d12ba9af40cfd7b01f0b68dfaf4c908a5655870')
+sha256sums=('c026ee60a103c26f5e6a50080e273aac7bce7e4b86cf65d6397b34d1ce517276'
+            'ebfffae194ca9f21d76f673ebc8bb238d641ec78f73875773321150a489ae9f8')
 
 prepare() {
   cd "$srcdir/$pkgname-$pkgver"
@@ -45,9 +47,9 @@ build() {
 
 package() {
   cd "$srcdir/$pkgname-$pkgver"
-  install -Dm755 src-tauri/target/release/justice-client "$pkgdir/usr/bin/justice-client"
-  for jar in src-tauri/resources/justice-mod-*.jar; do
-    install -Dm644 "$jar" "$pkgdir/usr/lib/justice-client/resources/$(basename "$jar")"
+  install -Dm755 src-tauri/target/release/kuubl-client "$pkgdir/usr/bin/kuubl-client"
+  for jar in src-tauri/resources/kuubl-mod-*.jar; do
+    install -Dm644 "$jar" "$pkgdir/usr/lib/kuubl-client/resources/$(basename "$jar")"
   done
   install -Dm644 "$srcdir/$pkgname.desktop" "$pkgdir/usr/share/applications/$pkgname.desktop"
   install -Dm644 src-tauri/icons/32x32.png      "$pkgdir/usr/share/icons/hicolor/32x32/apps/$pkgname.png"

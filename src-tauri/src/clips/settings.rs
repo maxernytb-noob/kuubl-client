@@ -31,6 +31,14 @@ pub struct Settings {
     pub ffmpeg_path: String,
     /// Replay buffer runs while a Minecraft instance from the launcher is running.
     pub enabled: bool,
+    /// Voice clips ("Kuubl, clip that"), Windows.
+    pub voice: bool,
+    /// "en" | "cs"
+    pub voice_lang: String,
+    /// Automatic clips, reported by Kuubl Mod: a player kill, your death, an advancement.
+    pub auto_kill: bool,
+    pub auto_death: bool,
+    pub auto_advancement: bool,
 }
 
 impl Default for Settings {
@@ -55,6 +63,11 @@ impl Default for Settings {
             game_folders: true,
             ffmpeg_path: String::new(),
             enabled: true,
+            voice: false,
+            voice_lang: "en".into(),
+            auto_kill: false,
+            auto_death: false,
+            auto_advancement: false,
         }
     }
 }
@@ -71,6 +84,9 @@ impl Settings {
         }
         self.mic_volume = self.mic_volume.clamp(0.0, 3.0);
         self.audio_offset_ms = self.audio_offset_ms.clamp(-1000, 1000);
+        if self.voice_lang != "cs" {
+            self.voice_lang = "en".into();
+        }
         if self.hotkey.trim().is_empty() {
             self.hotkey = "F8".into();
         }
@@ -97,21 +113,21 @@ impl Settings {
 fn default_clips_dir() -> PathBuf {
     // C: is small on this machine; prefer D: when it exists.
     if PathBuf::from("D:\\").exists() {
-        PathBuf::from("D:\\Justice Clips")
+        PathBuf::from("D:\\Kuubl Clips")
     } else {
         dirs::video_dir()
             .unwrap_or_else(|| dirs::home_dir().unwrap_or_default())
-            .join("Justice Clips")
+            .join("Kuubl Clips")
     }
 }
 
 fn path() -> PathBuf {
-    dirs::config_dir().unwrap_or_default().join("JusticeClient").join("clips.json")
+    dirs::config_dir().unwrap_or_default().join("KuublClient").join("clips.json")
 }
 
-/// Settings of the old standalone Justice Clips app, taken over on first start.
+/// Settings of the old standalone Kuubl Clips app, taken over on first start.
 fn legacy_path() -> PathBuf {
-    dirs::config_dir().unwrap_or_default().join("JusticeClips").join("settings.json")
+    dirs::config_dir().unwrap_or_default().join("KuublClips").join("settings.json")
 }
 
 pub fn load() -> Settings {

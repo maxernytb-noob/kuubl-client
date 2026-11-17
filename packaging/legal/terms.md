@@ -1,28 +1,28 @@
 ---
 doc: terms
-version: 2026-10-29
+version: 2026-11-17
 ---
 
 <!-- lang:cs -->
 
-# Podmínky použití Justice Client
+# Podmínky použití Kuubl Client
 
 > **Upozornění k návrhu:** Tento text je návrh připravený bez právní kontroly a není právní radou. Před vydáním ho nechte zkontrolovat advokátem se znalostí českého a evropského spotřebitelského práva a práva digitálních služeb.
 
-**Verze:** 2026-10-29 · **Účinnost od:** [DOPLNIT: datum účinnosti] · **Závazné znění:** české. Anglický překlad je jen informativní; při rozporu má přednost české znění.
+**Verze:** 2026-11-17 · **Účinnost od:** [DOPLNIT: datum účinnosti] · **Závazné znění:** české. Anglický překlad je jen informativní; při rozporu má přednost české znění.
 
 ## 1. Kdo jsme a co tyto podmínky upravují
 
-1.1 Justice Client, Justice Mod a služba Justice Social (dále společně „**Služby**“) provozuje fyzická osoba **[DOPLNIT: jméno a příjmení provozovatele]**, adresa pro doručování **[DOPLNIT: adresa pro doručování]**, e-mail **[DOPLNIT: kontaktní e-mail]** (dále „**provozovatel**“, „**my**“).
+1.1 Kuubl Client, Kuubl Mod a služba Kuubl Social (dále společně „**Služby**“) provozuje fyzická osoba **[DOPLNIT: jméno a příjmení provozovatele]**, e-mail **[DOPLNIT: kontaktní e-mail]** (dále „**provozovatel**“, „**my**“).
 
 1.2 Služby tvoří zejména:
 
-- **Justice Client** – launcher pro hru Minecraft pro Windows a Linux (připravuje se macOS), včetně automatických aktualizací, správy instancí, modů a modpacků, nahrávání klipů a přehrávače hudby;
-- **Justice Mod** – modifikace hry pro loadery Fabric, NeoForge a Forge;
-- **Justice Social** – online služba na našem serveru: účty, přátelé, chat, party, sdílení světů pro jednoho hráče přes relay, pláště, uložené skiny, žebříček, stav online („presence“), statistiky a – jakmile budou dostupné – zveřejněné klipy a pomocník pro modpacky využívající umělou inteligenci;
-- web **https://justiceclient.online**.
+- **Kuubl Client** – launcher pro hru Minecraft pro Windows a Linux (připravuje se macOS), včetně automatických aktualizací, správy instancí, modů a modpacků, nahrávání klipů a přehrávače hudby;
+- **Kuubl Mod** – modifikace hry pro loadery Fabric, NeoForge a Forge;
+- **Kuubl Social** – online služba na našem serveru: účty, přátelé, chat, party, sdílení světů pro jednoho hráče přes relay, pláště, uložené skiny, žebříček, stav online („presence“), statistiky a – jakmile budou dostupné – zveřejněné klipy a pomocník pro modpacky využívající umělou inteligenci;
+- web **https://ertenix.net/kuubl**.
 
-1.3 Tyto podmínky upravují vaše užívání Služeb. Zpracování osobních údajů popisují samostatné [Zásady ochrany osobních údajů](https://justiceclient.online/privacy) a pravidla pro obsah a chování [Pravidla obsahu a komunity](https://justiceclient.online/content-policy), která jsou součástí těchto podmínek.
+1.3 Tyto podmínky upravují vaše užívání Služeb. Zpracování osobních údajů popisují samostatné [Zásady ochrany osobních údajů](https://ertenix.net/kuubl/privacy.html) a pravidla pro obsah a chování [Pravidla obsahu a komunity](https://ertenix.net/kuubl/content-policy.html), která jsou součástí těchto podmínek.
 
 1.4 Služby poskytujeme **zdarma**. Nejsou za ně žádné poplatky ani předplatné a neprodáváme v nich nic.
 
@@ -30,11 +30,11 @@ version: 2026-10-29
 
 2.1 Podmínky přijímáte zaškrtnutím souhlasu v launcheru nebo tím, že Služby začnete používat. Pokud s nimi nesouhlasíte, Služby nepoužívejte a launcher odinstalujte.
 
-2.2 Části Služeb, které nevyžadují účet Justice Social (například samotný launcher nebo Justice Mod bez přihlášení k Justice Social), můžete používat bez ohledu na věk, pokud to dovolují podmínky hry Minecraft a pravidla vaší země.
+2.2 Části Služeb, které nevyžadují účet Kuubl Social (například samotný launcher nebo Kuubl Mod bez přihlášení k Kuubl Social), můžete používat bez ohledu na věk, pokud to dovolují podmínky hry Minecraft a pravidla vaší země.
 
 ## 3. Věk
 
-3.1 Služby s účtem (Justice Social: účet, přátelé, chat, party, sdílení světů, zveřejňování klipů, pomocník s AI) smí sám používat jen ten, komu je **alespoň 15 let**. To odpovídá věku, od kterého může podle českého zákona o zpracování osobních údajů dát souhlas se službami informační společnosti sám.
+3.1 Služby s účtem (Kuubl Social: účet, přátelé, chat, party, sdílení světů, zveřejňování klipů, pomocník s AI) smí sám používat jen ten, komu je **alespoň 15 let**. To odpovídá věku, od kterého může podle českého zákona o zpracování osobních údajů dát souhlas se službami informační společnosti sám.
 
 3.2 Je-li vám méně než 15 let, smíte Služby s účtem používat jen se souhlasem a pod dohledem rodiče nebo jiného zákonného zástupce. Zákonný zástupce odpovídá za to, jak dítě Služby používá, a může nás kdykoli požádat o zrušení účtu dítěte.
 
@@ -42,9 +42,9 @@ version: 2026-10-29
 
 ## 4. Licence k softwaru
 
-4.1 Udělujeme vám bezúplatnou, nevýhradní, nepřevoditelnou a odvolatelnou licenci instalovat a používat Justice Client a Justice Mod pro vaše osobní a nekomerční účely.
+4.1 Kuubl Client a Kuubl Mod jsou vydané pod [licencí MIT](https://github.com/maxernytb-noob/kuubl-client/blob/main/LICENSE). Zdrojový kód launcheru je zveřejněný na [GitHubu](https://github.com/maxernytb-noob/kuubl-client). Licence MIT vám dovoluje software zdarma používat, kopírovat, upravovat, šířit i prodávat, pokud zachováte text licence a označení autorství. Pro software má licence MIT přednost před těmito podmínkami.
 
-4.2 Bez našeho souhlasu nesmíte software prodávat, pronajímat, šířit v upravené podobě pod naším jménem, odstraňovat z něj označení autorství ani obcházet jeho bezpečnostní opatření, ledaže vám to výslovně dovoluje zákon nebo licence, pod kterou je daná část softwaru vydána.
+4.2 Licence MIT se nevztahuje na název a logo. Upravené verze nesmíte šířit pod naším názvem a logem ani tak, aby vypadaly jako oficiální verze. Licence MIT se také nevztahuje na Služby provozované na našem serveru (Kuubl Social, web); jejich používání se řídí těmito podmínkami.
 
 4.3 Části softwaru jsou tvořeny knihovnami třetích stran pod jejich vlastními licencemi (open source). Tyto licence mají u těchto částí přednost.
 
@@ -56,11 +56,11 @@ version: 2026-10-29
 
 5.2 Minecraft je ochranná známka společnosti Mojang AB. Všechna práva ke hře Minecraft a jejím prvkům patří jejich vlastníkům. Názvy, obrázky a podklady ke hře používáme jen v rozsahu, který dovolují [Minecraft Usage Guidelines](https://www.minecraft.net/usage-guidelines).
 
-5.3 Justice Client neprodává hru Minecraft ani přístup k ní. K hraní potřebujete vlastní platnou licenci hry. Hru stahujeme z oficiálních serverů Mojangu a nijak ji nemodifikujeme mimo modů, které si sami zvolíte.
+5.3 Kuubl Client neprodává hru Minecraft ani přístup k ní. K hraní potřebujete vlastní platnou licenci hry. Hru stahujeme z oficiálních serverů Mojangu a nijak ji nemodifikujeme mimo modů, které si sami zvolíte.
 
 5.4 Při používání hry se musíte řídit [licenčními podmínkami Minecraftu (EULA)](https://www.minecraft.net/eula), [Microsoft Services Agreement](https://www.microsoft.com/servicesagreement) a pravidly serverů, na kterých hrajete.
 
-5.5 **Offline („Justice“) účty** slouží k hraní v režimu bez ověření (singleplayer, LAN, sdílené světy a servery, které offline režim samy povolují). Nejsou náhradou za koupi hry a nesmíte je používat k obcházení ochrany serverů ani licenčních podmínek Minecraftu. Doporučujeme si hru koupit.
+5.5 **Offline („Kuubl“) účty** slouží k hraní v režimu bez ověření (singleplayer, LAN, sdílené světy a servery, které offline režim samy povolují). Nejsou náhradou za koupi hry a nesmíte je používat k obcházení ochrany serverů ani licenčních podmínek Minecraftu. Doporučujeme si hru koupit.
 
 5.6 Přihlášení účtem Microsoft probíhá přímo u Microsoftu. Vaše heslo k účtu Microsoft nikdy nevidíme ani neukládáme.
 
@@ -70,25 +70,25 @@ version: 2026-10-29
 
 6.2 Mody třetích stran mohou obsahovat chyby, být nekompatibilní, poškodit vaše světy nebo obsahovat škodlivý kód. Instalujete je na vlastní odpovědnost a doporučujeme zálohovat světy.
 
-6.3 **Hudba.** Přehrávač v launcheru a modul Now Playing v Justice Modu jen zobrazují a ovládají přehrávání aplikace, kterou máte v počítači (přes systémové rozhraní Windows / Linux). Aplikaci **Sonolith** uvádíme pouze jako doporučený přehrávač. Nejsme jejím provozovatelem ani partnerem a za ni neodpovídáme.
+6.3 **Hudba.** Přehrávač v launcheru a modul Now Playing v Kuubl Modu jen zobrazují a ovládají přehrávání aplikace, kterou máte v počítači (přes systémové rozhraní Windows / Linux). Aplikaci **Sonolith** uvádíme pouze jako doporučený přehrávač. Nejsme jejím provozovatelem ani partnerem a za ni neodpovídáme.
 
 6.4 **Discord.** Launcher může na vašem počítači předávat aplikaci Discord informaci o tom, co hrajete (Rich Presence). Tuto funkci lze vypnout v Nastavení. Discord je samostatná služba se svými podmínkami.
 
 6.5 Odkazy na weby a služby třetích stran (servery, Justice SMP, YouTube apod.) uvádíme pro pohodlí. Nejsou součástí Služeb a neodpovídáme za ně.
 
-## 7. Účet Justice Social
+## 7. Účet Kuubl Social
 
-7.1 K účtu se přihlašujete účtem Microsoft (ověření proti serverům Mojangu) nebo offline účtem Justice se jménem a heslem.
+7.1 K účtu se přihlašujete účtem Microsoft (ověření proti serverům Mojangu) nebo offline účtem Kuubl se jménem a heslem.
 
 7.2 Odpovídáte za to, že:
 
-- uvedené údaje jsou pravdivé a jméno nevydává za někoho jiného (zejména za členy týmu Justice nebo známé osoby);
+- uvedené údaje jsou pravdivé a jméno nevydává za někoho jiného (zejména za členy týmu Kuubl nebo známé osoby);
 - heslo uchováváte v tajnosti, nepoužíváte ho jinde a účet nesdílíte; o zneužití účtu nám dáte vědět bez zbytečného odkladu;
 - účet používáte jen vy (jeden účet = jedna osoba).
 
 7.3 Za činnost provedenou z vašeho účtu odpovídáte, ledaže prokážete, že k ní došlo bez vašeho zavinění.
 
-7.4 Uživatelská jména a jiný veřejný obsah profilu nesmí porušovat [Pravidla obsahu a komunity](https://justiceclient.online/content-policy).
+7.4 Uživatelská jména a jiný veřejný obsah profilu nesmí porušovat [Pravidla obsahu a komunity](https://ertenix.net/kuubl/content-policy.html).
 
 ## 8. Pravidla chování
 
@@ -103,7 +103,7 @@ Při používání Služeb nesmíte zejména:
 - vytvářet účty hromadně nebo za účelem obejití zablokování;
 - zneužívat systém nahlašování (vědomě nepravdivá nahlášení).
 
-Podrobnosti jsou v [Pravidlech obsahu a komunity](https://justiceclient.online/content-policy).
+Podrobnosti jsou v [Pravidlech obsahu a komunity](https://ertenix.net/kuubl/content-policy.html).
 
 ## 9. Uživatelský obsah
 
@@ -180,7 +180,7 @@ Podrobnosti jsou v [Pravidlech obsahu a komunity](https://justiceclient.online/c
 
 ## 15. Ukončení
 
-15.1 Používání Služeb můžete kdykoli ukončit – odinstalovat launcher a požádat o zrušení účtu Justice Social e-mailem na **[DOPLNIT: kontaktní e-mail]** (nebo v launcheru, až bude tato funkce dostupná). Účet a s ním spojená data smažeme podle Zásad ochrany osobních údajů.
+15.1 Používání Služeb můžete kdykoli ukončit – odinstalovat launcher a požádat o zrušení účtu Kuubl Social e-mailem na **[DOPLNIT: kontaktní e-mail]** (nebo v launcheru, až bude tato funkce dostupná). Účet a s ním spojená data smažeme podle Zásad ochrany osobních údajů.
 
 15.2 Účet můžeme omezit nebo zrušit, pokud vážně nebo opakovaně porušujete tyto podmínky nebo zákon, pokud to vyžaduje bezpečnost Služeb nebo jiných uživatelů, na pokyn orgánu, nebo pokud Služby ukončujeme. Postupujeme podle článku 10 a rozhodnutí vám zdůvodníme.
 
@@ -217,30 +217,30 @@ Podrobnosti jsou v [Pravidlech obsahu a komunity](https://justiceclient.online/c
 ## 19. Kontakt
 
 - Provozovatel: **[DOPLNIT: jméno a příjmení provozovatele]**
-- Adresa pro doručování: **[DOPLNIT: adresa pro doručování]**
+- Písemnosti: na vyžádání e-mailem sdělíme poštovní adresu pro doručování.
 - E-mail: **[DOPLNIT: kontaktní e-mail]**
 - Kontaktní místo DSA / nahlašování: **[DOPLNIT: e-mail pro nahlašování]**
 
 <!-- lang:en -->
 
-# Justice Client Terms of Use
+# Kuubl Client Terms of Use
 
 > **Draft notice:** This text is a draft prepared without legal review and is not legal advice. Before release, have it reviewed by a lawyer familiar with Czech and EU consumer law and the law of digital services.
 
-**Version:** 2026-10-29 · **Effective from:** [DOPLNIT: effective date] · **Binding version:** Czech. This English translation is for information only; if the versions conflict, the Czech version prevails.
+**Version:** 2026-11-17 · **Effective from:** [DOPLNIT: effective date] · **Binding version:** Czech. This English translation is for information only; if the versions conflict, the Czech version prevails.
 
 ## 1. Who we are and what these terms cover
 
-1.1 Justice Client, Justice Mod and the Justice Social service (together the "**Services**") are operated by a natural person, **[DOPLNIT: operator's full name]**, address for correspondence **[DOPLNIT: address for correspondence]**, e-mail **[DOPLNIT: contact e-mail]** (the "**operator**", "**we**").
+1.1 Kuubl Client, Kuubl Mod and the Kuubl Social service (together the "**Services**") are operated by a natural person, **[DOPLNIT: operator's full name]**, e-mail **[DOPLNIT: contact e-mail]** (the "**operator**", "**we**").
 
 1.2 The Services consist mainly of:
 
-- **Justice Client** – a launcher for the game Minecraft for Windows and Linux (macOS in preparation), including automatic updates, management of instances, mods and modpacks, clip recording and a music player;
-- **Justice Mod** – a game modification for the Fabric, NeoForge and Forge loaders;
-- **Justice Social** – an online service on our server: accounts, friends, chat, parties, sharing of singleplayer worlds via relay, capes, stored skins, a leaderboard, online status ("presence"), statistics and – once available – published clips and an AI-powered modpack helper;
-- the website **https://justiceclient.online**.
+- **Kuubl Client** – a launcher for the game Minecraft for Windows and Linux (macOS in preparation), including automatic updates, management of instances, mods and modpacks, clip recording and a music player;
+- **Kuubl Mod** – a game modification for the Fabric, NeoForge and Forge loaders;
+- **Kuubl Social** – an online service on our server: accounts, friends, chat, parties, sharing of singleplayer worlds via relay, capes, stored skins, a leaderboard, online status ("presence"), statistics and – once available – published clips and an AI-powered modpack helper;
+- the website **https://ertenix.net/kuubl**.
 
-1.3 These terms govern your use of the Services. The processing of personal data is described in the separate [Privacy Policy](https://justiceclient.online/privacy), and rules for content and behaviour in the [Content and Community Policy](https://justiceclient.online/content-policy), which forms part of these terms.
+1.3 These terms govern your use of the Services. The processing of personal data is described in the separate [Privacy Policy](https://ertenix.net/kuubl/privacy.html), and rules for content and behaviour in the [Content and Community Policy](https://ertenix.net/kuubl/content-policy.html), which forms part of these terms.
 
 1.4 The Services are **free of charge**. There are no fees or subscriptions and we sell nothing in them.
 
@@ -248,11 +248,11 @@ Podrobnosti jsou v [Pravidlech obsahu a komunity](https://justiceclient.online/c
 
 2.1 You accept these terms by ticking the consent box in the launcher or by starting to use the Services. If you do not agree, do not use the Services and uninstall the launcher.
 
-2.2 Parts of the Services that do not require a Justice Social account (for example the launcher itself or Justice Mod without signing in to Justice Social) may be used regardless of age, as far as the Minecraft terms and the rules of your country allow.
+2.2 Parts of the Services that do not require a Kuubl Social account (for example the launcher itself or Kuubl Mod without signing in to Kuubl Social) may be used regardless of age, as far as the Minecraft terms and the rules of your country allow.
 
 ## 3. Age
 
-3.1 Services with an account (Justice Social: account, friends, chat, parties, world sharing, publishing clips, the AI helper) may be used independently only by people who are **at least 15 years old**. This is the age from which Czech law allows a person to consent to information society services on their own.
+3.1 Services with an account (Kuubl Social: account, friends, chat, parties, world sharing, publishing clips, the AI helper) may be used independently only by people who are **at least 15 years old**. This is the age from which Czech law allows a person to consent to information society services on their own.
 
 3.2 If you are under 15, you may use the Services with an account only with the consent and under the supervision of a parent or other legal guardian. The guardian is responsible for how the child uses the Services and may ask us to close the child's account at any time.
 
@@ -260,9 +260,9 @@ Podrobnosti jsou v [Pravidlech obsahu a komunity](https://justiceclient.online/c
 
 ## 4. Software licence
 
-4.1 We grant you a free, non-exclusive, non-transferable and revocable licence to install and use Justice Client and Justice Mod for your personal, non-commercial purposes.
+4.1 Kuubl Client and Kuubl Mod are released under the [MIT License](https://github.com/maxernytb-noob/kuubl-client/blob/main/LICENSE). The launcher's source code is published on [GitHub](https://github.com/maxernytb-noob/kuubl-client). The MIT License lets you use, copy, modify, distribute and sell the software free of charge, as long as you keep the licence text and the copyright notice. For the software, the MIT License takes precedence over these terms.
 
-4.2 Without our consent you may not sell or rent the software, distribute modified versions under our name, remove authorship notices or circumvent its security measures, unless the law or the licence under which a given part of the software is released expressly allows it.
+4.2 The MIT License does not cover our name or logo. You may not distribute modified versions under our name and logo or in a way that makes them look like an official release. The MIT License also does not cover the Services we run on our server (Kuubl Social, the website); using them is governed by these terms.
 
 4.3 Parts of the software are third-party libraries under their own (open-source) licences. Those licences take precedence for those parts.
 
@@ -274,11 +274,11 @@ Podrobnosti jsou v [Pravidlech obsahu a komunity](https://justiceclient.online/c
 
 5.2 Minecraft is a trademark of Mojang AB. All rights to Minecraft and its elements belong to their owners. We use game names, images and assets only as permitted by the [Minecraft Usage Guidelines](https://www.minecraft.net/usage-guidelines).
 
-5.3 Justice Client does not sell Minecraft or access to it. You need your own valid game licence to play. The game is downloaded from Mojang's official servers and we do not modify it beyond the mods you choose yourself.
+5.3 Kuubl Client does not sell Minecraft or access to it. You need your own valid game licence to play. The game is downloaded from Mojang's official servers and we do not modify it beyond the mods you choose yourself.
 
 5.4 When using the game you must comply with the [Minecraft End User Licence Agreement (EULA)](https://www.minecraft.net/eula), the [Microsoft Services Agreement](https://www.microsoft.com/servicesagreement) and the rules of the servers you play on.
 
-5.5 **Offline ("Justice") accounts** are intended for playing without authentication (singleplayer, LAN, shared worlds and servers that themselves allow offline mode). They are not a substitute for buying the game and you must not use them to bypass server protection or the Minecraft licence terms. We recommend buying the game.
+5.5 **Offline ("Kuubl") accounts** are intended for playing without authentication (singleplayer, LAN, shared worlds and servers that themselves allow offline mode). They are not a substitute for buying the game and you must not use them to bypass server protection or the Minecraft licence terms. We recommend buying the game.
 
 5.6 Microsoft sign-in happens directly with Microsoft. We never see or store your Microsoft account password.
 
@@ -288,25 +288,25 @@ Podrobnosti jsou v [Pravidlech obsahu a komunity](https://justiceclient.online/c
 
 6.2 Third-party mods may contain bugs, be incompatible, damage your worlds or contain malicious code. You install them at your own risk; we recommend backing up your worlds.
 
-6.3 **Music.** The launcher's player and Justice Mod's Now Playing module only display and control playback of an application on your computer (via the Windows / Linux system interface). **Sonolith** is mentioned only as a recommended player. We do not operate it, are not its partner and are not responsible for it.
+6.3 **Music.** The launcher's player and Kuubl Mod's Now Playing module only display and control playback of an application on your computer (via the Windows / Linux system interface). **Sonolith** is mentioned only as a recommended player. We do not operate it, are not its partner and are not responsible for it.
 
 6.4 **Discord.** The launcher may pass information about what you are playing to the Discord application on your computer (Rich Presence). You can turn this off in Settings. Discord is a separate service with its own terms.
 
 6.5 Links to third-party websites and services (servers, Justice SMP, YouTube, etc.) are provided for convenience. They are not part of the Services and we are not responsible for them.
 
-## 7. Justice Social account
+## 7. Kuubl Social account
 
-7.1 You sign in with a Microsoft account (verified against Mojang's servers) or with an offline Justice account with a name and password.
+7.1 You sign in with a Microsoft account (verified against Mojang's servers) or with an offline Kuubl account with a name and password.
 
 7.2 You are responsible for ensuring that:
 
-- the details you provide are true and your name does not impersonate anyone else (in particular Justice team members or well-known people);
+- the details you provide are true and your name does not impersonate anyone else (in particular Kuubl team members or well-known people);
 - you keep your password secret, do not reuse it elsewhere and do not share your account; you tell us without undue delay if your account is misused;
 - only you use the account (one account = one person).
 
 7.3 You are responsible for activity carried out from your account unless you prove it happened through no fault of yours.
 
-7.4 User names and other public profile content must not violate the [Content and Community Policy](https://justiceclient.online/content-policy).
+7.4 User names and other public profile content must not violate the [Content and Community Policy](https://ertenix.net/kuubl/content-policy.html).
 
 ## 8. Rules of conduct
 
@@ -321,7 +321,7 @@ When using the Services you must not in particular:
 - create accounts in bulk or to evade a ban;
 - abuse the reporting system (knowingly false reports).
 
-Details are in the [Content and Community Policy](https://justiceclient.online/content-policy).
+Details are in the [Content and Community Policy](https://ertenix.net/kuubl/content-policy.html).
 
 ## 9. User content
 
@@ -398,7 +398,7 @@ Details are in the [Content and Community Policy](https://justiceclient.online/c
 
 ## 15. Termination
 
-15.1 You may stop using the Services at any time – uninstall the launcher and ask us to close your Justice Social account by e-mail to **[DOPLNIT: contact e-mail]** (or in the launcher once this feature is available). We will delete the account and its data according to the Privacy Policy.
+15.1 You may stop using the Services at any time – uninstall the launcher and ask us to close your Kuubl Social account by e-mail to **[DOPLNIT: contact e-mail]** (or in the launcher once this feature is available). We will delete the account and its data according to the Privacy Policy.
 
 15.2 We may restrict or close an account if you seriously or repeatedly breach these terms or the law, if required for the security of the Services or other users, on an order of an authority, or if we discontinue the Services. We follow section 10 and give reasons for the decision.
 
@@ -435,6 +435,6 @@ Details are in the [Content and Community Policy](https://justiceclient.online/c
 ## 19. Contact
 
 - Operator: **[DOPLNIT: operator's full name]**
-- Address for correspondence: **[DOPLNIT: address for correspondence]**
+- Postal correspondence: we will provide a postal address on request by e-mail.
 - E-mail: **[DOPLNIT: contact e-mail]**
 - DSA point of contact / reports: **[DOPLNIT: reporting e-mail]**

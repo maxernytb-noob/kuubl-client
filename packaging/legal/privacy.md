@@ -11,16 +11,16 @@ version: 2026-10-29
 
 **Verze:** 2026-10-29 · **Účinnost od:** [DOPLNIT: datum účinnosti] · **Závazné znění:** české.
 
-Tyto zásady vysvětlují, jaké osobní údaje zpracováváme, když používáte Justice Client, Justice Mod, službu Justice Social a web justiceclient.online (dále „**Služby**“), proč, jak dlouho a jaká máte práva. Řídíme se nařízením (EU) 2016/679 (GDPR) a zákonem č. 110/2019 Sb., o zpracování osobních údajů.
+Tyto zásady vysvětlují, jaké osobní údaje zpracováváme, když používáte Kuubl Client, Kuubl Mod, službu Kuubl Social a web ertenix.net/kuubl (dále „**Služby**“), proč, jak dlouho a jaká máte práva. Řídíme se nařízením (EU) 2016/679 (GDPR) a zákonem č. 110/2019 Sb., o zpracování osobních údajů.
 
 ## 1. Správce
 
-Správcem osobních údajů je fyzická osoba **[DOPLNIT: jméno a příjmení provozovatele]**, adresa pro doručování **[DOPLNIT: adresa pro doručování]**, e-mail **[DOPLNIT: e-mail pro ochranu osobních údajů]** (dále „**my**“). Pověřence pro ochranu osobních údajů nemáme jmenovaného, protože nám to zákon neukládá; se vším se obracejte na uvedený e-mail.
+Správcem osobních údajů je fyzická osoba **[DOPLNIT: jméno a příjmení provozovatele]**, e-mail **[DOPLNIT: e-mail pro ochranu osobních údajů]** (dále „**my**“). Pověřence pro ochranu osobních údajů nemáme jmenovaného, protože nám to zákon neukládá; se vším se obracejte na uvedený e-mail.
 
 ## 2. Stručně
 
 - **Launcher bez účtu** posílá na náš server jen to, co je nutné k aktualizacím a stažení obrázků (vaše IP adresa a technické údaje požadavku).
-- **Účet Justice Social** potřebuje vaše herní jméno a UUID; u offline účtu také heslo, které ukládáme jen jako bezpečný otisk (Argon2).
+- **Účet Kuubl Social** potřebuje vaše herní jméno a UUID; u offline účtu také heslo, které ukládáme jen jako bezpečný otisk (Argon2).
 - Zprávy, přátele, profil, skiny a klipy ukládáme, abychom vám mohli poskytovat sociální funkce.
 - **Crash logy a logy hry zůstávají jen ve vašem počítači.** Nic nesbíráme automaticky, nepoužíváme analytické nástroje, reklamu ani sledovací cookies a údaje neprodáváme.
 - Integrace hudebního přehrávače (Sonolith apod.) a Discord Rich Presence fungují **jen lokálně** ve vašem počítači.
@@ -36,7 +36,7 @@ Správcem osobních údajů je fyzická osoba **[DOPLNIT: jméno a příjmení p
 
 Launcher si v počítači ukládá svá data (nastavení, instance, přihlašovací tokeny účtů, klipy, logy, crash logy, nalezená „tajemství“). Ta k nám **neodesílá** – zpracováváte je vy ve svém zařízení.
 
-### 3.2 Účet Justice Social
+### 3.2 Účet Kuubl Social
 
 | Údaje | Účel | Právní základ | Doba uchování |
 |---|---|---|---|
@@ -44,7 +44,7 @@ Launcher si v počítači ukládá svá data (nastavení, instance, přihlašova
 | U offline účtu: jméno a heslo uložené jako otisk Argon2 (heslo samotné nikdy) | přihlášení | plnění smlouvy | po dobu existence účtu |
 | Přihlašovací relace (náhodný token) | udržení přihlášení | plnění smlouvy | do odhlášení, změny hesla nebo zrušení účtu |
 | Profil: bio, status, banner, zvolený plášť, statistiky a úspěchy, které launcher spočítá (např. odehraný čas) | zobrazení profilu přátelům a v žebříčku | plnění smlouvy | do změny nebo zrušení účtu |
-| Uložený skin offline účtu (obrázek PNG, varianta modelu) | zobrazení skinu ve hře ostatním hráčům Justice | plnění smlouvy | do resetu skinu nebo zrušení účtu |
+| Uložený skin offline účtu (obrázek PNG, varianta modelu) | zobrazení skinu ve hře ostatním hráčům Kuubl | plnění smlouvy | do resetu skinu nebo zrušení účtu |
 | Přátelé a žádosti o přátelství | funkce přátel | plnění smlouvy | do odebrání přítele nebo zrušení účtu |
 | Zprávy v chatu (text, typ, metadata jako pozvánky, čas, přečtení) | doručení zpráv a historie konverzace | plnění smlouvy | po dobu existence účtu; [DOPLNIT: rozhodnout, zda zprávy mazat automaticky, např. po 12 měsících] |
 | Soubory poslané v chatu (obrázky, videa) | doručení příjemci | plnění smlouvy | automaticky se mažou po **30 dnech** |
@@ -99,7 +99,7 @@ Některé funkce launcheru komunikují **přímo** z vašeho počítače se slu�
 
 | Příjemce | Role | Údaje | Umístění |
 |---|---|---|---|
-| **[DOPLNIT: poskytovatel VPS – název a sídlo]** | zpracovatel – hosting serveru, na kterém běží web, aktualizace a Justice Social | všechny údaje uložené na serveru | [DOPLNIT: stát datového centra] |
+| **[DOPLNIT: poskytovatel VPS – název a sídlo]** | zpracovatel – hosting serveru, na kterém běží web, aktualizace a Kuubl Social | všechny údaje uložené na serveru | [DOPLNIT: stát datového centra] |
 | **[DOPLNIT: registrátor/DNS – např. Namecheap]** | poskytovatel domény a DNS | jen DNS dotazy, nikoli obsah | [DOPLNIT: země] |
 | **[DOPLNIT: poskytovatel LLM – Groq, Inc. (USA) nebo Google (Gemini API)]** | zpracovatel / poskytovatel – odpovědi pomocníka s AI | text dotazu a kontext (bez vašeho jména, UUID a IP adresy) | USA |
 | **Mojang / Microsoft** | samostatný správce – ověření vlastnictví účtu Microsoft | herní jméno, jednorázový identifikátor, IP adresa našeho serveru | EU / USA |
@@ -141,7 +141,7 @@ Služby s účtem jsou určeny osobám od 15 let; mladší je smějí používat
 
 ## 11. Cookies a localStorage
 
-Web **justiceclient.online nepoužívá cookies** ani analytické či reklamní nástroje třetích stran a nenačítá písma ani skripty z cizích serverů. Do localStorage prohlížeče ukládá jen zvolený jazyk (`jc-lang`); tento údaj nikam neodesíláme. Protože jde o nezbytné uložení na vaši žádost, nevyžaduje souhlas.
+Web **ertenix.net/kuubl nepoužívá cookies** ani analytické či reklamní nástroje třetích stran a nenačítá písma ani skripty z cizích serverů. Do localStorage prohlížeče ukládá jen zvolený jazyk (`jc-lang`); tento údaj nikam neodesíláme. Protože jde o nezbytné uložení na vaši žádost, nevyžaduje souhlas.
 
 Rozhraní launcheru běží ve webovém zobrazení systému (WebView2 / WebKitGTK) a do jeho localStorage ukládá nastavení rozhraní a stav „tajemství“. Tyto údaje zůstávají ve vašem počítači.
 
@@ -157,16 +157,16 @@ Zásady můžeme aktualizovat. O podstatných změnách vás budeme informovat v
 
 **Version:** 2026-10-29 · **Effective from:** [DOPLNIT: effective date] · **Binding version:** Czech.
 
-This policy explains what personal data we process when you use Justice Client, Justice Mod, the Justice Social service and the justiceclient.online website (the "**Services**"), why, for how long and what rights you have. We comply with Regulation (EU) 2016/679 (GDPR) and Czech Act No. 110/2019 Coll. on personal data processing.
+This policy explains what personal data we process when you use Kuubl Client, Kuubl Mod, the Kuubl Social service and the ertenix.net/kuubl website (the "**Services**"), why, for how long and what rights you have. We comply with Regulation (EU) 2016/679 (GDPR) and Czech Act No. 110/2019 Coll. on personal data processing.
 
 ## 1. Controller
 
-The controller is a natural person, **[DOPLNIT: operator's full name]**, address for correspondence **[DOPLNIT: address for correspondence]**, e-mail **[DOPLNIT: privacy e-mail]** ("**we**"). We have not appointed a data protection officer because the law does not require it; please contact us at the e-mail above.
+The controller is a natural person, **[DOPLNIT: operator's full name]**, e-mail **[DOPLNIT: privacy e-mail]** ("**we**"). We have not appointed a data protection officer because the law does not require it; please contact us at the e-mail above.
 
 ## 2. In short
 
 - **The launcher without an account** sends our server only what is needed for updates and images (your IP address and technical request data).
-- **A Justice Social account** needs your in-game name and UUID; for an offline account also a password, which we store only as a secure hash (Argon2).
+- **A Kuubl Social account** needs your in-game name and UUID; for an offline account also a password, which we store only as a secure hash (Argon2).
 - We store messages, friends, profiles, skins and clips so that we can provide social features.
 - **Crash logs and game logs stay on your computer only.** We collect nothing automatically, use no analytics, advertising or tracking cookies and do not sell data.
 - The music player integration (Sonolith etc.) and Discord Rich Presence work **only locally** on your computer.
@@ -182,7 +182,7 @@ The controller is a natural person, **[DOPLNIT: operator's full name]**, address
 
 The launcher stores its data on your computer (settings, instances, account sign-in tokens, clips, logs, crash logs, discovered "secrets"). It does **not send** them to us – you process them on your own device.
 
-### 3.2 Justice Social account
+### 3.2 Kuubl Social account
 
 | Data | Purpose | Legal basis | Retention |
 |---|---|---|---|
@@ -190,7 +190,7 @@ The launcher stores its data on your computer (settings, instances, account sign
 | For an offline account: name and password stored as an Argon2 hash (never the password itself) | sign-in | performance of contract | for the life of the account |
 | Sign-in sessions (random token) | keeping you signed in | performance of contract | until sign-out, password change or account closure |
 | Profile: bio, status, banner, chosen cape, statistics and achievements computed by the launcher (e.g. play time) | showing your profile to friends and on the leaderboard | performance of contract | until changed or the account is closed |
-| Stored skin of an offline account (PNG image, model variant) | showing the skin in game to other Justice players | performance of contract | until skin reset or account closure |
+| Stored skin of an offline account (PNG image, model variant) | showing the skin in game to other Kuubl players | performance of contract | until skin reset or account closure |
 | Friends and friend requests | friends feature | performance of contract | until a friend is removed or the account is closed |
 | Chat messages (text, type, metadata such as invitations, time, read state) | delivering messages and conversation history | performance of contract | for the life of the account; [DOPLNIT: decide whether to delete messages automatically, e.g. after 12 months] |
 | Files sent in chat (images, videos) | delivery to the recipient | performance of contract | deleted automatically after **30 days** |
@@ -245,7 +245,7 @@ Some launcher features communicate **directly** from your computer with third-pa
 
 | Recipient | Role | Data | Location |
 |---|---|---|---|
-| **[DOPLNIT: VPS provider – name and registered office]** | processor – hosting of the server running the website, updates and Justice Social | all data stored on the server | [DOPLNIT: data centre country] |
+| **[DOPLNIT: VPS provider – name and registered office]** | processor – hosting of the server running the website, updates and Kuubl Social | all data stored on the server | [DOPLNIT: data centre country] |
 | **[DOPLNIT: registrar/DNS – e.g. Namecheap]** | domain and DNS provider | DNS queries only, not content | [DOPLNIT: country] |
 | **[DOPLNIT: LLM provider – Groq, Inc. (USA) or Google (Gemini API)]** | processor / provider – AI helper answers | question text and context (without your name, UUID or IP address) | USA |
 | **Mojang / Microsoft** | independent controller – verifying Microsoft account ownership | in-game name, one-time identifier, our server's IP address | EU / USA |
@@ -287,7 +287,7 @@ Services with an account are intended for people aged 15 and over; younger peopl
 
 ## 11. Cookies and localStorage
 
-The **justiceclient.online website uses no cookies** and no third-party analytics or advertising tools, and loads no fonts or scripts from other servers. It stores only your chosen language (`jc-lang`) in browser localStorage; this value is never sent anywhere. As this is storage strictly necessary at your request, it does not require consent.
+The **ertenix.net/kuubl website uses no cookies** and no third-party analytics or advertising tools, and loads no fonts or scripts from other servers. It stores only your chosen language (`jc-lang`) in browser localStorage; this value is never sent anywhere. As this is storage strictly necessary at your request, it does not require consent.
 
 The launcher interface runs in the system web view (WebView2 / WebKitGTK) and stores interface settings and the state of "secrets" in its localStorage. This data stays on your computer.
 

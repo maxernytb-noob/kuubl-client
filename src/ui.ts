@@ -49,6 +49,8 @@ export interface UiPrefs {
   density: "comfortable" | "compact";
   /** Short UI sounds (play, done, error, notifications). */
   sounds: boolean;
+  /** Soft click/hover ticks on buttons and toggles (on top of the master sound toggle). */
+  clickSounds: boolean;
   /** 0–1. */
   soundVolume: number;
   /** Home sections the user turned off. */
@@ -79,6 +81,7 @@ export const DEFAULT_UI: UiPrefs = {
   sidebar: "full",
   density: "comfortable",
   sounds: true,
+  clickSounds: true,
   soundVolume: 0.5,
   homeHidden: [],
   homeArt: true,
@@ -119,7 +122,7 @@ export function applyUi(p: UiPrefs) {
   root.classList.toggle("ui-round", p.radius === "round");
   root.classList.toggle("ui-noanim", !p.animations);
   root.classList.toggle("ui-dense", p.density === "compact");
-  setSoundPrefs(p.sounds, p.soundVolume);
+  setSoundPrefs(p.sounds, p.soundVolume, p.clickSounds);
   // Animations off also means light mode (main.tsx turns it on for Linux regardless).
   const forcedLow = (/Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)) || new URLSearchParams(location.search).has("lowfx");
   root.classList.toggle("lowfx", forcedLow || !p.animations);

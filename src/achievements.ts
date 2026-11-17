@@ -9,9 +9,11 @@ export interface Stats {
   pvp?: { kills: number; deaths: number; bestCombo: number; hits: number };
 }
 
-/** Justice capes (textures in public/capes, same as in Justice Mod). */
-export const CAPES: { id: string; name: [string, string] }[] = [
-  { id: "justice", name: ["Justice", "Justice"] },
+/** Kuubl capes (textures in public/capes, same as in Kuubl Mod). Animated ones have `frames`
+ *  (public/capes/<id>_<i>.png, 8 per second; <id>.png is the first frame). `unlock` = achievement id
+ *  that earns it (Kuubl Social checks it too). */
+export const CAPES: { id: string; name: [string, string]; frames?: number; unlock?: string }[] = [
+  { id: "justice", name: ["Kuubl", "Kuubl"] },
   { id: "midnight", name: ["Půlnoc", "Midnight"] },
   { id: "gold", name: ["Zlato", "Gold"] },
   { id: "frost", name: ["Mráz", "Frost"] },
@@ -39,6 +41,16 @@ export const CAPES: { id: string; name: [string, string] }[] = [
   { id: "desert", name: ["Poušť", "Desert"] },
   { id: "blossom", name: ["Květ", "Blossom"] },
   { id: "prism", name: ["Hranol", "Prism"] },
+  { id: "crown", name: ["Koruna", "Crown"] },
+  { id: "sweetheart", name: ["Srdíčko", "Sweetheart"] },
+  { id: "inferno", unlock: "kill1", name: ["Peklo", "Inferno"], frames: 16 },
+  { id: "starfall", unlock: "clip1", name: ["Padající hvězdy", "Starfall"], frames: 16 },
+  { id: "pulse", name: ["Puls", "Pulse"], frames: 16 },
+  { id: "rainbow", unlock: "inst5", name: ["Duha", "Rainbow"], frames: 16 },
+  { id: "matrix", unlock: "clip25", name: ["Matrix", "Matrix"], frames: 16 },
+  { id: "ender", unlock: "h100", name: ["Ender", "Ender"], frames: 16 },
+  { id: "tide", unlock: "h10", name: ["Příliv", "Tide"], frames: 16 },
+  { id: "heartbeat", unlock: "friend1", name: ["Tlukot srdce", "Heartbeat"], frames: 16 },
 ];
 
 export const PETS: { id: string; name: [string, string] }[] = [
@@ -57,7 +69,7 @@ export const PETS: { id: string; name: [string, string] }[] = [
 ];
 
 export const ACHIEVEMENTS: { id: string; icon: string; mc: string; name: [string, string]; text: [string, string]; test: (s: Stats) => boolean }[] = [
-  { id: "first", icon: "play", mc: "emerald", name: ["První kroky", "First steps"], text: ["Zahraj si poprvé přes Justice Client", "Play for the first time with Justice Client"], test: (s) => s.playtimeSecs > 0 },
+  { id: "first", icon: "play", mc: "emerald", name: ["První kroky", "First steps"], text: ["Zahraj si poprvé přes Kuubl Client", "Play for the first time with Kuubl Client"], test: (s) => s.playtimeSecs > 0 },
   { id: "h10", icon: "clock", mc: "clock", name: ["Rozehřátý", "Warmed up"], text: ["10 hodin ve hře", "10 hours in-game"], test: (s) => s.playtimeSecs >= 10 * 3600 },
   { id: "h100", icon: "flame", mc: "flame", name: ["Nepřetržitě", "Non-stop"], text: ["100 hodin ve hře", "100 hours in-game"], test: (s) => s.playtimeSecs >= 100 * 3600 },
   { id: "h500", icon: "crown", mc: "crown", name: ["Legenda", "Legend"], text: ["500 hodin ve hře", "500 hours in-game"], test: (s) => s.playtimeSecs >= 500 * 3600 },
@@ -66,7 +78,7 @@ export const ACHIEVEMENTS: { id: string; icon: string; mc: string; name: [string
   { id: "clip25", icon: "film", mc: "trophy", name: ["Režisér", "Director"], text: ["25 klipů", "25 clips"], test: (s) => s.clips >= 25 },
   { id: "friend1", icon: "users", mc: "steve", name: ["Parťák", "Buddy"], text: ["Prvního přítele", "Your first friend"], test: (s) => s.friends >= 1 },
   { id: "friend10", icon: "heart", mc: "heart", name: ["Společenský", "Social"], text: ["10 přátel", "10 friends"], test: (s) => s.friends >= 10 },
-  { id: "kill1", icon: "sword", mc: "sword", name: ["První krev", "First blood"], text: ["Zabij prvního hráče (počítá Justice Mod)", "Kill your first player (counted by Justice Mod)"], test: (s) => (s.pvp?.kills ?? 0) >= 1 },
+  { id: "kill1", icon: "sword", mc: "sword", name: ["První krev", "First blood"], text: ["Zabij prvního hráče (počítá Kuubl Mod)", "Kill your first player (counted by Kuubl Mod)"], test: (s) => (s.pvp?.kills ?? 0) >= 1 },
   { id: "kill100", icon: "skull", mc: "skull", name: ["Lovec", "Hunter"], text: ["100 zabitých hráčů", "100 player kills"], test: (s) => (s.pvp?.kills ?? 0) >= 100 },
   { id: "combo10", icon: "zap", mc: "bolt", name: ["Nedotknutelný", "Untouchable"], text: ["Combo 10 zásahů", "A 10-hit combo"], test: (s) => (s.pvp?.bestCombo ?? 0) >= 10 },
 ];
@@ -81,13 +93,14 @@ export function achievementName(id: string) {
 }
 
 export const BADGES: Record<string, { label: [string, string]; cls: string }> = {
-  team: { label: ["Tým Justice", "Justice team"], cls: "red" },
+  team: { label: ["Tým Kuubl", "Kuubl team"], cls: "red" },
   early: { label: ["Early", "Early"], cls: "amber" },
   offline: { label: ["Offline", "Offline"], cls: "" },
 };
 
 /** Profile banner presets (CSS backgrounds). */
 export const BANNERS: Record<string, string> = {
+  ember: "linear-gradient(135deg, #f0661f, #5a1d06)",
   red: "linear-gradient(135deg, #e11d38, #5b0714)",
   night: "linear-gradient(135deg, #1e3a8a, #0b1024)",
   aurora: "linear-gradient(135deg, #10b981, #6366f1)",

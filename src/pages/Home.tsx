@@ -270,13 +270,13 @@ const NEWS: { tag: string; title: [string, string]; items: [string, string][] } 
   ],
 };
 
-/** Versions on the home page, newest first: each gets a ready "Justice" Fabric instance on demand. */
+/** Versions on the home page, newest first: each gets a ready "Kuubl" Fabric instance on demand. */
 const HOME_VERSIONS = ["26.3", "26.2", "26.1.2", "1.21.11", "1.21.10"];
-const JUSTICE_GROUP = "Justice";
+const KUUBL_GROUP = "Kuubl";
 
-/** The launcher-managed instance of a version (Fabric + performance mods + Justice Mod). */
+/** The launcher-managed instance of a version (Fabric + performance mods + Kuubl Mod). */
 function managedFor(instances: Instance[], version: string) {
-  return instances.find((i) => i.group === JUSTICE_GROUP && i.mcVersion === version && i.loader === "fabric");
+  return instances.find((i) => i.group === KUUBL_GROUP && i.mcVersion === version && i.loader === "fabric");
 }
 
 function VersionCard({ version, on, onPick }: { version: string; on: boolean; onPick: () => void }) {
@@ -324,16 +324,16 @@ export default function Home() {
     prevRunning.current = isRunning;
   }, [isRunning]);
   const onlinePlaying = (friends ?? []).filter((f) => f.online && f.presence?.state === "playing");
-  const own = instances.filter((i) => i.group !== JUSTICE_GROUP);
+  const own = instances.filter((i) => i.group !== KUUBL_GROUP);
   const placeName = place && place.kind === "server" && settings?.streamerMode ? "••••••" : place?.name;
 
-  /** Plays the version's Justice instance, creating it the first time. */
+  /** Plays the version's Kuubl instance, creating it the first time. */
   const launch = async (server?: string) => {
     if (inst) return play(inst.id, server);
     setPreparing(version);
     try {
-      toast(tr(`Připravuji Minecraft ${version} s Justice optimalizacemi…`, `Setting up Minecraft ${version} with Justice optimizations…`), "info");
-      const made = await api.createInstance({ name: `Justice ${version}`, icon: "zap", group: JUSTICE_GROUP, mcVersion: version, loader: "fabric", loaderVersion: "" }, [], true);
+      toast(tr(`Připravuji Minecraft ${version} s Kuubl optimalizacemi…`, `Setting up Minecraft ${version} with Kuubl optimizations…`), "info");
+      const made = await api.createInstance({ name: `Kuubl ${version}`, icon: "zap", group: KUUBL_GROUP, mcVersion: version, loader: "fabric", loaderVersion: "" }, [], true);
       await reloadInstances();
       await play(made.id, server);
     } catch (e) {
@@ -367,7 +367,7 @@ export default function Home() {
         )}
         <div className="body" key={version}>
           <h1>{version} Fabric</h1>
-          <div className="drop-name">{art?.name || tr("Minecraft s Justice optimalizacemi", "Minecraft with Justice optimizations")}</div>
+          <div className="drop-name">{art?.name || tr("Minecraft s Kuubl optimalizacemi", "Minecraft with Kuubl optimizations")}</div>
           {inst && progress[inst.id] && (
             <div style={{ maxWidth: 380 }}>
               <TaskProgress task={inst.id} />

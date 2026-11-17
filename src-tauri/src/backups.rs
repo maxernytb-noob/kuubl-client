@@ -75,6 +75,20 @@ pub fn backup_all_worlds(inst: &str) -> Result<()> {
     Ok(())
 }
 
+/// Before risky changes (mod updates, a new Minecraft version): backs up worlds played in the last
+/// `days` days, so a world upgraded or broken by the change can be restored. Returns how many.
+pub fn backup_recent_worlds(inst: &str, days: i64) -> usize {
+    let since = chrono::Utc::now().timestamp() - days * 86400;
+    let mut n = 0;
+    for w in worlds(inst).into_iter().filter(|w| w.modified >= since) {
+        match backup_world(inst, &w.name) {
+            Ok(_) => n += 1,
+            Err(e) => lwarn!("world backup {inst}/{}: {e:#}", w.name),
+        }
+    }
+    n
+}
+
 pub fn snapshot(inst: &str, label: &str) -> Result<String> {
     let g = instances::game_dir(inst);
     let dest = backups_dir(inst).join("snapshots").join(format!("{label}__{}.zip", stamp()));
@@ -82,7 +96,7 @@ pub fn snapshot(inst: &str, label: &str) -> Result<String> {
         &[
             (g.join("mods"), "mods".into()),
             (g.join("config"), "config".into()),
-            (g.join(".justice"), ".justice".into()),
+            (g.join(".kuubl"), ".kuubl".into()),
             (g.join("options.txt"), "options.txt".into()),
             (instances::dir(inst).join("instance.json"), "instance.json".into()),
         ],
@@ -142,7 +156,7 @@ pub fn restore(inst: &str, file: &str) -> Result<()> {
         unzip_into(&p, &g.join("saves"))
     } else {
         snapshot(inst, "pred-obnovou")?;
-        for d in ["mods", "config", ".justice"] {
+        for d in ["mods", "config", ".kuubl"] {
             let _ = std::fs::remove_dir_all(g.join(d));
         }
         let tmp = settings::cache_dir().join(format!("restore-{inst}"));

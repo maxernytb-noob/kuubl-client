@@ -8,7 +8,7 @@ import { Modal } from "./common";
 const splitTags = (s: string) =>
   s.split(/[\s,]+/).map((t) => t.trim().replace(/^[#@]/, "")).filter(Boolean).slice(0, 10);
 
-/** Publish a local clip to the Justice feed: title, description, tagged players, hashtags. */
+/** Publish a local clip to the Kuubl feed: title, description, tagged players, hashtags. */
 export function PublishClip({ clip, onClose, onPublished }: { clip: Clip; onClose: () => void; onPublished: () => void }) {
   const { toast } = useStore();
   const [title, setTitle] = useState(clip.name);
@@ -57,7 +57,7 @@ export function PublishClip({ clip, onClose, onPublished }: { clip: Clip; onClos
         <label className="field"><span>{tr("Označit hráče", "Tag players")}</span>
           <input className="input" value={players} onChange={(e) => setPlayers(e.target.value)} placeholder="Notch, jeb_" />
         </label>
-        <span className="small muted">{tr("Klip se převede na 720p (max 60 s) a nahraje na Justice. Uvidí ho ostatní ve feedu.", "The clip is converted to 720p (max 60 s) and uploaded to Justice. Everyone sees it in the feed.")}</span>
+        <span className="small muted">{tr("Klip se převede na 720p (max 60 s) a nahraje na Kuubl. Uvidí ho ostatní ve feedu.", "The clip is converted to 720p (max 60 s) and uploaded to Kuubl. Everyone sees it in the feed.")}</span>
       </div>
     </Modal>
   );

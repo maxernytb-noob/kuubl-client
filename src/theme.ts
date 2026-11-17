@@ -1,7 +1,8 @@
 // Derives the whole accent palette from one hex colour and applies it as CSS variables.
 
 export const ACCENT_PRESETS: { name: string; nameEn: string; hex: string }[] = [
-  { name: "Justice červená", nameEn: "Justice red", hex: "#e11d38" },
+  { name: "Kuubl oranžová", nameEn: "Kuubl orange", hex: "#f0661f" },
+  { name: "Červená", nameEn: "Red", hex: "#e11d38" },
   { name: "Modrá", nameEn: "Blue", hex: "#3b82f6" },
   { name: "Růžová", nameEn: "Pink", hex: "#ec4899" },
   { name: "Fialová", nameEn: "Purple", hex: "#8b5cf6" },
@@ -17,7 +18,7 @@ export const BG_STYLES: Record<string, { name: string; nameEn: string; bg: strin
   dark: { name: "Tmavá", nameEn: "Dark", bg: "#08080a", bg2: "#0d0d10", panel: "#121215", panel2: "#17171b", panel3: "#1e1e23", line: "#222228", line2: "#2e2e36" },
   graphite: { name: "Grafit", nameEn: "Graphite", bg: "#111317", bg2: "#15181d", panel: "#1a1d23", panel2: "#20242b", panel3: "#282c34", line: "#2b2f37", line2: "#383d47" },
   // Backgrounds of the theme presets below.
-  void: { name: "Justice", nameEn: "Justice", bg: "#050506", bg2: "#09090b", panel: "#0e0e10", panel2: "#141417", panel3: "#1b1b1f", line: "#1c1c21", line2: "#2a2a30" },
+  void: { name: "Kuubl", nameEn: "Kuubl", bg: "#050506", bg2: "#09090b", panel: "#0e0e10", panel2: "#141417", panel3: "#1b1b1f", line: "#1c1c21", line2: "#2a2a30" },
   midnight: { name: "Midnight", nameEn: "Midnight", bg: "#05070d", bg2: "#080b13", panel: "#0d111b", panel2: "#121826", panel3: "#192030", line: "#1a2131", line2: "#273046" },
   aurora: { name: "Aurora", nameEn: "Aurora", bg: "#04080a", bg2: "#070c0f", panel: "#0b1215", panel2: "#10191d", panel3: "#172226", line: "#172327", line2: "#233338" },
   sakura: { name: "Sakura", nameEn: "Sakura", bg: "#0a0508", bg2: "#0e080c", panel: "#140c11", panel2: "#1b1117", panel3: "#24171f", line: "#26171f", line2: "#36222d" },
@@ -26,7 +27,7 @@ export const BG_STYLES: Record<string, { name: string; nameEn: string; bg: strin
 
 /** One-click looks: background + accent together. */
 export const THEME_PRESETS: { id: string; name: string; bg: string; accent: string }[] = [
-  { id: "justice", name: "Justice", bg: "void", accent: "#e11d38" },
+  { id: "justice", name: "Kuubl", bg: "void", accent: "#f0661f" },
   { id: "midnight", name: "Midnight", bg: "midnight", accent: "#3b82f6" },
   { id: "aurora", name: "Aurora", bg: "aurora", accent: "#14b8a6" },
   { id: "sakura", name: "Sakura", bg: "sakura", accent: "#ec4899" },
@@ -63,7 +64,7 @@ function luminance(hex: string): number {
 }
 
 export function applyTheme(accentInput: string, bgStyle: string) {
-  const accent = normalizeHex(accentInput) ?? "#e11d38";
+  const accent = normalizeHex(accentInput) ?? "#f0661f";
   const bg = BG_STYLES[bgStyle] ?? BG_STYLES.dark;
   const [r, g, b] = rgb(accent);
   const s = document.documentElement.style;

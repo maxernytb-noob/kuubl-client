@@ -9,9 +9,9 @@ version: 2026-10-29
 
 > **Upozornění k návrhu:** Tento text je návrh připravený bez právní kontroly a není právní radou. Před vydáním ho nechte zkontrolovat advokátem.
 
-**Verze:** 2026-10-29 · **Závazné znění:** české. Tato pravidla jsou součástí [Podmínek použití](https://justiceclient.online/terms).
+**Verze:** 2026-10-29 · **Závazné znění:** české. Tato pravidla jsou součástí [Podmínek použití](https://ertenix.net/kuubl/terms.html).
 
-Justice má být místo, kde se dobře hraje s kamarády. Pravidla platí pro vše, co v Justice Social vytváříte nebo sdílíte: **zprávy v chatu a soubory v nich, klipy (video, popis, hashtagy, označení hráčů), profil (jméno, bio, status, banner), skiny, názvy sdílených světů a party**.
+Kuubl má být místo, kde se dobře hraje s kamarády. Pravidla platí pro vše, co v Kuubl Social vytváříte nebo sdílíte: **zprávy v chatu a soubory v nich, klipy (video, popis, hashtagy, označení hráčů), profil (jméno, bio, status, banner), skiny, názvy sdílených světů a party**.
 
 ## 1. Co je zakázáno vždy
 
@@ -20,7 +20,7 @@ Justice má být místo, kde se dobře hraje s kamarády. Pravidla platí pro v�
 - **Obtěžování a šikana** – opakované nevyžádané zprávy, urážky, vyhrožování, zveřejňování cizích osobních údajů (doxxing), nahrávky lidí, kteří s tím nesouhlasí, ponižování.
 - **Sexuální a explicitní obsah**, extrémní násilí a gore.
 - **Sebepoškozování** – propagace nebo návody. Pokud se někdo ocitl v nouzi, v Česku pomůže Linka bezpečí **116 111** nebo tísňová linka **112**.
-- **Vydávání se za jiné** – za členy týmu Justice, známé tvůrce, jiné hráče nebo organizace.
+- **Vydávání se za jiné** – za členy týmu Kuubl, známé tvůrce, jiné hráče nebo organizace.
 - **Spam a podvody** – reklama, řetězové zprávy, phishing, falešné odkazy na „free“ účty, škodlivé soubory, obchodování s účty.
 - **Cheaty** – sdílení, propagace a prodej cheatů, hacked clientů, X-ray packů a jiných nástrojů pro nepovolenou výhodu na serverech, které je zakazují; klipy, jejichž hlavním obsahem je propagace cheatování.
 - **Porušování autorských práv** – cizí videa, hudba nebo mody nahrané bez svolení, vydávání cizí práce za vlastní.
@@ -37,14 +37,14 @@ Justice má být místo, kde se dobře hraje s kamarády. Pravidla platí pro v�
 ## 3. Chat
 
 - Chat je soukromý mezi vámi a přáteli, ale pravidla v něm platí také. Obsah zpráv nesledujeme; řešíme je na základě nahlášení.
-- Neposílejte hesla, přihlašovací kódy ani platební údaje – tým Justice se vás na ně **nikdy** nezeptá.
+- Neposílejte hesla, přihlašovací kódy ani platební údaje – tým Kuubl se vás na ně **nikdy** nezeptá.
 - Pozvánky do party a světů neposílejte opakovaně lidem, kteří o ně nestojí.
 
 ## 4. Profil, jména a skiny
 
 - Jméno, bio, status, banner a skin nesmí obsahovat nic ze seznamu v bodě 1.
-- Offline jména nesmí napodobovat jiné hráče ani tým Justice.
-- Pláště Justice jsou jen pro hru v Justice; nesmíte je vydávat za oficiální pláště Mojangu.
+- Offline jména nesmí napodobovat jiné hráče ani tým Kuubl.
+- Pláště Kuubl jsou jen pro hru v Kuubl; nesmíte je vydávat za oficiální pláště Mojangu.
 
 ## 5. Pomocník s AI
 
@@ -91,9 +91,9 @@ O každém opatření vůči vašemu obsahu nebo účtu vás informujeme a uvede
 
 > **Draft notice:** This text is a draft prepared without legal review and is not legal advice. Before release, have it reviewed by a lawyer.
 
-**Version:** 2026-10-29 · **Binding version:** Czech. This policy forms part of the [Terms of Use](https://justiceclient.online/terms).
+**Version:** 2026-10-29 · **Binding version:** Czech. This policy forms part of the [Terms of Use](https://ertenix.net/kuubl/terms.html).
 
-Justice should be a place where it's fun to play with friends. These rules apply to everything you create or share in Justice Social: **chat messages and files in them, clips (video, description, hashtags, player tags), profile (name, bio, status, banner), skins, names of shared worlds and parties**.
+Kuubl should be a place where it's fun to play with friends. These rules apply to everything you create or share in Kuubl Social: **chat messages and files in them, clips (video, description, hashtags, player tags), profile (name, bio, status, banner), skins, names of shared worlds and parties**.
 
 ## 1. Always forbidden
 
@@ -102,7 +102,7 @@ Justice should be a place where it's fun to play with friends. These rules apply
 - **Harassment and bullying** – repeated unwanted messages, insults, threats, publishing other people's personal data (doxxing), recordings of people who do not consent, humiliation.
 - **Sexual and explicit content**, extreme violence and gore.
 - **Self-harm** – promotion or instructions. If someone is in crisis, in Czechia call Linka bezpečí **116 111** or the emergency number **112**.
-- **Impersonation** – of Justice team members, well-known creators, other players or organisations.
+- **Impersonation** – of Kuubl team members, well-known creators, other players or organisations.
 - **Spam and scams** – advertising, chain messages, phishing, fake "free account" links, malicious files, account trading.
 - **Cheats** – sharing, promoting or selling cheats, hacked clients, X-ray packs and other tools for an unfair advantage on servers that forbid them; clips whose main content promotes cheating.
 - **Copyright infringement** – other people's videos, music or mods uploaded without permission, passing off others' work as your own.
@@ -119,14 +119,14 @@ Justice should be a place where it's fun to play with friends. These rules apply
 ## 3. Chat
 
 - Chat is private between you and your friends, but the rules apply there too. We do not monitor message content; we act on reports.
-- Do not send passwords, sign-in codes or payment details – the Justice team will **never** ask you for them.
+- Do not send passwords, sign-in codes or payment details – the Kuubl team will **never** ask you for them.
 - Do not repeatedly send party or world invitations to people who don't want them.
 
 ## 4. Profile, names and skins
 
 - Name, bio, status, banner and skin must not contain anything from the list in section 1.
-- Offline names must not imitate other players or the Justice team.
-- Justice capes are for play within Justice only; you must not pass them off as official Mojang capes.
+- Offline names must not imitate other players or the Kuubl team.
+- Kuubl capes are for play within Kuubl only; you must not pass them off as official Mojang capes.
 
 ## 5. AI helper
 

@@ -6,7 +6,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { api, type Backup, type GameVersion, type Installed, type Instance, type Loader, type LoaderVersion, type Update, type World } from "../api";
 import { Icon, INSTANCE_ICONS, instanceIcon } from "../icons";
-import { errText, fmtAgo, fmtDuration, fmtSize, LOADER_LABEL, useStore } from "../store";
+import { errText, fmtAgo, fmtDuration, fmtSize, KUUBL_MOD_VERSIONS, LOADER_LABEL, useStore } from "../store";
 import { Empty, InstIcon, Modal, openFolder, PlayButton, SkeletonList, Switch, TaskProgress, useAsync } from "../components/common";
 import { tr } from "../i18n";
 import Select from "../components/Select";
@@ -496,6 +496,89 @@ function LogTab({ inst }: { inst: Instance }) {
   );
 }
 
+const COPY_PARTS: [string, [string, string], [string, string]][] = [
+  ["game", ["Nastavení hry", "Game settings"], ["grafika, zvuk, ovládání (options.txt)", "video, sound, controls (options.txt)"]],
+  ["kuubl", ["Kuubl Mod", "Kuubl Mod"], ["moduly, HUD, menu", "modules, HUD, menu"]],
+  ["mods", ["Nastavení modů", "Mod configs"], ["složka config (Sodium, Iris…)", "the config folder (Sodium, Iris…)"]],
+  ["packs", ["Resource packy", "Resource packs"], ["soubory packů", "the pack files"]],
+  ["shaders", ["Shadery", "Shaders"], ["shader packy", "shader packs"]],
+  ["servers", ["Seznam serverů", "Server list"], ["servers.dat", "servers.dat"]],
+  ["worlds", ["Světy", "Worlds"], ["složka saves – při přechodu na novou verzi modpacku", "the saves folder – when moving to a new modpack version"]],
+  ["screenshots", ["Screenshoty", "Screenshots"], ["složka screenshots", "the screenshots folder"]],
+];
+
+/** Takes settings over from another instance (e.g. into a freshly installed modpack). */
+function CopySettingsCard({ inst }: { inst: Instance }) {
+  const { instances, toast } = useStore();
+  const others = instances.filter((i) => i.id !== inst.id);
+  const [from, setFrom] = useState("");
+  const [parts, setParts] = useState<string[]>(["game", "kuubl", "packs", "shaders"]);
+  const [busy, setBusy] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  if (!others.length) return null;
+  const src = others.find((i) => i.id === from);
+  const run = async () => {
+    setConfirm(false);
+    setBusy(true);
+    try {
+      const n = await api.copyInstanceSettings(from, inst.id, parts);
+      toast(tr(`Zkopírováno (${n} souborů). Původní soubory jsou zálohované ve složce settings-backup.`, `Copied (${n} files). The old files are backed up in the settings-backup folder.`), "success");
+    } catch (e) {
+      toast(errText(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="card pad col">
+      <b>{tr("Převzít nastavení z jiné instance", "Copy settings from another instance")}</b>
+      <span className="muted small">
+        {tr("Hodí se po instalaci modpacku nebo nové verze: grafika, ovládání, HUD a packy budou jako v instanci, kterou vybereš.", "Handy after installing a modpack or a new version: video, controls, HUD and packs become the same as in the instance you pick.")}
+      </span>
+      <div className="field">
+        <label>{tr("Zdrojová instance", "Source instance")}</label>
+        <Select className="select" value={from} onChange={(e) => setFrom(e.target.value)}>
+          <option value="">{tr("Vyber instanci…", "Pick an instance…")}</option>
+          {others.map((i) => (
+            <option key={i.id} value={i.id}>{`${i.name} · ${i.mcVersion}`}</option>
+          ))}
+        </Select>
+      </div>
+      <div className="row" style={{ flexWrap: "wrap", gap: 8 }}>
+        {COPY_PARTS.map(([id, name, hint]) => (
+          <button
+            key={id}
+            className={`chip ${parts.includes(id) ? "on" : ""}`}
+            title={tr(...hint)}
+            onClick={() => setParts((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))}
+          >
+            {tr(...name)}
+          </button>
+        ))}
+      </div>
+      <div className="row" style={{ justifyContent: "flex-end" }}>
+        <button className="btn primary sm" disabled={!src || !parts.length || busy} onClick={() => setConfirm(true)}>
+          <Icon name="copy" size={14} /> {busy ? tr("Kopíruju…", "Copying…") : tr("Zkopírovat", "Copy")}
+        </button>
+      </div>
+      {confirm && src && (
+        <Modal title={tr("Zkopírovat nastavení?", "Copy settings?")} onClose={() => setConfirm(false)}>
+          <p>
+            {tr(
+              `Nastavení z „${src.name}“ přepíše to v „${inst.name}“. Přepsané soubory se nejdřív zazálohují do minecraft/settings-backup.`,
+              `Settings from “${src.name}” overwrite the ones in “${inst.name}”. Overwritten files are backed up to minecraft/settings-backup first.`,
+            )}
+          </p>
+          <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+            <button className="btn ghost" onClick={() => setConfirm(false)}>{tr("Zrušit", "Cancel")}</button>
+            <button className="btn primary" onClick={run}>{tr("Zkopírovat", "Copy")}</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 function SettingsTab({ inst, onChange }: { inst: Instance; onChange: (i: Instance) => void }) {
   const { settings, system, toast, go, reloadInstances } = useStore();
   const [draft, setDraft] = useState(inst);
@@ -572,6 +655,8 @@ function SettingsTab({ inst, onChange }: { inst: Instance; onChange: (i: Instanc
         </div>
       </div>
 
+      <CopySettingsCard inst={inst} />
+
       <div className="card pad">
         <div className="setting" style={{ paddingTop: 0 }}>
           <div className="txt">
@@ -585,10 +670,10 @@ function SettingsTab({ inst, onChange }: { inst: Instance; onChange: (i: Instanc
           </div>
           <Switch checked={draft.recordingMode} onChange={(v) => set({ recordingMode: v })} />
         </div>
-        {["fabric", "quilt", "neoforge", "forge"].includes(draft.loader) && JUSTICE_MOD_VERSIONS.test(draft.mcVersion) && (
+        {["fabric", "quilt", "neoforge", "forge"].includes(draft.loader) && KUUBL_MOD_VERSIONS.test(draft.mcVersion) && (
           <div className="setting">
             <div className="txt">
-              <b>{tr("Justice Mod (menu ve hře)", "Justice Mod (in-game menu)")}</b>
+              <b>{tr("Kuubl Mod (menu ve hře)", "Kuubl Mod (in-game menu)")}</b>
               <span>
                 {tr(
                   "Pravý Shift ve hře otevře menu jako v Lunaru: PvP HUD, zoom, freelook, nástroje na natáčení a pro streamery.",
@@ -596,7 +681,7 @@ function SettingsTab({ inst, onChange }: { inst: Instance; onChange: (i: Instanc
                 )}
               </span>
             </div>
-            <Switch checked={!draft.noJusticeMod} onChange={(v) => set({ noJusticeMod: !v })} />
+            <Switch checked={!draft.noKuublMod} onChange={(v) => set({ noKuublMod: !v })} />
           </div>
         )}
         {(draft.loader === "fabric" || draft.loader === "quilt") && (
@@ -722,7 +807,7 @@ function SettingsTab({ inst, onChange }: { inst: Instance; onChange: (i: Instanc
           <button
             className="btn"
             onClick={async () => {
-              const dest = await save({ defaultPath: `${inst.name}.justice.zip`, filters: [{ name: "Justice pack", extensions: ["zip"] }] });
+              const dest = await save({ defaultPath: `${inst.name}.kuubl.zip`, filters: [{ name: "Kuubl pack", extensions: ["zip"] }] });
               if (!dest) return;
               try {
                 await api.exportPack(inst.id, dest);
@@ -793,9 +878,6 @@ function SettingsTab({ inst, onChange }: { inst: Instance; onChange: (i: Instanc
   );
 }
 
-
-/** Minecraft versions with a bundled Justice Mod build (keep in sync with src-tauri/src/justice_mod.rs). */
-const JUSTICE_MOD_VERSIONS = /^(1\.21\.(9|10|11)|26\.[123](\.\d+)?)$/;
 /** Header: the last place's screenshot behind the name, play and folder buttons. */
 function InstanceBanner({ inst }: { inst: Instance }) {
   const { go, settings } = useStore();

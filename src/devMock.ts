@@ -5,21 +5,22 @@ const sampleInstances = [
   { id: "pvp18", name: "1.8.9 PvP", icon: "gamepad", group: "", mcVersion: "1.8.9", loader: "forge", loaderVersion: "", installedId: "", ramMb: null, javaPath: "", jvmArgs: "", width: null, height: null, created: 1790000000, lastPlayed: Date.now() / 1000 - 86400, playtimeSecs: 5400, template: "pvp18", modProfile: "", modProfiles: {}, recordingMode: false, lightMode: false },
 ];
 const settings = {
-  dataDir: "D:\\JusticeClient", ramMb: 6144, jvmArgs: "", onLaunch: "hide", language: new URLSearchParams(location.search).get("lang") ?? "cs", curseforgeKey: "", msClientId: "", discordRpc: true,
+  dataDir: "D:\\KuublClient", ramMb: 6144, jvmArgs: "", onLaunch: "hide", language: new URLSearchParams(location.search).get("lang") ?? "cs", curseforgeKey: "", msClientId: "", discordRpc: true,
   discordAppId: "", streamerMode: false, backupOnExit: false, width: 1280, height: 720, highPriority: true, gc: "auto", obsEnabled: false,
-  obsUrl: "ws://127.0.0.1:4455", obsPassword: "", obsAutoRecord: false, obsScene: "", onboarded: true, accentColor: "#e11d38", bgStyle: "void", quickServers: {}, justiceMod: true, ui: { shortcuts: [{ kind: "instance", id: "cinematic" }], startPage: new URLSearchParams(location.search).get("page") ?? "home" },
+  obsUrl: "ws://127.0.0.1:4455", obsPassword: "", obsAutoRecord: false, obsScene: "", onboarded: true, accentColor: "#f0661f", bgStyle: "void", quickServers: {}, kuublMod: true, ui: { shortcuts: [{ kind: "instance", id: "cinematic" }], startPage: new URLSearchParams(location.search).get("page") ?? "home" },
 };
 
 const clipsSettings = {
-  clipsDir: "D:\Justice Clips", hotkey: "F8", bufferSecs: 60, postSecs: 1, fps: 60, quality: "balanced", monitor: 0, drawMouse: true, gameAudio: true,
+  clipsDir: "D:\Kuubl Clips", hotkey: "F8", bufferSecs: 60, postSecs: 1, fps: 60, quality: "balanced", monitor: 0, drawMouse: true, gameAudio: true,
   gameDevice: "", mic: true, micDevice: "", micVolume: 1, audioOffsetMs: 0, overlay: true, sound: true, gameFolders: true, ffmpegPath: "", enabled: true,
+  voice: true, voiceLang: "en", autoKill: true, autoDeath: false, autoAdvancement: true,
 };
 const sampleClips = [
-  ["Triple kill na Justice SMP", "PvP 1.21.11", null, 38, 58e6, 600],
+  ["Triple kill na Kamoši SMP", "PvP 1.21.11", null, 38, 58e6, 600],
   ["Clutch s perlou", "PvP 1.21.11", null, 60, 91e6, 7200],
   ["Base tour", "Cinematic 1.21.11", null, 45, 70e6, 90000],
   ["Bedwars final", "1.8.9 PvP", null, 22, 31e6, 300000],
-].map(([name, game, thumb, duration, size, ago]) => ({ path: `D:\Justice Clips\${name}.mp4`, name, game, thumb, duration, size, modified: Date.now() - (ago as number) * 1000, audioTracks: 3 }));
+].map(([name, game, thumb, duration, size, ago]) => ({ path: `D:\Kuubl Clips\${name}.mp4`, name, game, thumb, duration, size, modified: Date.now() - (ago as number) * 1000, audioTracks: 3 }));
 
 // ?shots=1 uses real screenshots from /devmock (only present while taking website screenshots).
 const SHOTS = new URLSearchParams(location.search).has("shots");
@@ -31,18 +32,18 @@ if (SHOTS) {
   const base = sampleInstances[0];
   sampleInstances.push(
     { ...base, id: "pvp", name: "PvP 1.21.11", icon: "sword", template: "pvp", lastPlayed: Date.now() / 1000 - 600, playtimeSecs: 30100, recordingMode: false },
-    { ...base, id: "smp", name: "Justice SMP", icon: "crown", template: "smp", lastPlayed: Date.now() / 1000 - 7200, playtimeSecs: 52000, recordingMode: false },
+    { ...base, id: "smp", name: "Kamoši SMP", icon: "crown", template: "smp", lastPlayed: Date.now() / 1000 - 7200, playtimeSecs: 52000, recordingMode: false },
     { ...base, id: "v263", name: "Vanilla 26.3", icon: "trees", loader: "vanilla", mcVersion: "26.3", template: "", lastPlayed: Date.now() / 1000 - 250000, playtimeSecs: 3000, recordingMode: false },
     { ...base, id: "burger", name: "Burger Survival", icon: "burger", mcVersion: "26.2", template: "smp", lastPlayed: Date.now() / 1000 - 400000, playtimeSecs: 8000, recordingMode: false },
   );
 }
 const now = Date.now() / 1000;
 const me = { uuid: "0494ec66d9504e5d93016701417cfb8b", name: "Maxern_", badges: ["team", "early"], created: now - 86400, lastSeen: now, online: true, presence: null,
-  profile: { status: "Točím nové video 🎬", banner: "red", bio: "", stats: { playtimeSecs: 19 * 3600, instances: 7, clips: 12, friends: 4, pvp: { kills: 142, deaths: 61, bestCombo: 17, hits: 3400 } }, cape: "justice", achievements: ["first", "h10", "inst5", "clip1", "friend1"] } };
+  profile: { status: "Točím nové video 🎬", banner: "ember", bio: "", stats: { playtimeSecs: 19 * 3600, instances: 7, clips: 12, friends: 4, pvp: { kills: 142, deaths: 61, bestCombo: 17, hits: 3400 } }, cape: "justice", achievements: ["first", "h10", "inst5", "clip1", "friend1"] } };
 const pvpOf = (k: number) => ({ playtimeSecs: k * 900, instances: 3, clips: 2, friends: 3, pvp: { kills: k, deaths: Math.round(k * 0.7) + 3, bestCombo: 5 + (k % 13), hits: k * 20 } });
 const friend = (uuid: string, name: string, online: boolean, presence: unknown, unread = 0) => ({ uuid, name, online, presence, unread, badges: [], created: now - 3600, lastSeen: now - 5400, profile: {} });
 const friends = [
-  friend("069a79f444e94726a5befca90e38aaf5", "Notch", true, { state: "playing", instance: "PvP 1.21.11", mc: "1.21.11", loader: "fabric", server: "justicesmp.online" }, 2),
+  friend("069a79f444e94726a5befca90e38aaf5", "Notch", true, { state: "playing", instance: "PvP 1.21.11", mc: "1.21.11", loader: "fabric", server: "play.kamosi.cz" }, 2),
   friend("853c80ef3c3749fdaa49938b674adae6", "jeb_", true, { state: "online" }),
   friend("61699b2ed3274a019f1e0ea8c3f06bc6", "Dinnerbone", false, null),
 ];
@@ -55,22 +56,22 @@ const LOGWIN = new URLSearchParams(location.search).get("window") === "logs";
 const DLDEMO = new URLSearchParams(location.search).has("dl");
 const SAMPLE_LOG = [
   "[19:52:48] [main/INFO] Loading Minecraft 1.21.11 with Fabric Loader 0.17.2",
-  "[19:52:49] [main/INFO] Loading 18 mods:\n\t- fabric-api 0.137.0\n\t- justicemod 1.8.8\n\t- sodium 0.6.13",
-  "[19:52:50] [Render thread/INFO] [Justice] Performance module enabled (tier: mid)",
+  "[19:52:49] [main/INFO] Loading 18 mods:\n\t- fabric-api 0.137.0\n\t- kuubl 1.8.8\n\t- sodium 0.6.13",
+  "[19:52:50] [Render thread/INFO] [Kuubl] Performance module enabled (tier: mid)",
   "[19:52:50] [Render thread/INFO] Setting user: Maxern_",
   "[19:52:51] [Render thread/INFO] [Indigo] Registering Indigo renderer!",
   "[19:52:53] [Render thread/INFO] Backend library: LWJGL version 3.3.3",
   "[19:52:55] [Render thread/WARN] Ignoring unknown attribute 'glow' in particle config",
-  "[19:52:57] [Render thread/INFO] Reloading ResourceManager: vanilla, fabric-api, justicemod",
+  "[19:52:57] [Render thread/INFO] Reloading ResourceManager: vanilla, fabric-api, kuubl",
   "[19:53:00] [Render thread/INFO] OpenAL initialized on device OpenAL Soft on Sluchátka",
   "[19:53:00] [Render thread/INFO] Sound engine started",
   "[19:53:00] [Render thread/INFO] Created: 2048x2048x4 minecraft:textures/atlas/blocks.png-atlas",
-  "[19:53:01] [Render thread/INFO] [Justice] Now Playing bridge connected",
+  "[19:53:01] [Render thread/INFO] [Kuubl] Now Playing bridge connected",
   "[19:53:02] [Render thread/INFO] Time elapsed: 14032 ms",
 ];
 const party = { id: "p1", leader: me.uuid, members: [me, friends[0]], invited: [friends[1]], created: now - 60 };
 const msgs = [
-  { id: 1, from: friends[0].uuid, to: me.uuid, kind: "text", body: "ahoj, jdeš na Justice SMP?", meta: {}, created: now - 900, read: true },
+  { id: 1, from: friends[0].uuid, to: me.uuid, kind: "text", body: "ahoj, jdeš na Kamoši SMP?", meta: {}, created: now - 900, read: true },
   { id: 2, from: me.uuid, to: friends[0].uuid, kind: "text", body: "jj, dej mi 5 minut, dotáčím klip", meta: {}, created: now - 840, read: true },
   { id: 3, from: me.uuid, to: friends[0].uuid, kind: "world", body: "Svět hráče Maxern_", meta: { world: "x", mc: "1.21.11", loader: "fabric" }, created: now - 300, read: true },
   { id: 4, from: friends[0].uuid, to: me.uuid, kind: "pack", body: "PvP 1.21.11", meta: { name: "PvP 1.21.11", mc: "1.21.11", loader: "fabric", code: "x" }, created: now - 120, read: false },
@@ -82,7 +83,7 @@ const D = "/packaging/design/img/";
 const PLACES: Record<string, unknown> = {
   cinematic: { kind: "world", name: "My World", image: D + "shaders.webp" },
   pvp: { kind: "server", name: "mc.hypixel.net", image: D + "pvp2.webp" },
-  smp: { kind: "server", name: "justicesmp.online", image: D + "vanilla.webp" },
+  smp: { kind: "server", name: "play.kamosi.cz", image: D + "vanilla.webp" },
   v263: { kind: "world", name: "Builds", image: D + "pvp.webp" },
   burger: { kind: "world", name: "New World", image: D + "nihher.webp" },
 };
@@ -247,18 +248,18 @@ const handlers: Record<string, (a: any) => unknown> = {
   get_instance: (a) => sampleInstances.find((i) => i.id === a.id),
   game_versions: () => ["26.3", "26.2", "26.1.2", "26.1", "1.21.11", "1.21.10", "1.21.9", "1.21.8", "1.21.4", "1.21.1", "1.20.6", "1.20.4", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2", "1.8.9"].map((id) => ({ id, kind: "release", releaseTime: "" })),
   loader_versions: () => [{ version: "0.17.2", stable: true }, { version: "0.17.1", stable: true }],
-  instance_path: () => "D:/JusticeClient/instances/x",
+  instance_path: () => "D:/KuublClient/instances/x",
   list_accounts: () => [{ id: "a", kind: OFFLINE ? "offline" : "msa", username: OFFLINE ? "Pepa_CZ" : "Maxern_", uuid: "069a79f444e94726a5befca90e38aaf5", skinUrl: "", skinVariant: "CLASSIC", active: true }],
   running_games: () => (LOGWIN ? ["cinematic"] : []),
   game_logs: () => LOGWIN ? SAMPLE_LOG : [],
   open_logs_window: () => null,
   list_servers: () => [
-    { id: "s1", name: "Justice SMP", address: "justicesmp.online", instance: "smp", pinned: true },
+    { id: "s1", name: "Kamoši SMP", address: "play.kamosi.cz", instance: "smp", pinned: true },
     { id: "s2", name: "Ertenix", address: "ertenix.net", instance: "pvp", pinned: true },
     { id: "s3", name: "Hypixel", address: "mc.hypixel.net", instance: "pvp", pinned: false },
     { id: "s4", name: "Starý server", address: "old.example.cz", instance: "", pinned: false },
   ],
-  ping_server: (a) => a.address.startsWith("old.") ? Promise.reject("offline") : a.address.includes("hypixel") ? { online: 41203, max: 200000, motd: "§aHypixel Network §c[1.8-1.21] §6§lSKYBLOCK §e§lUPDATE", version: "1.21", icon: null, pingMs: 98 } : ({ online: a.address.includes("30000") ? 12 : 57, max: a.address.includes("30000") ? 69 : 500, motd: "§c-=- JUSTICE SMP -=-", version: "1.21.11", icon: null, pingMs: 24 }),
+  ping_server: (a) => a.address.startsWith("old.") ? Promise.reject("offline") : a.address.includes("hypixel") ? { online: 41203, max: 200000, motd: "§aHypixel Network §c[1.8-1.21] §6§lSKYBLOCK §e§lUPDATE", version: "1.21", icon: null, pingMs: 98 } : ({ online: a.address.includes("30000") ? 12 : 57, max: a.address.includes("30000") ? 69 : 500, motd: "§c-=- KUUBL SMP -=-", version: "1.21.11", icon: null, pingMs: 24 }),
   free_space: () => 48 * 1024 ** 3,
   list_content: () => [{ projectId: "AANobbMI", title: "Sodium" }],
   search_content: () => ({
@@ -274,7 +275,7 @@ const handlers: Record<string, (a: any) => unknown> = {
   }),
   clips_get_settings: () => clipsSettings,
   clips_set_settings: (a) => Object.assign(clipsSettings, a.s),
-  clips_status: () => ({ state: "recording", error: null, bufferBytes: 90e6, bufferSecs: 58.4, ffmpeg: "C:\ffmpeg\ffmpeg.exe", hotkeyError: null, gameRunning: true }),
+  clips_status: () => ({ state: "recording", error: null, bufferBytes: 90e6, bufferSecs: 58.4, ffmpeg: "C:\ffmpeg\ffmpeg.exe", hotkeyError: null, gameRunning: true, voiceInstalled: true }),
   clips_list: () => sampleClips,
   clips_publish: () => ({ id: "new", owner: me.uuid, ownerName: "Maxern_", url: "", thumb: "", title: "Nový klip", description: "", tags: [], hashtags: [], durationMs: 12000, width: 0, height: 720, captured: 0, created: Math.floor(Date.now() / 1000), likes: 0, liked: false, mine: true }),
   clips_feed: () => ({ clips: [
@@ -286,7 +287,7 @@ const handlers: Record<string, (a: any) => unknown> = {
   clips_report: () => null,
   clips_feed_delete: () => null,
   social_status: () => ({ signedIn: !OFFLINE, uuid: OFFLINE ? null : me.uuid }),
-  social_login: () => Promise.reject("JUSTICE_NEEDS_PASSWORD"),
+  social_login: () => Promise.reject("KUUBL_NEEDS_PASSWORD"),
   social_login_password: () => ({ token: "t", uuid: me.uuid, name: "Pepa_CZ" }),
   pvp_stats: () => me.profile.stats.pvp,
   get_capes: () => [],
@@ -308,7 +309,7 @@ const handlers: Record<string, (a: any) => unknown> = {
   social_put: () => me,
   clips_devices: () => ({ outputs: ["Sluchátka (TUF GAMING H1)"], inputs: ["Mikrofon (TUF GAMING H1)"], defaultOutput: "Sluchátka (TUF GAMING H1)", defaultInput: "Mikrofon (TUF GAMING H1)" }),
   clips_monitors: () => [{ index: 0, name: "", width: 1920, height: 1080, primary: true }, { index: 1, name: "", width: 1920, height: 1080, primary: false }],
-  "plugin:updater|check": () => SHOTS ? null : ({ rid: 1, currentVersion: "0.2.0", version: "0.2.1", date: new Date().toISOString(), body: "- Rychlé připojení na Justice SMP a Ertenix", rawJson: {} }),
+  "plugin:updater|check": () => SHOTS ? null : ({ rid: 1, currentVersion: "0.2.0", version: "0.2.1", date: new Date().toISOString(), body: "- Rychlé připojení na Kamoši SMP a Ertenix", rawJson: {} }),
 };
 
 (window as any).__TAURI_INTERNALS__ = {

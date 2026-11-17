@@ -44,7 +44,7 @@ fn set_opt(opts: &mut Vec<(String, String)>, k: &str, v: &str) {
 
 pub fn apply_before_launch(inst: &Instance, game_dir: &Path) -> Result<()> {
     let opts_path = game_dir.join("options.txt");
-    let backup = game_dir.join(".justice").join("options.before-recording.txt");
+    let backup = game_dir.join(".kuubl").join("options.before-recording.txt");
     let mut opts = read_options(&opts_path);
     if inst.recording_mode {
         if !backup.exists() {

@@ -1,11 +1,11 @@
 [package]
-name = "justice-client"
-version = "0.8.1"
-description = "Justice Client - Minecraft launcher for creators"
+name = "kuubl-client"
+version = "1.0.0"
+description = "Kuubl Client - Minecraft launcher for creators"
 edition = "2021"
 
 [lib]
-name = "justice_client_lib"
+name = "kuubl_client_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -40,9 +40,15 @@ sha2 = "0.10"
 base64 = "0.22"
 flate2 = "1"
 tar = "0.4"
+# Peer-to-peer shared worlds (p2p.rs): QUIC over UDP, self-signed cert pinned by fingerprint, UPnP.
+quinn = { version = "0.11", default-features = false, features = ["runtime-tokio", "rustls-ring"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std"] }
+rcgen = "0.13"
+igd-next = { version = "0.16", default-features = false, features = ["aio_tokio"] }
 
-# Justice Clips (screen recording) is Windows-only: Desktop Duplication, WASAPI, Win32 windows.
+# Kuubl Clips (screen recording) is Windows-only: Desktop Duplication, WASAPI, Win32 windows.
 [target.'cfg(windows)'.dependencies]
+libloading = "0.8"
 cpal = "0.15"
 windows = { version = "0.61", features = ["Win32_Graphics_Dxgi", "Win32_Graphics_Gdi", "Win32_Graphics_Dxgi_Common", "Win32_Foundation", "Foundation", "Media_Control", "Storage_Streams"] }
 windows-sys = { version = "0.59", features = [

@@ -6,6 +6,7 @@ import { applyTheme } from "../theme";
 import { McIcon, mcSvg } from "./McIcons";
 import { sound } from "../sounds";
 import Logo from "./Logo";
+import { listen } from "@tauri-apps/api/event";
 
 const SECRETS: Record<string, [string, string]> = {
   logo: ["Tajný zvuk při startu", "Secret startup sound"],
@@ -16,6 +17,7 @@ const SECRETS: Record<string, [string, string]> = {
   disco: ["Disko", "Disco"],
   diamonds: ["Diamantový déšť", "Diamond rain"],
   speedrun: ["Speedrunner", "Speedrunner"],
+  clipwall: ["Přímo do zdi", "Straight into the wall"],
 };
 const HINTS: Record<string, [string, string]> = {
   logo: ["Logo vydrží hodně klikání…", "The logo can take a lot of clicks…"],
@@ -26,6 +28,7 @@ const HINTS: Record<string, [string, string]> = {
   disco: ["Obal písničky má rád rytmus.", "The song cover likes a beat."],
   diamonds: ["Hledej ty nejcennější rudy.", "Search for the most precious ore."],
   speedrun: ["Speedrunneři drží Shift.", "Speedrunners hold Shift."],
+  clipwall: ["Klipy poslouchají víc, než si myslíš.", "Clips listen to more than you think."],
 };
 
 // ---------- Found list ----------
@@ -200,7 +203,7 @@ export default function LogoButton() {
     }
   };
   return (
-    <button ref={btn} className={`logo-btn ${n ? "counting" : ""} ${n >= 7 ? "shake" : ""} ${on ? "egg-on" : ""}`} onClick={click} aria-label="Justice Client">
+    <button ref={btn} className={`logo-btn ${n ? "counting" : ""} ${n >= 7 ? "shake" : ""} ${on ? "egg-on" : ""}`} onClick={click} aria-label="Kuubl Client">
       <svg className="ring" viewBox="0 0 60 60">
         <circle cx="30" cy="30" r="27" style={{ strokeDashoffset: 170 - (170 * n) / 10 }} />
       </svg>
@@ -391,7 +394,15 @@ export function useSecrets() {
     };
     addEventListener("keydown", key);
     addEventListener("pointerdown", down);
+    // the secret voice phrase in Clips (the launcher hears it, see clips/voice.rs)
+    const un = listen<string>("secret-found", (e) => {
+      if (e.payload !== "clipwall") return;
+      boing();
+      toastFn?.(tr("Klip letí přímo do zdi!", "Clip flying straight into the wall!"), "info");
+      found("clipwall");
+    });
     return () => {
+      un.then((f) => f()).catch(() => {});
       removeEventListener("keydown", key);
       removeEventListener("pointerdown", down);
     };

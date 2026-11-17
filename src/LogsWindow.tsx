@@ -82,7 +82,7 @@ export default function LogsWindow() {
       <header className="lw-bar" data-tauri-drag-region>
         <div className="lw-brand" data-tauri-drag-region>
           <span className="lw-dot" />
-          <strong>Justice</strong> <span className="muted">· {tr("Logy", "Logs")}</span>
+          <strong>Kuubl</strong> <span className="muted">· {tr("Logy", "Logs")}</span>
         </div>
         <div className="lw-grow" data-tauri-drag-region />
         <div className="lw-winbtns">

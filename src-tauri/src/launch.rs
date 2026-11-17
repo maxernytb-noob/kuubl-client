@@ -7,7 +7,7 @@ use crate::java;
 use crate::loaders;
 use crate::minecraft;
 use crate::settings;
-use crate::{compat, crash, integrations, justice_mod, platform, recording};
+use crate::{compat, crash, integrations, kuubl_mod, platform, recording};
 use anyhow::{bail, Result};
 use once_cell::sync::Lazy;
 use serde::Serialize;
@@ -304,7 +304,8 @@ async fn launch_inner(instance_id: &str, server: Option<String>) -> Result<()> {
     if matches!(inst.loader.as_str(), "fabric" | "quilt") {
         compat::apply_light_mode(instance_id, inst.light_mode)?;
     }
-    justice_mod::sync(&inst, &game_dir).await?;
+    crate::migrate::instance(&game_dir);
+    kuubl_mod::sync(&inst, &game_dir).await?;
 
     let width = inst.width.unwrap_or(s.width);
     let height = inst.height.unwrap_or(s.height);
@@ -561,9 +562,9 @@ fn build_vars<'a>(
     v.insert("clientid", settings::get().ms_client_id);
     v.insert("user_type", if acc.kind == "msa" { "msa".into() } else { "legacy".into() });
     v.insert("user_properties", "{}".into());
-    v.insert("version_type", "Justice Client".into());
+    v.insert("version_type", "Kuubl Client".into());
     v.insert("natives_directory", natives_dir.to_string_lossy().into_owned());
-    v.insert("launcher_name", "justice-client".into());
+    v.insert("launcher_name", "kuubl-client".into());
     v.insert("launcher_version", env!("CARGO_PKG_VERSION").into());
     v.insert("classpath", cp.join(platform::CLASSPATH_SEP));
     v.insert("classpath_separator", platform::CLASSPATH_SEP.into());

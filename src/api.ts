@@ -29,7 +29,7 @@ export interface Settings {
   accentColor: string;
   bgStyle: "oled" | "dark" | "graphite" | "void" | "midnight" | "aurora" | "sakura" | "mono";
   quickServers: Record<string, string>;
-  justiceMod: boolean;
+  kuublMod: boolean;
   /** Pop the standalone live-log window when a game launches (Lunar-style). */
   logWindowOnLaunch: boolean;
   /** Look & layout preferences, see ui.ts. */
@@ -65,7 +65,7 @@ export interface Instance {
   modProfiles: Record<string, string[]>;
   recordingMode: boolean;
   lightMode: boolean;
-  noJusticeMod: boolean;
+  noKuublMod: boolean;
 }
 
 export interface GameVersion {
@@ -131,7 +131,7 @@ export interface ProjectDetails {
 }
 export interface OptimizeChange {
   id: string;
-  group: "mods" | "conflicts" | "video" | "sodium" | "memory";
+  group: "mods" | "conflicts" | "duplicates" | "video" | "sodium" | "memory";
   title: string;
   detail: string;
   from: string | null;
@@ -313,6 +313,13 @@ export interface ClipsSettings {
   gameFolders: boolean;
   ffmpegPath: string;
   enabled: boolean;
+  /** Voice clips ("Kuubl, clip that"), Windows. */
+  voice: boolean;
+  voiceLang: "en" | "cs";
+  /** Automatic clips reported by Kuubl Mod. */
+  autoKill: boolean;
+  autoDeath: boolean;
+  autoAdvancement: boolean;
 }
 export interface Clip {
   path: string;
@@ -335,6 +342,8 @@ export interface ClipsStatus {
   platform: "windows" | "linux";
   /** Linux: gpu-screen-recorder isn't installed. */
   recorderMissing: boolean;
+  /** Voice recognition for the chosen language is downloaded. */
+  voiceInstalled: boolean;
 }
 export interface ClipsDevices {
   outputs: string[];
@@ -369,9 +378,9 @@ export interface SocialProfile {
   banner?: string;
   stats?: { playtimeSecs: number; instances: number; clips: number; friends: number; pvp?: PvpStats } | null;
   achievements?: string[];
-  /** Justice cape id ("" = none). */
+  /** Kuubl cape id ("" = none). */
   cape?: string;
-  /** Justice pet id ("" = none). */
+  /** Kuubl pet id ("" = none). */
   pet?: string;
 }
 export interface SocialUser {
@@ -384,7 +393,7 @@ export interface SocialUser {
   online: boolean;
   presence: Presence | null;
   unread?: number;
-  /** Offline (non-premium) account with a Justice password. */
+  /** Offline (non-premium) account with a Kuubl password. */
   offline?: boolean;
 }
 export interface Party {
@@ -394,7 +403,7 @@ export interface Party {
   invited: SocialUser[];
   created: number;
 }
-/** Where the party leader wants everyone: a server, or a world they share through Justice. */
+/** Where the party leader wants everyone: a server, or a world they share through Kuubl. */
 export type WarpTarget =
   | { kind: "server"; address: string; mc?: string; loader?: string; instance?: string }
   | { kind: "world"; world: string; name: string; mc?: string; loader?: string };
@@ -402,7 +411,7 @@ export interface ChatMessage {
   id: number;
   from: string;
   to: string;
-  kind: "text" | "clip" | "pack" | "invite" | "world";
+  kind: "text" | "clip" | "pack" | "invite" | "world" | "shot";
   body: string;
   meta: Record<string, any>;
   created: number;
@@ -411,7 +420,7 @@ export interface ChatMessage {
 
 export const social = {
   login: () => invoke<{ token: string; uuid: string; name: string }>("social_login"),
-  /** Offline accounts: sign in to (register = create) the Justice account. */
+  /** Offline accounts: sign in to (register = create) the Kuubl account. */
   loginPassword: (password: string, register: boolean) => invoke<{ token: string; uuid: string; name: string }>("social_login_password", { password, register }),
   changePassword: (oldPassword: string, newPassword: string) => invoke<void>("social_post", { path: "/password", body: { oldPassword, newPassword } }),
   party: () => invoke<{ party: Party | null; invites: Party[] }>("social_get", { path: "/party" }),
@@ -446,6 +455,8 @@ export const clips = {
   settings: () => invoke<ClipsSettings>("clips_get_settings"),
   saveSettings: (s: ClipsSettings) => invoke<ClipsSettings>("clips_set_settings", { s }),
   status: () => invoke<ClipsStatus>("clips_status"),
+  installFfmpeg: () => invoke<string>("clips_install_ffmpeg"),
+  installVoice: (lang: string) => invoke<void>("clips_install_voice", { lang }),
   save: () => invoke<void>("clips_save"),
   setRecording: (on: boolean) => invoke<void>("clips_set_recording", { on }),
   list: () => invoke<Clip[]>("clips_list"),
@@ -549,6 +560,7 @@ export const api = {
   setInstanceIcon: (id: string, path: string) => invoke<Instance>("set_instance_icon", { id, path }),
   deleteInstance: (id: string) => invoke<void>("delete_instance", { id }),
   duplicateInstance: (id: string) => invoke<Instance>("duplicate_instance", { id }),
+  copyInstanceSettings: (from: string, to: string, parts: string[]) => invoke<number>("copy_instance_settings", { from, to, parts }),
   instancePath: (id: string, sub?: string) => invoke<string>("instance_path", { id, sub: sub ?? null }),
 
   launch: (id: string, server?: string) => invoke<void>("launch_instance", { id, server: server ?? null }),

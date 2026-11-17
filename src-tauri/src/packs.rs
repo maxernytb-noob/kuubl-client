@@ -1,4 +1,4 @@
-//! Share codes, Justice pack export, and importing .mrpack / CurseForge / .dawnpack / .justice packs.
+//! Share codes, Kuubl pack export, and importing .mrpack / CurseForge / .dawnpack / .kuubl packs.
 
 use crate::backups;
 use crate::content::{self, Kind};
@@ -15,7 +15,9 @@ use serde_json::{json, Value};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-const CODE_PREFIX: &str = "JUSTICE1:";
+const CODE_PREFIX: &str = "KUUBL1:";
+/// Share codes made before the Kuubl rebrand still import.
+const OLD_CODE_PREFIX: &str = "JUSTICE1:";
 
 fn b64() -> base64::engine::GeneralPurpose {
     base64::engine::general_purpose::URL_SAFE_NO_PAD
@@ -38,7 +40,7 @@ pub fn share_code(inst_id: &str) -> Result<String> {
 }
 
 fn decode_code(code: &str) -> Result<Value> {
-    let data = code.trim().strip_prefix(CODE_PREFIX).ok_or_else(|| anyhow!(l!("Tohle není Justice kód", "That isn't a Justice code")))?;
+    let data = code.trim().strip_prefix(CODE_PREFIX).or_else(|| code.trim().strip_prefix(OLD_CODE_PREFIX)).ok_or_else(|| anyhow!(l!("Tohle není Kuubl kód", "That isn't a Kuubl code")))?;
     let bytes = b64().decode(data.trim()).map_err(|_| anyhow!(l!("Kód je poškozený", "The code is corrupted")))?;
     let mut s = String::new();
     DeflateDecoder::new(&bytes[..]).read_to_string(&mut s)?;
@@ -90,17 +92,17 @@ pub async fn import_code(code: &str) -> Result<Instance> {
     create_from_description(&d, None).await
 }
 
-/// Zip with justice.json + configs + untracked files so friends get exactly the same setup.
+/// Zip with kuubl.json + configs + untracked files so friends get exactly the same setup.
 pub fn export_pack(inst_id: &str, dest: &str) -> Result<()> {
     let inst = instances::load(inst_id)?;
     let g = instances::game_dir(inst_id);
     let tmp = settings::cache_dir().join(format!("export-{inst_id}"));
     let _ = std::fs::remove_dir_all(&tmp);
     std::fs::create_dir_all(&tmp)?;
-    std::fs::write(tmp.join("justice.json"), describe(&inst).to_string())?;
+    std::fs::write(tmp.join("kuubl.json"), describe(&inst).to_string())?;
 
     let tracked: std::collections::HashSet<String> = content::load_meta(inst_id).keys().cloned().collect();
-    let mut entries: Vec<(PathBuf, String)> = vec![(tmp.join("justice.json"), "justice.json".into())];
+    let mut entries: Vec<(PathBuf, String)> = vec![(tmp.join("kuubl.json"), "kuubl.json".into())];
     for (p, name) in [
         (g.join("config"), "overrides/config"),
         (g.join("options.txt"), "overrides/options.txt"),
@@ -175,8 +177,10 @@ async fn import_file_h(path: &str, h: Option<&downloads::Handle>) -> Result<Inst
     backups::unzip_into(&p, &tmp).context(l!("Soubor není platný modpack (zip)", "The file isn't a valid modpack (zip)"))?;
     let stem = p.file_stem().unwrap_or_default().to_string_lossy().into_owned();
 
-    let result = if tmp.join("justice.json").exists() {
-        let d = net::read_json(&tmp.join("justice.json"))?;
+    // Packs exported before the rename carry justice.json.
+    let desc = ["kuubl.json", "justice.json"].iter().map(|f| tmp.join(f)).find(|f| f.exists());
+    let result = if let Some(desc) = desc {
+        let d = net::read_json(&desc)?;
         let inst = create_from_description(&d, None).await?;
         copy_overrides(&tmp.join("overrides"), &inst.id)?;
         Ok(inst)
@@ -187,7 +191,7 @@ async fn import_file_h(path: &str, h: Option<&downloads::Handle>) -> Result<Inst
     } else if tmp.join("manifest.json").exists() {
         import_curseforge(&tmp, &stem).await
     } else {
-        Err(anyhow!(l!("Neznámý formát — podporuji .mrpack, CurseForge .zip, Dawn .dawnpack a Justice export", "Unknown format — supported are .mrpack, CurseForge .zip, Dawn .dawnpack and Justice exports")))
+        Err(anyhow!(l!("Neznámý formát — podporuji .mrpack, CurseForge .zip, Dawn .dawnpack a Kuubl export", "Unknown format — supported are .mrpack, CurseForge .zip, Dawn .dawnpack and Kuubl exports")))
     };
     let _ = std::fs::remove_dir_all(&tmp);
     result

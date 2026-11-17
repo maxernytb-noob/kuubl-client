@@ -1,7 +1,7 @@
-//! Shared singleplayer worlds (like Essential). The host's world is opened to LAN by Justice Mod;
-//! this module tunnels it through the Justice relay (WebSockets over HTTPS), so nobody opens ports.
-//! Host: a control socket per world, one data socket per guest, piped to the local LAN port.
-//! Guest: a local TCP port for Minecraft to connect to, piped to the relay.
+//! Shared singleplayer worlds (like Essential). The host's world is opened to LAN by Kuubl Mod and
+//! guests connect peer-to-peer (`p2p.rs`): the game's bytes go straight between the PCs.
+//! Host: a control socket per world on Kuubl Social, used only to swap addresses with each guest.
+//! Guest: a local TCP port for Minecraft to connect to, carried over a direct QUIC connection.
 
 use crate::social;
 use anyhow::{anyhow, bail, Result};
@@ -20,14 +20,16 @@ pub struct Hosted {
     pub id: String,
     pub name: String,
     lan_port: u16,
+    /// "ip:port" guests can type in Multiplayer when hole punching fails (UPnP opened the port).
+    pub direct: Option<String>,
 }
 
 static HOSTED: Lazy<Mutex<Option<Hosted>>> = Lazy::new(|| Mutex::new(None));
-/// Offline Justice accounts the relay just let into our world (lowercase name -> when). Justice Mod
+/// Offline Kuubl accounts the relay just let into our world (lowercase name -> when). Kuubl Mod
 /// asks about each login so these players skip Mojang's check, which offline accounts can't pass.
 static OFFLINE_GUESTS: Lazy<Mutex<std::collections::HashMap<String, std::time::Instant>>> = Lazy::new(Default::default);
 
-/// Did an offline Justice account with this name just join our shared world through the relay?
+/// Did an offline Kuubl account with this name just join our shared world through the relay?
 pub fn is_offline_guest(name: &str) -> bool {
     let mut g = OFFLINE_GUESTS.lock().unwrap();
     g.retain(|_, t| t.elapsed() < Duration::from_secs(120));
@@ -48,7 +50,8 @@ pub async fn host(lan_port: u16, name: &str, mc: &str, loader: &str) -> Result<V
     stop().await;
     let v = social::post("/worlds", json!({ "name": name, "mc": mc, "loader": loader })).await?;
     let id = v["id"].as_str().ok_or_else(|| anyhow!("bad reply"))?.to_string();
-    let h = Hosted { id: id.clone(), name: name.to_string(), lan_port };
+    let direct = crate::p2p::open_direct(lan_port).await;
+    let h = Hosted { id: id.clone(), name: name.to_string(), lan_port, direct: direct.clone() };
     *HOSTED.lock().unwrap() = Some(h.clone());
     let gen = HOST_GEN.fetch_add(1, Ordering::SeqCst) + 1;
     let token = token()?;
@@ -66,19 +69,38 @@ pub async fn host(lan_port: u16, name: &str, mc: &str, loader: &str) -> Result<V
             delay = (delay * 2).min(30);
         }
     });
-    Ok(json!({ "id": id }))
+    Ok(json!({ "id": id, "direct": direct }))
 }
 
 async fn control(token: &str, h: &Hosted, gen: u64) -> Result<()> {
     let url = format!("{}/host?token={token}&world={}", social::RELAY, h.id);
     let (ws, _) = tokio_tungstenite::connect_async(url).await?;
     let (mut sink, mut stream) = ws.split();
+    // Answers to guests' address swaps, sent back over this socket.
+    let (answers_tx, mut answers) = tokio::sync::mpsc::unbounded_channel::<String>();
     loop {
         tokio::select! {
+            Some(a) = answers.recv() => sink.send(Message::Text(a)).await?,
             m = stream.next() => match m {
                 Some(Ok(Message::Text(t))) => {
                     let v: Value = serde_json::from_str(&t).unwrap_or(Value::Null);
-                    if v["type"] == "open" {
+                    if v["type"] == "punch" {
+                        let conn = v["conn"].as_str().unwrap_or_default().to_string();
+                        let guest = &v["guest"];
+                        let label = guest["name"].as_str().unwrap_or("guest").to_string();
+                        if guest["offline"] == true {
+                            OFFLINE_GUESTS.lock().unwrap().insert(label.to_lowercase(), std::time::Instant::now());
+                        }
+                        linfo!("world: {label} wants to join, punching");
+                        let (addrs, port, tx) = (v["addrs"].clone(), h.lan_port, answers_tx.clone());
+                        tauri::async_runtime::spawn(async move {
+                            let reply = match crate::p2p::host_session(&addrs, port, label).await {
+                                Ok((mine, cert)) => json!({ "type": "punch-answer", "conn": conn, "addrs": mine, "cert": cert }),
+                                Err(e) => json!({ "type": "punch-answer", "conn": conn, "error": format!("{e:#}") }),
+                            };
+                            let _ = tx.send(reply.to_string());
+                        });
+                    } else if v["type"] == "open" {
                         let conn = v["conn"].as_str().unwrap_or_default().to_string();
                         if v["guest"]["offline"] == true {
                             if let Some(name) = v["guest"]["name"].as_str() {
@@ -126,6 +148,7 @@ pub async fn invite(uuid: &str) -> Result<Value> {
 
 pub async fn stop() {
     HOST_GEN.fetch_add(1, Ordering::SeqCst);
+    crate::p2p::close_direct();
     if let Some(h) = HOSTED.lock().unwrap().take() {
         let id = h.id.clone();
         tauri::async_runtime::spawn(async move {
@@ -135,29 +158,47 @@ pub async fn stop() {
     }
 }
 
-/// Guest side: returns a local port for Minecraft to connect to.
+/// Guest side: returns a local port for Minecraft to connect to. The first connection is made right
+/// away (so errors show up in the join button), later ones reuse it or punch again if it dropped.
 pub async fn join(world: &str) -> Result<u16> {
     let info = social::get(&format!("/worlds/{world}")).await?;
     if info["online"] != true {
         bail!(l!("Hostitel teď svět nemá otevřený", "The host doesn't have the world open right now"));
     }
-    let token = token()?;
+    let first = crate::p2p::connect(world).await?;
     let listener = TcpListener::bind(("127.0.0.1", 0)).await?;
     let port = listener.local_addr()?.port();
     let world = world.to_string();
-    linfo!("world: joining {world} through 127.0.0.1:{port}");
+    linfo!("world: joining {world} directly through 127.0.0.1:{port}");
     tauri::async_runtime::spawn(async move {
+        let mut cur = Some(first);
         // Minecraft pings the server and then connects; keep accepting for a while.
         loop {
             let accepted = tokio::time::timeout(Duration::from_secs(30 * 60), listener.accept()).await;
             let Ok(Ok((tcp, _))) = accepted else { break };
-            let url = format!("{}/join?token={token}&world={world}", social::RELAY);
+            if cur.as_ref().is_some_and(|(_, c)| c.close_reason().is_some()) {
+                cur = None;
+            }
+            if cur.is_none() {
+                match crate::p2p::connect(&world).await {
+                    Ok(c) => cur = Some(c),
+                    Err(e) => {
+                        lwarn!("world: reconnect failed: {e:#}");
+                        continue;
+                    }
+                }
+            }
+            let conn = cur.as_ref().unwrap().1.clone();
             tauri::async_runtime::spawn(async move {
-                match tokio_tungstenite::connect_async(url).await {
-                    Ok((ws, _)) => pipe(tcp, ws).await,
-                    Err(e) => lwarn!("world: relay join failed: {e:#}"),
+                match conn.open_bi().await {
+                    Ok((send, recv)) => crate::p2p::pipe(tcp, send, recv).await,
+                    Err(e) => lwarn!("world: stream failed: {e}"),
                 }
             });
+        }
+        if let Some((ep, c)) = cur {
+            c.close(0u32.into(), b"bye");
+            ep.wait_idle().await;
         }
     });
     Ok(port)

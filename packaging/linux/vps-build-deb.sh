@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Builds the .deb and the AppImage inside an Ubuntu 22.04 container on the VPS.
 # Called by release.ps1: vps-build-deb.sh <stage-dir> <version>
-# <stage-dir> holds Dockerfile.deb and the source tarball justice-client-<version>.tar.gz (from make-arch.sh).
-# Output: <stage-dir>/out/justice-client_<version>_amd64.deb and JusticeClient-<version>-x86_64.AppImage
+# <stage-dir> holds Dockerfile.deb and the source tarball kuubl-client-<version>.tar.gz (from make-arch.sh).
+# Output: <stage-dir>/out/kuubl-client_<version>_amd64.deb and KuublClient-<version>-x86_64.AppImage
 set -euo pipefail
 stage="$1"
 version="$2"
@@ -16,7 +16,7 @@ fi
 
 # The container writes as root; clear leftovers from an earlier run the same way.
 sudo rm -rf src out && mkdir -p src out
-tar -xzf "justice-client-$version.tar.gz" -C src --strip-components=1
+tar -xzf "kuubl-client-$version.tar.gz" -C src --strip-components=1
 
 # Capped so the game servers on this box don't notice the build.
 # APPIMAGE_EXTRACT_AND_RUN: linuxdeploy is itself an AppImage and there's no FUSE in the container.
@@ -33,7 +33,7 @@ sudo docker run --rm --cpus 4 --memory 8g -e APPIMAGE_EXTRACT_AND_RUN=1 -e NO_ST
   chown -R '"$(id -u):$(id -g)"' /out /src
 '
 cd out
-mv ./*.deb "justice-client_${version}_amd64.deb"
-mv ./*.AppImage "JusticeClient-${version}-x86_64.AppImage"
-chmod +x "JusticeClient-${version}-x86_64.AppImage"
+mv ./*.deb "kuubl-client_${version}_amd64.deb"
+mv ./*.AppImage "KuublClient-${version}-x86_64.AppImage"
+chmod +x "KuublClient-${version}-x86_64.AppImage"
 ls -la

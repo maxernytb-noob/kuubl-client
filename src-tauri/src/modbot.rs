@@ -4,12 +4,9 @@
 
 use crate::content::{self, Kind, SearchQuery};
 use crate::instances::{self, Instance};
-use crate::net;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-
-const PROXY: &str = "https://justiceclient.online/social/modbot";
 
 #[derive(Deserialize)]
 pub struct Msg {
@@ -45,11 +42,18 @@ pub async fn chat(mc: &str, loader: &str, messages: Vec<Msg>) -> Result<ChatRepl
         "lang": if crate::i18n::is_en() { "en" } else { "cs" },
         "messages": messages.iter().map(|m| json!({"role": m.role, "content": m.content})).collect::<Vec<_>>(),
     });
-    let r = net::CLIENT.post(PROXY).json(&body).send().await?;
-    if !r.status().is_success() {
-        anyhow::bail!("MaxPack proxy HTTP {}", r.status());
+    // MaxPack is only for real Minecraft accounts; the proxy checks the Kuubl session.
+    let is_msa = crate::auth::ready_account(None).await.map(|a| a.kind == "msa").unwrap_or(false);
+    if !is_msa {
+        anyhow::bail!(l!(
+            "MaxPack je jen pro účty s koupeným Minecraftem (Microsoft). Přepni si účet nahoře vpravo.",
+            "MaxPack is only for accounts that own Minecraft (Microsoft). Switch accounts in the top right."
+        ));
     }
-    let v: Value = r.json().await?;
+    if crate::social::token().is_none() {
+        crate::social::login().await?;
+    }
+    let v: Value = crate::social::post("/modbot", body).await?;
     let reply = v["reply"].as_str().unwrap_or_default().to_string();
     let limited = v["limited"].as_bool().unwrap_or(false);
 

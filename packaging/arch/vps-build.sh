@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the binary Arch package (justice-client-<ver>-1-x86_64.pkg.tar.zst) inside an Arch container
+# Builds the binary Arch package (kuubl-client-<ver>-1-x86_64.pkg.tar.zst) inside an Arch container
 # on the VPS, so Arch users just run `sudo pacman -U`. Called by release.ps1: vps-build.sh <stage-dir>
 # <stage-dir>/arch holds PKGBUILD, the .desktop file and the source tarball from make-arch.sh.
 set -euo pipefail

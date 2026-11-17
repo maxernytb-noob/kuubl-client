@@ -162,6 +162,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setLaunching((l) => (l && l.id === payload ? { ...l, started: true } : l));
         setTimeout(() => setLaunching((l) => (l && l.id === payload ? null : l)), 1600);
       }),
+      // "Play" in the in-game clips window: show that clip here.
+      listen<{ path?: string; id?: string }>("open-clip", ({ payload }) => {
+        (window as unknown as { __jcOpenClip?: unknown }).__jcOpenClip = payload;
+        setHist((h) => {
+          const items = [...h.items.slice(0, h.i + 1), { page: "clips" } as Nav].slice(-30);
+          return { items, i: items.length - 1 };
+        });
+        window.dispatchEvent(new Event("jc-open-clip"));
+      }),
       // A modpack installed from the in-game chat.
       listen("instances-changed", () => reloadInstances()),
       listen<{ text: string; kind: Toast["kind"] }>("toast", ({ payload }) => toast(payload.text, payload.kind)),
@@ -333,6 +342,9 @@ export function fmtNum(n: number): string {
   if (n >= 1e3) return `${(n / 1e3).toFixed(n >= 1e4 ? 0 : 1)}k`;
   return String(n);
 }
+
+/** Minecraft versions with a bundled Kuubl Mod build (keep in sync with src-tauri/src/kuubl_mod.rs). */
+export const KUUBL_MOD_VERSIONS = /^(1\.21\.(9|10|11)|26\.[123](\.\d+)?)$/;
 
 export const LOADER_LABEL: Record<string, string> = {
   vanilla: "Vanilla",

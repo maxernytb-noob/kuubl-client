@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { api, clips as clipsApi, social, type ChatMessage, type Clip, type Presence, type SocialProfile, type SocialUser } from "../api";
 import { Icon } from "../icons";
 import { errText, fmtAgo, fmtSize, useStore } from "../store";
@@ -10,6 +12,7 @@ import { useJoinFriend } from "../components/FriendsPlaying";
 import { ACHIEVEMENTS, BADGES, BANNERS, CAPES, earned, head, type Stats } from "../achievements";
 import { McIcon } from "../components/McIcons";
 import { PartyPanel, useParty } from "../components/Party";
+import Logo from "../components/Logo";
 
 type SocialEvent =
   | { type: "message"; message: ChatMessage }
@@ -170,7 +173,7 @@ export default function Friends() {
           <h1>{tr("Přátelé", "Friends")}</h1>
         </div>
         <div className="card pad col" style={{ maxWidth: 560, gap: 14 }}>
-          <b style={{ fontSize: 16 }}>{tr("Přátelé a chat v Justice Clientu", "Friends and chat in Justice Client")}</b>
+          <b style={{ fontSize: 16 }}>{tr("Přátelé a chat v Kuubl Clientu", "Friends and chat in Kuubl Client")}</b>
           <span className="muted">
             {tr(
               "Přidávej kamarády podle jejich Minecraft jména, piš si, posílej klipy a modpacky a zvi je do hry. Přihlášení ověří tvůj Minecraft účet stejně jako připojení na server — heslo ani token nikdo neuvidí.",
@@ -199,7 +202,7 @@ export default function Friends() {
       <div className="friends">
         <aside className="fl">
           {me && (
-            <div className="me-card" style={{ background: BANNERS[me.profile.banner ?? ""] ?? BANNERS.red }}>
+            <div className="me-card" style={{ background: BANNERS[me.profile.banner ?? ""] ?? BANNERS.ember }}>
               <Head uuid={me.uuid} size={44} />
               <div className="grow" style={{ minWidth: 0 }}>
                 <b>{me.name}</b>
@@ -251,6 +254,15 @@ export default function Friends() {
             </>
           )}
 
+          <div className="fl-title">{tr("Skupiny", "Groups")}</div>
+          <button className={`frow friend ${active === KUUBL_GROUP ? "on" : ""}`} onClick={() => setActive(KUUBL_GROUP)}>
+            <span className="jg-logo img"><Logo size={36} /></span>
+            <span className="grow" style={{ minWidth: 0, textAlign: "left" }}>
+              <b className="ellipsis" style={{ display: "block" }}>Kuubl</b>
+              <span className="small muted ellipsis" style={{ display: "block" }}>{tr("Novinky a updaty · všichni hráči", "News and updates · every player")}</span>
+            </span>
+          </button>
+
           <div className="fl-title row" style={{ gap: 6 }}>
             <span className="grow">
               {tr("Přátelé", "Friends")} · {friends.filter((f) => f.online).length}/{friends.length} online
@@ -287,7 +299,9 @@ export default function Friends() {
         </aside>
 
         <section className="fc">
-          {activeFriend && me ? (
+          {active === KUUBL_GROUP ? (
+            <KuublGroup />
+          ) : activeFriend && me ? (
             <Chat key={activeFriend.uuid} me={me} friend={activeFriend} onProfile={() => setProfileOf(activeFriend)} onRemoved={() => { setActive(null); reload(); }} />
           ) : (
             <FriendsOverview friends={friends} onOpen={setActive} />
@@ -570,6 +584,15 @@ function LinuxClip({ m }: { m: ChatMessage }) {
 
 function MessageBody({ m, mine }: { m: ChatMessage; mine: boolean }) {
   const { instances, play, reloadInstances, toast, go } = useStore();
+  if (m.kind === "shot")
+    return (
+      <div className="col" style={{ gap: 6 }}>
+        <img src={m.meta.url} className="msg-video" alt="" loading="lazy" onClick={() => openUrl(m.meta.url).catch(() => {})} style={{ cursor: "zoom-in" }} />
+        <span className="small">
+          <Icon name="image" size={12} /> {tr("Screenshot", "Screenshot")}
+        </span>
+      </div>
+    );
   if (m.kind === "clip")
     return IS_LINUX ? (
       <LinuxClip m={m} />
@@ -707,7 +730,7 @@ function SendClip({ to, onClose }: { to: string; onClose: () => void }) {
   };
   return (
     <Modal title={tr("Poslat klip", "Send a clip")} onClose={() => !busy && onClose()}>
-      <div className="small muted" style={{ marginBottom: 10 }}>{tr("Klip se nahraje na server Justice (max 300 MB) a vydrží 30 dní.", "The clip is uploaded to the Justice server (max 300 MB) and kept for 30 days.")}</div>
+      <div className="small muted" style={{ marginBottom: 10 }}>{tr("Klip se nahraje na server Kuubl (max 300 MB) a vydrží 30 dní.", "The clip is uploaded to the Kuubl server (max 300 MB) and kept for 30 days.")}</div>
       {!list ? (
         <SkeletonList rows={3} />
       ) : !list.length ? (
@@ -827,7 +850,7 @@ function ProfileView({ user }: { user: SocialUser }) {
   const got = new Set(user.profile.achievements ?? []);
   return (
     <div className="profile">
-      <div className="profile-banner" style={{ background: BANNERS[user.profile.banner ?? ""] ?? BANNERS.red }}>
+      <div className="profile-banner" style={{ background: BANNERS[user.profile.banner ?? ""] ?? BANNERS.ember }}>
         <Head uuid={user.uuid} size={64} />
       </div>
       <div className="profile-body">
@@ -870,7 +893,7 @@ function ProfileView({ user }: { user: SocialUser }) {
             </div>
           ))}
         </div>
-        <div className="small muted" style={{ marginTop: 12 }}>{tr(`V Justice Clientu od ${new Date(user.created * 1000).toLocaleDateString()}`, `On Justice Client since ${new Date(user.created * 1000).toLocaleDateString()}`)}</div>
+        <div className="small muted" style={{ marginTop: 12 }}>{tr(`V Kuubl Clientu od ${new Date(user.created * 1000).toLocaleDateString()}`, `On Kuubl Client since ${new Date(user.created * 1000).toLocaleDateString()}`)}</div>
       </div>
     </div>
   );
@@ -917,18 +940,32 @@ function EditProfile({ me, onClose, onSaved }: { me: SocialUser; onClose: () => 
             <textarea className="input" rows={4} value={p.bio ?? ""} maxLength={300} onChange={(e) => setP({ ...p, bio: e.target.value })} placeholder={tr("Pár slov o sobě…", "A few words about you…")} />
           </div>
           <div className="field">
-            <label>{tr("Justice pláštěnka", "Justice cape")}</label>
+            <label>{tr("Kuubl pláštěnka", "Kuubl cape")}</label>
             <div className="cape-grid">
               <button className={`cape-pick ${!p.cape ? "on" : ""}`} onClick={() => setP({ ...p, cape: "" })} title={tr("Žádná", "None")}>
                 <Icon name="x" size={16} />
               </button>
-              {CAPES.map((c) => (
-                <button key={c.id} className={`cape-pick ${p.cape === c.id ? "on" : ""}`} onClick={() => setP({ ...p, cape: c.id })} title={tr(c.name[0], c.name[1])}>
-                  <CapePreview id={c.id} size={3} />
-                </button>
-              ))}
+              {CAPES.map((c) => {
+                const need = c.unlock && !(p.achievements ?? []).includes(c.unlock) ? ACHIEVEMENTS.find((x) => x.id === c.unlock) : undefined;
+                return (
+                  <button
+                    key={c.id}
+                    className={`cape-pick ${p.cape === c.id ? "on" : ""} ${need ? "locked" : ""}`}
+                    disabled={!!need}
+                    onClick={() => setP({ ...p, cape: c.id })}
+                    title={need ? `${tr(c.name[0], c.name[1])} · ${tr("odemkni", "unlock")}: ${tr(...need.text)}` : tr(c.name[0], c.name[1])}
+                  >
+                    <CapePreview id={c.id} size={3} />
+                    {need && (
+                      <span className="cape-lock">
+                        <Icon name="lock" size={14} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            <span className="small muted">{tr("Uvidí ji ostatní hráči Justice Clientu ve hře (i na elytrách).", "Other Justice Client players see it in-game (on elytra too).")}</span>
+            <span className="small muted">{tr("Uvidí ji ostatní hráči Kuubl Clientu ve hře (i na elytrách).", "Other Kuubl Client players see it in-game (on elytra too).")}</span>
           </div>
           <div className="field">
             <label>Banner</label>
@@ -937,7 +974,7 @@ function EditProfile({ me, onClose, onSaved }: { me: SocialUser; onClose: () => 
                 <button
                   key={k}
                   onClick={() => setP({ ...p, banner: k })}
-                  style={{ width: 54, height: 30, borderRadius: 8, background: bg, cursor: "pointer", border: (p.banner ?? "red") === k ? "2px solid var(--text)" : "2px solid transparent" }}
+                  style={{ width: 54, height: 30, borderRadius: 8, background: bg, cursor: "pointer", border: (p.banner ?? "ember") === k ? "2px solid var(--text)" : "2px solid transparent" }}
                   aria-label={k}
                 />
               ))}
@@ -954,7 +991,7 @@ function EditProfile({ me, onClose, onSaved }: { me: SocialUser; onClose: () => 
 
 // ---------------- offline sign-in, capes, leaderboard ----------------
 
-/** Offline accounts can't be verified by Mojang, so they sign in to Justice with a password. */
+/** Offline accounts can't be verified by Mojang, so they sign in to Kuubl with a password. */
 function OfflineSignIn({ name, onDone }: { name: string; onDone: () => void }) {
   const [mode, setMode] = useState<"login" | "register">("login");
   const [pw, setPw] = useState("");
@@ -1027,13 +1064,20 @@ function capeName(id: string) {
 
 /** The outer face of a cape texture (10x16 px at 1,1), scaled up with crisp pixels. */
 function CapePreview({ id, size }: { id: string; size: number }) {
+  const frames = CAPES.find((x) => x.id === id)?.frames ?? 0;
+  const [f, setF] = useState(0);
+  useEffect(() => {
+    if (!frames) return;
+    const t = setInterval(() => setF((n) => (n + 1) % frames), 125);
+    return () => clearInterval(t);
+  }, [frames]);
   return (
     <span
       className="cape-preview"
       style={{
         width: 10 * size,
         height: 16 * size,
-        backgroundImage: `url(/capes/${id}.png)`,
+        backgroundImage: `url(/capes/${frames ? `${id}_${f}` : id}.png)`,
         backgroundSize: `${64 * size}px ${32 * size}px`,
         backgroundPosition: `${-1 * size}px ${-1 * size}px`,
       }}
@@ -1045,7 +1089,7 @@ function kd(p: { kills: number; deaths: number }) {
   return p.deaths ? (p.kills / p.deaths).toFixed(2) : p.kills ? String(p.kills) : "0";
 }
 
-/** PvP from Justice Mod: you and your friends, sorted by kills. */
+/** PvP from Kuubl Mod: you and your friends, sorted by kills. */
 function Leaderboard({ me, friends, onClose }: { me: SocialUser; friends: SocialUser[]; onClose: () => void }) {
   const [sort, setSort] = useState<"kills" | "kd" | "combo" | "hours">("kills");
   const rows = [me, ...friends].map((u) => {
@@ -1063,7 +1107,7 @@ function Leaderboard({ me, friends, onClose }: { me: SocialUser; friends: Social
   return (
     <Modal title={tr("Žebříček přátel", "Friends leaderboard")} onClose={onClose} wide>
       <div className="small muted" style={{ marginBottom: 10 }}>
-        {tr("PvP počítá Justice Mod (killy hráčů, smrti, nejdelší combo). Aktualizuje se po minutě hraní.", "PvP is counted by Justice Mod (player kills, deaths, longest combo). Updates after a minute of play.")}
+        {tr("PvP počítá Kuubl Mod (killy hráčů, smrti, nejdelší combo). Aktualizuje se po minutě hraní.", "PvP is counted by Kuubl Mod (player kills, deaths, longest combo). Updates after a minute of play.")}
       </div>
       <div className="lb">
         <div className="lb-row lb-head">
@@ -1091,5 +1135,125 @@ function Leaderboard({ me, friends, onClose }: { me: SocialUser; friends: Social
         ))}
       </div>
     </Modal>
+  );
+}
+
+const KUUBL_GROUP = "kuubl-group";
+
+type Post = { id: number; author: string; authorName: string; body: string; created: number; likes: number; liked: boolean };
+
+/** The group every Kuubl player is in: update announcements. Admins write, everyone reads and likes. */
+function KuublGroup() {
+  const { toast } = useStore();
+  const [posts, setPosts] = useState<Post[] | null>(null);
+  const [canPost, setCanPost] = useState(false);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(
+    () =>
+      invoke<{ posts: Post[]; canPost: boolean }>("social_get", { path: "/announcements" })
+        .then((r) => {
+          setPosts(r.posts);
+          setCanPost(r.canPost);
+        })
+        .catch((e) => toast(errText(e), "error")),
+    [toast],
+  );
+  useEffect(() => {
+    load();
+    const un = listen<SocialEvent>("social-event", (e) => {
+      const ev = e.payload as unknown as { type: string; post?: Post };
+      if (ev.type === "announcement" && ev.post) setPosts((p) => [ev.post!, ...(p ?? []).filter((x) => x.id !== ev.post!.id)]);
+    });
+    return () => {
+      un.then((f) => f());
+    };
+  }, [load]);
+
+  const send = async () => {
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      const p = await invoke<Post>("social_post", { path: "/announcements", body: { body: text.trim() } });
+      setPosts((l) => [p, ...(l ?? []).filter((x) => x.id !== p.id)]);
+      setText("");
+    } catch (e) {
+      toast(errText(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const like = async (p: Post) => {
+    try {
+      const r = await invoke<{ likes: number; liked: boolean }>("social_post", { path: `/announcements/${p.id}/like`, body: {} });
+      setPosts((l) => (l ?? []).map((x) => (x.id === p.id ? { ...x, ...r } : x)));
+    } catch (e) {
+      toast(errText(e), "error");
+    }
+  };
+
+  return (
+    <div className="chat jg">
+      <div className="chat-head row" style={{ gap: 10 }}>
+        <span className="jg-logo big img"><Logo size={42} /></span>
+        <div className="grow">
+          <b>Kuubl</b>
+          <div className="small muted">{tr("Oficiální novinky o Kuubl Clientu. Píšou jen admini.", "Official Kuubl Client news. Only admins post.")}</div>
+        </div>
+      </div>
+      <div className="jg-feed">
+        {!posts ? (
+          <SkeletonList rows={3} />
+        ) : !posts.length ? (
+          <Empty icon="bell" title={tr("Zatím žádné novinky", "No news yet")} text={tr("Tady se objeví oznámení o nových verzích.", "Announcements about new versions show up here.")} />
+        ) : (
+          posts.map((p) => (
+            <article key={p.id} className="jg-post">
+              <div className="row small muted" style={{ gap: 6 }}>
+                <b className="jg-author">{p.authorName}</b>
+                <span>· {fmtAgo(p.created)}</span>
+              </div>
+              <PostBody text={p.body} />
+              <button className={`btn sm ghost ${p.liked ? "on" : ""}`} onClick={() => like(p)}>
+                <Icon name="heart" size={13} /> {p.likes}
+              </button>
+            </article>
+          ))
+        )}
+      </div>
+      {canPost && (
+        <div className="jg-compose">
+          <textarea className="input" rows={3} maxLength={2000} placeholder={tr("Napiš oznámení pro všechny hráče…", "Write an announcement for every player…")} value={text} onChange={(e) => setText(e.target.value)} />
+          <button className="btn primary" disabled={busy || !text.trim()} onClick={send}>
+            <Icon name="share" size={14} /> {tr("Zveřejnit", "Post")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const IMG_LINE = /^https:\/\/\S+\.(png|jpe?g|webp|gif)(\?\S*)?$/i;
+
+/** Announcement text; a line that is just an image link shows as the image (click = full size). */
+function PostBody({ text }: { text: string }) {
+  const parts: { img?: string; text?: string }[] = [];
+  for (const line of text.split("\n")) {
+    const t = line.trim();
+    if (IMG_LINE.test(t)) parts.push({ img: t });
+    else if (parts.length && parts[parts.length - 1].text !== undefined) parts[parts.length - 1].text += "\n" + line;
+    else parts.push({ text: line });
+  }
+  return (
+    <>
+      {parts.map((x, i) =>
+        x.img ? (
+          <img key={i} className="jg-img" src={x.img} alt="" loading="lazy" onClick={() => openUrl(x.img!)} />
+        ) : x.text!.trim() ? (
+          <div key={i} className="jg-body">{x.text!.trim()}</div>
+        ) : null,
+      )}
+    </>
   );
 }

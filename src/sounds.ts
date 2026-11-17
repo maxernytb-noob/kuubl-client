@@ -6,12 +6,14 @@ export type UiSound = "launch" | "done" | "error" | "notify" | "achievement" | "
 
 let enabled = true;
 let volume = 0.5;
+let clicks = true;
 let ctx: AudioContext | null = null;
 
 /** Called by applyUi whenever the preferences change. */
-export function setSoundPrefs(on: boolean, vol: number) {
+export function setSoundPrefs(on: boolean, vol: number, clickLayer = true) {
   enabled = on;
   volume = vol;
+  clicks = clickLayer;
 }
 
 function ac(): AudioContext | null {
@@ -65,6 +67,30 @@ export function sound(kind: UiSound, force = false) {
       break;
     case "open":
       note(a, 1760, 0, 0.06, 0.05);
+      break;
+  }
+}
+
+/**
+ * The global click/hover/toggle layer: tiny, soft ticks on the controls people touch. Kept very quiet
+ * so it feels satisfying, not noisy. Gated by its own "clickLayer" preference on top of the master
+ * sound toggle, and silent when sounds are off, volume is 0, or the secret mute class is set.
+ */
+export function uiTick(kind: "click" | "hover" | "toggle") {
+  if (!enabled || !clicks || volume <= 0) return;
+  if (document.documentElement.classList.contains("snd-off")) return;
+  const a = ac();
+  if (!a) return;
+  switch (kind) {
+    case "hover":
+      note(a, 2100, 0, 0.03, 0.016, "sine");
+      break;
+    case "click":
+      note(a, 1320, 0, 0.045, 0.05, "triangle");
+      break;
+    case "toggle":
+      note(a, 880, 0, 0.05, 0.05, "triangle");
+      note(a, 1320, 0.04, 0.06, 0.045, "triangle");
       break;
   }
 }

@@ -1,5 +1,6 @@
 #[macro_use]
 mod logger;
+mod migrate;
 #[macro_use]
 mod i18n;
 mod auth;
@@ -13,7 +14,7 @@ mod events;
 mod instances;
 mod integrations;
 mod java;
-mod justice_mod;
+mod kuubl_mod;
 mod launch;
 mod loaders;
 mod minecraft;
@@ -28,6 +29,7 @@ mod settings;
 mod skinlib;
 mod social;
 mod world;
+mod p2p;
 mod bridge;
 mod media;
 mod art;
@@ -75,10 +77,10 @@ struct ManualUpdate {
 fn linux_package_kind() -> &'static str {
     if std::env::var_os("APPIMAGE").is_some() {
         "appimage"
-    } else if std::path::Path::new("/var/lib/dpkg/info/justice-client.list").exists() {
+    } else if std::path::Path::new("/var/lib/dpkg/info/kuubl-client.list").exists() || std::path::Path::new("/var/lib/dpkg/info/justice-client.list").exists() {
         "deb"
     } else if std::fs::read_dir("/var/lib/pacman/local")
-        .map(|d| d.flatten().any(|e| e.file_name().to_string_lossy().starts_with("justice-client-")))
+        .map(|d| d.flatten().any(|e| e.file_name().to_string_lossy().starts_with("kuubl-client-")))
         .unwrap_or(false)
     {
         "arch"
@@ -95,17 +97,65 @@ fn version_parts(v: &str) -> Vec<u64> {
 /// feed and just tell the UI a newer version exists and where to get it.
 #[tauri::command]
 async fn check_update_manual() -> Res<Option<ManualUpdate>> {
-    let feed = "https://justiceclient.online/latest.json";
+    let feed = "https://ertenix.net/kuubl/latest.json";
     ldebug!("update check (manual) -> {feed}");
     let v = e(net::get_json(feed).await)?;
     let latest = v["version"].as_str().unwrap_or_default().to_string();
     let current = env!("CARGO_PKG_VERSION");
     linfo!("update check: current {current}, latest {latest}");
     if version_parts(&latest) > version_parts(current) {
-        Ok(Some(ManualUpdate { version: latest, notes: v["notes"].as_str().unwrap_or_default().into(), url: "https://justiceclient.online/".into(), kind: linux_package_kind() }))
+        Ok(Some(ManualUpdate { version: latest, notes: v["notes"].as_str().unwrap_or_default().into(), url: "https://ertenix.net/kuubl/".into(), kind: linux_package_kind() }))
     } else {
         Ok(None)
     }
+}
+
+// ---------------- Dev channel ----------------
+// Test builds for the owner only (the button shows just for his account). Installs whatever build
+// the channel's feed has when it differs from this one, so going dev → stable works too.
+
+#[derive(serde::Serialize)]
+struct ChannelBuild {
+    version: String,
+    current: String,
+    notes: String,
+    date: Option<String>,
+}
+
+fn channel_feed(channel: &str) -> &'static str {
+    if channel == "dev" { "https://ertenix.net/kuubl/dev/latest.json" } else { "https://ertenix.net/kuubl/latest.json" }
+}
+
+async fn channel_update(app: &tauri::AppHandle, channel: &str) -> anyhow::Result<Option<tauri_plugin_updater::Update>> {
+    use tauri_plugin_updater::UpdaterExt;
+    let url: tauri::Url = channel_feed(channel).parse()?;
+    let up = app.updater_builder().endpoints(vec![url])?.version_comparator(|cur, remote| remote.version != cur).build()?;
+    Ok(up.check().await?)
+}
+
+#[tauri::command]
+async fn channel_check(app: tauri::AppHandle, channel: String) -> Res<Option<ChannelBuild>> {
+    let u = e(channel_update(&app, &channel).await)?;
+    Ok(u.map(|u| ChannelBuild { version: u.version.clone(), current: u.current_version.clone(), notes: u.body.clone().unwrap_or_default(), date: u.date.map(|d| d.to_string()) }))
+}
+
+#[tauri::command]
+async fn channel_install(app: tauri::AppHandle, channel: String) -> Res<()> {
+    let Some(u) = e(channel_update(&app, &channel).await)? else { return Err("No build to download".into()) };
+    linfo!("channel {channel}: installing {}", u.version);
+    let progress = app.clone();
+    let mut done = 0usize;
+    e(u.download_and_install(
+        move |chunk, total| {
+            use tauri::Emitter;
+            done += chunk;
+            let _ = progress.emit("channel-progress", (done, total));
+        },
+        || {},
+    )
+    .await
+    .map_err(anyhow::Error::from))?;
+    app.restart();
 }
 
 // ---------------- Settings ----------------
@@ -154,7 +204,7 @@ pub fn open_logs(app: &tauri::AppHandle) {
             return;
         }
         let r = tauri::WebviewWindowBuilder::new(&app, "logs", tauri::WebviewUrl::App("index.html?window=logs".into()))
-            .title("Justice — Logs")
+            .title("Kuubl — Logs")
             .inner_size(920.0, 580.0)
             .min_inner_size(440.0, 320.0)
             .decorations(false)
@@ -315,7 +365,7 @@ async fn social_login() -> Res<serde_json::Value> {
 fn social_logout() {
     social::sign_out();
 }
-/// Offline accounts: sign in to (or create, `register`) the Justice account with a password.
+/// Offline accounts: sign in to (or create, `register`) the Kuubl account with a password.
 #[tauri::command]
 async fn social_login_password(password: String, register: bool) -> Res<serde_json::Value> {
     e(social::login_password(&password, register).await)
@@ -396,6 +446,7 @@ fn set_instance_icon(id: String, path: String) -> Res<Instance> {
 #[tauri::command]
 fn update_instance(instance: Instance) -> Res<Instance> {
     let mut cur = e(instances::load(&instance.id))?;
+    let old_mc = cur.mc_version.clone();
     let version_changed = cur.mc_version != instance.mc_version
         || cur.loader != instance.loader
         || cur.loader_version != instance.loader_version;
@@ -412,9 +463,14 @@ fn update_instance(instance: Instance) -> Res<Instance> {
     cur.height = instance.height;
     cur.recording_mode = instance.recording_mode;
     cur.light_mode = instance.light_mode;
-    cur.no_justice_mod = instance.no_justice_mod;
+    cur.no_kuubl_mod = instance.no_kuubl_mod;
     if version_changed {
         cur.installed_id.clear();
+        // a new Minecraft version upgrades worlds for good: keep a copy of the recent ones
+        if cur.mc_version != old_mc {
+            let id = cur.id.clone();
+            std::thread::spawn(move || linfo!("version change: backed up {} worlds of {id}", backups::backup_recent_worlds(&id, 30)));
+        }
     }
     e(instances::save(&cur))?;
     Ok(cur)
@@ -428,6 +484,11 @@ fn delete_instance(id: String) -> Res<()> {
 #[tauri::command]
 fn duplicate_instance(id: String) -> Res<Instance> {
     e(instances::duplicate(&id))
+}
+
+#[tauri::command]
+fn copy_instance_settings(from: String, to: String, parts: Vec<String>) -> Res<usize> {
+    e(instances::copy_settings(&from, &to, &parts))
 }
 
 #[tauri::command]
@@ -569,6 +630,29 @@ async fn skinlib_apply(account: String, id: String) -> Res<()> {
     e(skinlib::apply(&account, &id).await)
 }
 
+/// PNG of a library skin as base64, for the 3D skin editor (reading it through the asset protocol
+/// would taint the canvas).
+#[tauri::command]
+fn skinlib_read(id: String) -> Res<String> {
+    use base64::Engine;
+    let file = skinlib::list().into_iter().find(|s| s.entry.id == id).ok_or("skin not found")?.file;
+    let bytes = std::fs::read(file).map_err(|e| e.to_string())?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(bytes))
+}
+
+/// Saves a skin painted in the launcher's 3D editor to the library; with `account`, also wears it.
+#[tauri::command]
+async fn skinlib_save(png: String, name: String, variant: String, account: Option<String>) -> Res<String> {
+    use base64::Engine;
+    let bytes = base64::engine::general_purpose::STANDARD.decode(png).map_err(|e| e.to_string())?;
+    let id = e(skinlib::add_png(bytes, &name, &variant))?;
+    if let Some(acc) = account {
+        e(skinlib::apply(&acc, &id).await)?;
+        social::skins_changed();
+    }
+    Ok(id)
+}
+
 #[tauri::command]
 fn skinlib_rename(id: String, name: String) -> Res<()> {
     e(skinlib::rename(&id, &name))
@@ -580,7 +664,7 @@ fn skinlib_remove(id: String) -> Res<()> {
 }
 
 /// Remote image as a data URL, so the webview can draw it on a canvas without CORS issues.
-/// Offline Justice skins come from the local copy (the upload may not have happened yet).
+/// Offline Kuubl skins come from the local copy (the upload may not have happened yet).
 #[tauri::command]
 async fn fetch_image(url: String) -> Res<String> {
     let bytes = match auth::skin_file(&url) {
@@ -723,7 +807,14 @@ struct UpdateReq {
 #[tauri::command]
 async fn apply_updates(instance: String, updates: Vec<UpdateReq>) -> Res<Vec<String>> {
     let id = instance.clone();
-    e(tokio::task::spawn_blocking(move || backups::snapshot(&id, "pred-aktualizaci")).await.map_err(anyhow::Error::from).and_then(|r| r))?;
+    e(tokio::task::spawn_blocking(move || {
+        let r = backups::snapshot(&id, "pred-aktualizaci");
+        backups::backup_recent_worlds(&id, 30);
+        r
+    })
+    .await
+    .map_err(anyhow::Error::from)
+    .and_then(|r| r))?;
     let mut failed = vec![];
     for u in updates {
         if let Err(err) = content::install(&instance, &u.source, &u.project_id, Kind::parse(&u.kind), Some(&u.new_version_id)).await {
@@ -996,7 +1087,7 @@ async fn ping_server(address: String) -> Res<servers::Status> {
     e(servers::ping(&address).await)
 }
 
-/// `justice-client --selftest <mc> <loader> [template]`: install + launch headlessly, report, kill.
+/// `kuubl-client --selftest <mc> <loader> [template]`: install + launch headlessly, report, kill.
 fn selftest(args: &[String]) -> anyhow::Result<()> {
     let mc = args.get(2).cloned().unwrap_or_else(|| "1.21.4".into());
     let loader = args.get(3).cloned().unwrap_or_else(|| "fabric".into());
@@ -1013,7 +1104,7 @@ fn selftest(args: &[String]) -> anyhow::Result<()> {
         }
         let had_accounts = !auth::load_store().accounts.is_empty();
         if !had_accounts {
-            auth::add_offline("JusticeTest")?;
+            auth::add_offline("KuublTest")?;
         }
         let world = std::env::var("JC_WORLD").ok();
         // Friends bridge + sign-in, so the mod's chat and world sharing can be tested too.
@@ -1073,7 +1164,7 @@ fn selftest(args: &[String]) -> anyhow::Result<()> {
         }
         let _ = launch::kill(&inst.id);
         if !had_accounts {
-            let _ = auth::remove(&format!("offline-{}", auth::offline_uuid("JusticeTest")));
+            let _ = auth::remove(&format!("offline-{}", auth::offline_uuid("KuublTest")));
         }
         println!("SELFTEST {}", if ok { "OK" } else { "FAILED" });
         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
@@ -1087,6 +1178,8 @@ fn selftest(args: &[String]) -> anyhow::Result<()> {
 }
 
 pub fn run() {
+    // Old Justice Client folders move to their Kuubl names before anything reads them.
+    migrate::run();
     // WebKitGTK's DMA-BUF renderer shows a blank window on many NVIDIA + Wayland setups, so it's off
     // there. Elsewhere it stays on: without it every frame is drawn and copied on the CPU, and the
     // whole launcher lags. Laptops with an Intel/AMD chip next to the NVIDIA one (Optimus) draw the
@@ -1104,7 +1197,7 @@ pub fn run() {
         std::env::set_var("GST_PLUGIN_FEATURE_RANK", hw.map(|d| format!("{d}:NONE")).join(","));
     }
     let args: Vec<String> = std::env::args().collect();
-    linfo!("Justice Client {} on {} {} - args {:?}", env!("CARGO_PKG_VERSION"), std::env::consts::OS, std::env::consts::ARCH, &args[1..]);
+    linfo!("Kuubl Client {} on {} {} - args {:?}", env!("CARGO_PKG_VERSION"), std::env::consts::OS, std::env::consts::ARCH, &args[1..]);
     linfo!("data dir: {} | log file: {}", settings::data_dir().display(), logger::path().display());
     if args.get(1).map(|a| a == "--install").unwrap_or(false) {
         // --install <instance> <modrinth|curseforge> <project>
@@ -1210,6 +1303,17 @@ pub fn run() {
         }
         return;
     }
+    if args.get(1).map(|a| a == "--p2p-selftest").unwrap_or(false) {
+        // Shared worlds: hosts a fake world and joins it directly on this PC (no Kuubl Social).
+        match tauri::async_runtime::block_on(p2p::selftest()) {
+            Ok(()) => println!("P2P OK"),
+            Err(err) => {
+                eprintln!("P2P ERROR: {err:#}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     if args.get(1).map(|a| a == "--optimize-plan").unwrap_or(false) {
         // Read-only: prints what the Optimize button would propose for an instance.
         let id = args.get(2).cloned().unwrap_or_default();
@@ -1251,8 +1355,49 @@ pub fn run() {
         println!("MODPACK TEST OK");
         return;
     }
+    #[cfg(windows)]
+    if args.get(1).map(|a| a == "--ffmpeg-install-test").unwrap_or(false) {
+        // Downloads ffmpeg like Clips → Download ffmpeg does and prints where it landed.
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        let last = std::sync::atomic::AtomicU64::new(0);
+        match rt.block_on(clips::ffmpeg::install(|d, t| {
+            let pct = if t > 0 { d * 100 / t } else { 0 };
+            if pct >= last.load(std::sync::atomic::Ordering::Relaxed) + 20 {
+                last.store(pct, std::sync::atomic::Ordering::Relaxed);
+                println!("ffmpeg {pct} % of {} MB", t / 1_000_000);
+            }
+        })) {
+            Ok(p) => println!("ffmpeg installed: {}", p.display()),
+            Err(e) => println!("ffmpeg install failed: {e:#}"),
+        }
+        return;
+    }
+    #[cfg(windows)]
+    if args.get(1).map(|a| a == "--voice-test").unwrap_or(false) {
+        // --voice-test <en|cs> <file.wav>: downloads voice recognition if needed, prints matched phrases.
+        let lang = args.get(2).cloned().unwrap_or_else(|| "en".into());
+        let rt = tokio::runtime::Runtime::new().expect("runtime");
+        if let Err(e) = rt.block_on(clips::voice::install(&lang, |_, _| {})) {
+            return println!("voice install failed: {e:#}");
+        }
+        match args.get(3).map(|w| clips::voice::test_wav(&lang, std::path::Path::new(w))) {
+            Some(Ok(h)) => println!("voice hits: {h:?}"),
+            Some(Err(e)) => println!("voice test failed: {e:#}"),
+            None => println!("voice installed"),
+        }
+        return;
+    }
+    if args.get(1).map(|a| a == "--copy-settings").unwrap_or(false) {
+        // --copy-settings <from> <to> <part,part,…>: same as Instance → Settings → Copy settings
+        let parts: Vec<String> = args.get(4).map(|p| p.split(',').map(String::from).collect()).unwrap_or_default();
+        match instances::copy_settings(args.get(2).map(String::as_str).unwrap_or(""), args.get(3).map(String::as_str).unwrap_or(""), &parts) {
+            Ok(n) => println!("copied {n} files"),
+            Err(e) => println!("copy failed: {e:#}"),
+        }
+        return;
+    }
     if args.get(1).map(|a| a == "--social-test").unwrap_or(false) {
-        // Signs in to Justice Social with the active account and prints profile + friends.
+        // Signs in to Kuubl Social with the active account and prints profile + friends.
         let rt = tokio::runtime::Runtime::new().expect("runtime");
         rt.block_on(async {
             match social::login().await {
@@ -1274,7 +1419,7 @@ pub fn run() {
     }
     tauri::Builder::default()
         // Must be first. A second launch hands its arguments to the running launcher:
-        // `justice-client --save-clip` saves a clip (for Wayland, where global hotkeys don't work).
+        // `kuubl-client --save-clip` saves a clip (for Wayland, where global hotkeys don't work).
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if args.iter().any(|a| a == "--save-clip") {
                 clips::on_hotkey(app);
@@ -1318,11 +1463,11 @@ pub fn run() {
             get_settings, save_settings, system_info,
             instance_last_place, media_state, media_command, open_music_app, open_logs_window, version_art, hardware_info, free_space, move_data_dir,
             game_versions, loader_versions,
-            list_instances, get_instance, create_instance, update_instance, delete_instance, duplicate_instance, instance_path,
+            list_instances, get_instance, create_instance, update_instance, delete_instance, duplicate_instance, copy_instance_settings, instance_path,
             launch_instance, kill_game, running_games, game_logs, analyze_crash,
             list_accounts, add_offline_account, ms_login_start, ms_login_poll, ms_login_cancel, set_active_account, remove_account,
             get_capes, set_cape, upload_skin, skin_from_player, reset_skin, fetch_image,
-            skinlib_list, skinlib_add_file, skinlib_add_player, skinlib_add_current, skinlib_apply, skinlib_rename, skinlib_remove,
+            skinlib_list, skinlib_add_file, skinlib_add_player, skinlib_add_current, skinlib_apply, skinlib_read, skinlib_save, skinlib_rename, skinlib_remove,
             search_content, project_details, install_content, list_content, toggle_content, remove_content, add_local_files, check_compat, fix_compat, repair_crash, repair_plan, repair_apply, repair_undo, set_pinned,
             check_updates, apply_updates, optimize_instance,
             optimize_plan,
@@ -1338,16 +1483,16 @@ pub fn run() {
             download_modpack, download_list, download_pause, download_resume, download_cancel, download_clear,
             modbot_chat, modbot_build, modbot_add,
             list_servers, save_server, remove_server, ping_server,
-            log_frontend, log_path, check_update_manual, set_instance_icon,
+            log_frontend, log_path, check_update_manual, channel_check, channel_install, set_instance_icon,
             social_login, social_logout, social_status, social_get, social_post, social_put, social_upload, social_open_clip, social_login_password, pvp_stats, party_warp_here, social_typing, world_join,
-            clips::clips_get_settings, clips::clips_set_settings, clips::clips_status, clips::clips_save, clips::clips_set_recording,
+            clips::clips_get_settings, clips::clips_set_settings, clips::clips_status, clips::clips_install_ffmpeg, clips::clips_install_voice, clips::clips_save, clips::clips_set_recording,
             clips::clips_list, clips::clips_strip, clips::clips_delete, clips::clips_rename, clips::clips_reveal, clips::clips_open_dir,
             clips::clips_trim, clips::clips_devices, clips::clips_monitors, clips::clips_log, clips::clips_test_notification,
             clips::clips_publish, clips_feed, clips_like, clips_report, clips_feed_delete,
             clips::clips_overlay_hide, clips::clips_detect_ffmpeg,
         ])
         .build(tauri::generate_context!())
-        .expect("error while building Justice Client")
+        .expect("error while building Kuubl Client")
         .run(|app, ev| match ev {
             // The hidden Clips overlay window would keep the app alive: closing the launcher quits,
             // unless a game is being recorded, then it goes to the tray.

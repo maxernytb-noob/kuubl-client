@@ -163,6 +163,15 @@ export default function Customize() {
             <Switch checked={v.sounds} onChange={(x) => set({ sounds: x })} />
           </div>
         </div>
+        {v.sounds && (
+          <div className="setting">
+            <div className="txt">
+              <b>{tr("Zvuky kliknutí", "Click sounds")}</b>
+              <span>{tr("Jemné cvaknutí na tlačítkách a přepínačích — satisfying odezva rozhraní.", "A soft tick on buttons and toggles — satisfying interface feedback.")}</span>
+            </div>
+            <Switch checked={v.clickSounds} onChange={(x) => set({ clickSounds: x })} />
+          </div>
+        )}
         <div className="setting">
           <div className="txt">
             <b>{tr("Domovská stránka", "Home")}</b>
@@ -272,7 +281,7 @@ export default function Customize() {
       <div className="card pad">
         <div className="setting" style={{ padding: 0 }}>
           <div className="txt">
-            <b>{tr("Justice Mod (menu ve hře)", "Justice Mod (in-game menu)")}</b>
+            <b>{tr("Kuubl Mod (menu ve hře)", "Kuubl Mod (in-game menu)")}</b>
             <span>
               {tr(
                 "Pravý Shift ve hře: PvP HUD, zoom, freelook, natáčení. Když ho vypneš, launcher ho do žádné instance nedá. Témata menu a HUD layouty najdeš přímo ve hře.",
@@ -280,7 +289,7 @@ export default function Customize() {
               )}
             </span>
           </div>
-          <Switch checked={settings.justiceMod} onChange={(x) => saveSettings({ justiceMod: x })} />
+          <Switch checked={settings.kuublMod} onChange={(x) => saveSettings({ kuublMod: x })} />
         </div>
       </div>
     </div>

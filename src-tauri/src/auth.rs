@@ -296,8 +296,8 @@ async fn finish_login(ms: &Value) -> Result<Account> {
         let msg = mc["errorMessage"].as_str().or(mc["error"].as_str()).unwrap_or_default();
         if status.as_u16() == 403 || msg.to_lowercase().contains("invalid app registration") {
             bail!(l!(
-                "Microsoft ještě neschválil Justice Client pro Minecraft (AppID review). Do té doby použij offline účet.",
-                "Microsoft hasn't approved Justice Client for Minecraft yet (AppID review). Use an offline account until then."
+                "Microsoft ještě neschválil Kuubl Client pro Minecraft (AppID review). Do té doby použij offline účet.",
+                "Microsoft hasn't approved Kuubl Client for Minecraft yet (AppID review). Use an offline account until then."
             ));
         }
         bail!(l!("Minecraft přihlášení selhalo ({status}) {msg}", "Minecraft sign-in failed ({status}) {msg}"));
@@ -430,7 +430,7 @@ pub async fn capes(account_id: &str) -> Result<Vec<Cape>> {
 pub async fn set_cape(account_id: &str, cape_id: Option<&str>) -> Result<()> {
     let acc = ready_account(Some(account_id)).await?;
     if acc.kind != "msa" {
-        bail!(l!("Minecraft capes má jen Microsoft účet — offline účet si vybere Justice plášť v profilu u přátel", "Only Microsoft accounts have Minecraft capes — offline accounts pick a Justice cape in their friends profile"));
+        bail!(l!("Minecraft capes má jen Microsoft účet — offline účet si vybere Kuubl plášť v profilu u přátel", "Only Microsoft accounts have Minecraft capes — offline accounts pick a Kuubl cape in their friends profile"));
     }
     let url = "https://api.minecraftservices.com/minecraft/profile/capes/active";
     let r = match cape_id {
@@ -443,17 +443,17 @@ pub async fn set_cape(account_id: &str, cape_id: Option<&str>) -> Result<()> {
     Ok(())
 }
 
-/// Skins of offline accounts: served by Justice Social under their MD5, and kept here too so the
+/// Skins of offline accounts: served by Kuubl Social under their MD5, and kept here too so the
 /// launcher preview and your own player in-game work before (or without) the upload.
-pub const JUSTICE_SKINS: &str = "https://justiceclient.online/u/skins/";
+pub const KUUBL_SKINS: &str = "https://justiceclient.online/u/skins/";
 
 pub fn skins_dir() -> PathBuf {
     settings::data_dir().join("skins")
 }
 
-/// The local copy of a Justice skin URL, if we have it.
+/// The local copy of a Kuubl skin URL, if we have it.
 pub fn skin_file(url: &str) -> Option<PathBuf> {
-    let name = url.strip_prefix(JUSTICE_SKINS)?;
+    let name = url.strip_prefix(KUUBL_SKINS)?;
     if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '.') || name.starts_with('.') {
         return None;
     }
@@ -461,7 +461,7 @@ pub fn skin_file(url: &str) -> Option<PathBuf> {
     p.is_file().then_some(p)
 }
 
-/// The local file behind an offline account's Justice skin, if it has one.
+/// The local file behind an offline account's Kuubl skin, if it has one.
 pub fn local_skin(acc: &Account) -> Option<PathBuf> {
     skin_file(&acc.skin_url)
 }
@@ -487,7 +487,7 @@ pub async fn upload_skin(account_id: &str, path: &str, variant: &str) -> Result<
     apply_skin(account_id, bytes, variant).await
 }
 
-/// Sets the skin from PNG bytes: Microsoft accounts at Mojang, offline accounts on Justice.
+/// Sets the skin from PNG bytes: Microsoft accounts at Mojang, offline accounts on Kuubl.
 pub(crate) async fn apply_skin(account_id: &str, bytes: Vec<u8>, variant: &str) -> Result<()> {
     check_skin(&bytes)?;
     let acc = ready_account(Some(account_id)).await?;
@@ -495,7 +495,7 @@ pub(crate) async fn apply_skin(account_id: &str, bytes: Vec<u8>, variant: &str) 
         let hash = hex::encode(Md5::digest(&bytes));
         std::fs::create_dir_all(skins_dir())?;
         std::fs::write(skins_dir().join(format!("{hash}.png")), &bytes)?;
-        let updated = set_skin_fields(&acc.id, format!("{JUSTICE_SKINS}{hash}.png"), if variant.eq_ignore_ascii_case("slim") { "SLIM" } else { "CLASSIC" })?;
+        let updated = set_skin_fields(&acc.id, format!("{KUUBL_SKINS}{hash}.png"), if variant.eq_ignore_ascii_case("slim") { "SLIM" } else { "CLASSIC" })?;
         crate::social::push_skin(&updated).await;
         return Ok(());
     }

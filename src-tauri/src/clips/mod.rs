@@ -1,11 +1,11 @@
-//! Justice Clips inside the launcher: a Medal-like replay buffer (ffmpeg ddagrab -> NVENC HEVC, kept in
+//! Kuubl Clips inside the launcher: a Medal-like replay buffer (ffmpeg ddagrab -> NVENC HEVC, kept in
 //! RAM) that runs while a Minecraft instance started from the launcher is running. A hotkey saves the
 //! last N seconds as an MP4. Windows: own ffmpeg pipeline (Desktop Duplication, WASAPI).
 //! Linux: gpu-screen-recorder in replay mode. Library, thumbnails and trimming are shared.
 
 #[cfg(windows)]
 mod audio;
-mod ffmpeg;
+pub(crate) mod ffmpeg;
 #[cfg(not(windows))]
 mod gsr;
 mod library;
@@ -13,6 +13,8 @@ mod library;
 mod recorder;
 mod settings;
 mod sys;
+#[cfg(windows)]
+pub(crate) mod voice;
 #[cfg(windows)]
 mod win;
 
@@ -174,6 +176,8 @@ pub fn game_started(instance_name: &str) {
         linfo!("clips: game started ({instance_name}), buffer on");
         st.rec.set_paused(false);
     }
+    #[cfg(windows)]
+    voice::sync(&app);
 }
 
 /// A Minecraft instance exited: stop the buffer once no game is left.
@@ -185,6 +189,8 @@ pub fn game_stopped() {
         linfo!("clips: no game running, buffer off");
         st.rec.set_paused(true);
     }
+    #[cfg(windows)]
+    voice::sync(&app);
 }
 
 pub fn shutdown(app: &AppHandle) {
@@ -223,6 +229,8 @@ pub fn clips_set_settings(app: AppHandle, st: State<ClipsState>, mut s: Settings
         register_hotkey(&app, &s.hotkey)?;
         update_tray(&app, &st.rec.status().state);
     }
+    #[cfg(windows)]
+    voice::sync(&app);
     Ok(s)
 }
 
@@ -239,6 +247,53 @@ pub struct StatusInfo {
     platform: &'static str,
     /// Linux: gpu-screen-recorder isn't installed.
     recorder_missing: bool,
+    /// Voice clips: Vosk + the model for the chosen language are downloaded.
+    voice_installed: bool,
+}
+
+/// Windows: downloads voice recognition for the chosen language (progress as `voice-progress`).
+#[tauri::command]
+pub async fn clips_install_voice(app: AppHandle, lang: String) -> Res<()> {
+    #[cfg(windows)]
+    {
+        let a = app.clone();
+        voice::install(&lang, move |done, total| {
+            let _ = a.emit("voice-progress", serde_json::json!({ "done": done, "total": total }));
+        })
+        .await
+        .map_err(|e| format!("{e:#}"))?;
+        linfo!("clips: voice recognition ({lang}) installed");
+        voice::sync(&app);
+        let _ = app.emit("clips-status", serde_json::json!({}));
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = (app, lang);
+        Err("Voice clips are Windows only".into())
+    }
+}
+
+/// Windows: downloads ffmpeg for Clips (progress as `ffmpeg-progress` {done, total}); returns its path.
+#[tauri::command]
+pub async fn clips_install_ffmpeg(app: AppHandle) -> Res<String> {
+    #[cfg(windows)]
+    {
+        let a = app.clone();
+        let p = ffmpeg::install(move |done, total| {
+            let _ = a.emit("ffmpeg-progress", serde_json::json!({ "done": done, "total": total }));
+        })
+        .await
+        .map_err(|e| format!("{e:#}"))?;
+        linfo!("clips: ffmpeg installed to {}", p.display());
+        let _ = app.emit("clips-status", serde_json::json!({})); // the page re-reads the status
+        Ok(p.to_string_lossy().into_owned())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = app;
+        Err("Install ffmpeg with your package manager".into())
+    }
 }
 
 #[tauri::command]
@@ -258,6 +313,10 @@ pub fn clips_status(st: State<ClipsState>) -> StatusInfo {
         recorder_missing: false,
         #[cfg(not(windows))]
         recorder_missing: gsr::binary().is_none(),
+        #[cfg(windows)]
+        voice_installed: voice::installed(&st.settings.read().unwrap().voice_lang),
+        #[cfg(not(windows))]
+        voice_installed: false,
     }
 }
 
@@ -344,7 +403,7 @@ pub async fn clips_trim(app: AppHandle, st: State<'_, ClipsState>, req: library:
 /// Transcodes a clip to browser-friendly H.264 720p (capped at 60 s) plus a JPG thumbnail, in temp files.
 fn transcode_for_feed(ff: &std::path::Path, src: &std::path::Path) -> anyhow::Result<(PathBuf, PathBuf)> {
     let stamp = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
-    let base = std::env::temp_dir().join(format!("justice-feed-{stamp}"));
+    let base = std::env::temp_dir().join(format!("kuubl-feed-{stamp}"));
     let mp4 = base.with_extension("mp4");
     let thumb = base.with_extension("jpg");
     let s = |x: &str| x.to_string();
@@ -362,7 +421,7 @@ fn transcode_for_feed(ff: &std::path::Path, src: &std::path::Path) -> anyhow::Re
     Ok((mp4, thumb))
 }
 
-/// Publishes a clip to the Justice feed: transcodes to 720p, uploads it and a thumbnail, then posts metadata.
+/// Publishes a clip to the Kuubl feed: transcodes to 720p, uploads it and a thumbnail, then posts metadata.
 #[tauri::command]
 pub async fn clips_publish(st: State<'_, ClipsState>, path: String, title: String, description: String, tags: Vec<String>, hashtags: Vec<String>, duration_ms: i64, captured: i64) -> Res<serde_json::Value> {
     let p = inside_clips(&st, &path)?;
@@ -602,23 +661,30 @@ struct Overlay {
 static OVERLAY_GEN: AtomicU64 = AtomicU64::new(0);
 
 /// Linux: a desktop notification (there's no overlay window); the "saving" step is skipped.
+/// The same message inside the game: Kuubl Mod shows it as a toast (the overlay window can't draw
+/// over exclusive fullscreen, and Linux notifications hide behind the game).
+fn game_toast(msg: &Overlay) {
+    crate::social::emit(serde_json::json!({ "type": "clip", "kind": msg.kind, "title": msg.title, "sub": msg.sub }));
+}
+
 #[cfg(not(windows))]
 fn overlay_show(_app: &AppHandle, msg: Overlay, _work: (i32, i32, i32, i32)) {
+    game_toast(&msg);
     if msg.kind == "saving" {
         return;
     }
     // The app's own icon (installed by the package); generic theme icons are missing in many themes.
-    let icon = ["/usr/share/icons/hicolor/128x128/apps/justice-client.png", "/usr/share/icons/hicolor/256x256/apps/justice-client.png"]
+    let icon = ["/usr/share/icons/hicolor/128x128/apps/kuubl-client.png", "/usr/share/icons/hicolor/256x256/apps/kuubl-client.png"]
         .into_iter()
         .find(|p| std::path::Path::new(p).exists())
-        .unwrap_or("justice-client");
+        .unwrap_or("kuubl-client");
     std::thread::spawn(move || {
         use std::sync::atomic::{AtomicU32, Ordering};
         // Replace the previous notification instead of stacking a new one each time.
         static LAST: AtomicU32 = AtomicU32::new(0);
         let mut cmd = std::process::Command::new("notify-send");
-        cmd.args(["-a", "Justice Clips", "-i", icon, "-t", "3500", "-p"])
-            .args(["-h", "string:x-canonical-private-synchronous:justice-clips", "-h", "string:x-dunst-stack-tag:justice-clips"]);
+        cmd.args(["-a", "Kuubl Clips", "-i", icon, "-t", "3500", "-p"])
+            .args(["-h", "string:x-canonical-private-synchronous:kuubl-clips", "-h", "string:x-dunst-stack-tag:kuubl-clips"]);
         let last = LAST.load(Ordering::SeqCst);
         if last != 0 {
             cmd.args(["-r", &last.to_string()]);
@@ -631,7 +697,7 @@ fn overlay_show(_app: &AppHandle, msg: Overlay, _work: (i32, i32, i32, i32)) {
             }
             // Old libnotify without -p/-r: plain notification.
             _ => {
-                let _ = std::process::Command::new("notify-send").args(["-a", "Justice Clips", "-i", icon, "-t", "3500", &msg.title, &msg.sub]).status();
+                let _ = std::process::Command::new("notify-send").args(["-a", "Kuubl Clips", "-i", icon, "-t", "3500", &msg.title, &msg.sub]).status();
             }
         }
     });
@@ -639,6 +705,7 @@ fn overlay_show(_app: &AppHandle, msg: Overlay, _work: (i32, i32, i32, i32)) {
 
 #[cfg(windows)]
 fn overlay_show(app: &AppHandle, msg: Overlay, work: (i32, i32, i32, i32)) {
+    game_toast(&msg);
     let Some(w) = app.get_webview_window("overlay") else { return };
     let Ok(hwnd) = w.hwnd() else { return };
     let hwnd = hwnd.0 as isize;
@@ -661,6 +728,26 @@ fn overlay_show(app: &AppHandle, msg: Overlay, work: (i32, i32, i32, i32)) {
 
 // ---------------- hotkey / overlay window / tray ----------------
 
+/// Kuubl Mod reported a clip-worthy moment ("kill" | "death" | "advancement"): save a clip when
+/// that kind of auto clip is on.
+pub fn auto_clip(reason: &str) -> bool {
+    let Some(app) = crate::events::app() else { return false };
+    let Some(st) = app.try_state::<ClipsState>() else { return false };
+    let s = st.settings.read().unwrap().clone();
+    let on = s.enabled
+        && match reason {
+            "kill" => s.auto_kill,
+            "death" => s.auto_death,
+            "advancement" => s.auto_advancement,
+            _ => false,
+        };
+    if on {
+        linfo!("clips: auto clip ({reason})");
+        trigger_save(&app, true);
+    }
+    on
+}
+
 /// Called by the global-shortcut plugin (registered in lib.rs).
 pub fn on_hotkey(app: &AppHandle) {
     trigger_save(app, true);
@@ -671,8 +758,8 @@ fn register_hotkey(app: &AppHandle, key: &str) -> Res<()> {
     let _ = gs.unregister_all();
     let r = gs.register(key).map_err(|e| {
         l!(
-            "Klávesu {} nejde zaregistrovat (nemáš zapnutý starý Justice Clips?): {}",
-            "Cannot register the {} key (is the old Justice Clips app still running?): {}",
+            "Klávesu {} nejde zaregistrovat (nemáš zapnutý starý Kuubl Clips?): {}",
+            "Cannot register the {} key (is the old Kuubl Clips app still running?): {}",
             key,
             e
         )
@@ -687,7 +774,7 @@ fn register_hotkey(app: &AppHandle, key: &str) -> Res<()> {
 #[cfg(windows)]
 fn create_overlay(app: &AppHandle) -> tauri::Result<()> {
     let w = WebviewWindowBuilder::new(app, "overlay", WebviewUrl::App("overlay.html".into()))
-        .title("Justice Clips overlay")
+        .title("Kuubl Clips overlay")
         .inner_size(380.0, 110.0)
         .decorations(false)
         .transparent(true)
@@ -761,9 +848,9 @@ pub(crate) fn update_tray(app: &AppHandle, state: &str) {
         "error" => tr("Clips: chyba", "Clips: error"),
         _ => tr("Clips se spouští", "Clips starting"),
     };
-    let _ = tray.set_tooltip(Some(format!("Justice Client – {label}")));
+    let _ = tray.set_tooltip(Some(format!("Kuubl Client – {label}")));
     if let Some(items) = app.try_state::<TrayItems>() {
-        let _ = items.open.set_text(tr("Otevřít Justice Client", "Open Justice Client"));
+        let _ = items.open.set_text(tr("Otevřít Kuubl Client", "Open Kuubl Client"));
         let _ = items.folder.set_text(tr("Otevřít složku s klipy", "Open clips folder"));
         let _ = items.quit.set_text(tr("Ukončit", "Quit"));
         if let Some(st) = app.try_state::<ClipsState>() {
@@ -776,7 +863,7 @@ pub(crate) fn update_tray(app: &AppHandle, state: &str) {
 #[cfg(windows)]
 fn build_tray(app: &AppHandle, hotkey: &str) -> tauri::Result<()> {
     let save = MenuItem::with_id(app, "save", save_label(hotkey), true, None::<&str>)?;
-    let open = MenuItem::with_id(app, "open", tr("Otevřít Justice Client", "Open Justice Client"), true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", tr("Otevřít Kuubl Client", "Open Kuubl Client"), true, None::<&str>)?;
     let folder = MenuItem::with_id(app, "folder", tr("Otevřít složku s klipy", "Open clips folder"), true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", tr("Ukončit", "Quit"), true, None::<&str>)?;
     let sep1 = PredefinedMenuItem::separator(app)?;
@@ -785,7 +872,7 @@ fn build_tray(app: &AppHandle, hotkey: &str) -> tauri::Result<()> {
     app.manage(TrayItems { save, open, folder, quit });
     TrayIconBuilder::with_id("main")
         .icon(tray_image("paused"))
-        .tooltip("Justice Client")
+        .tooltip("Kuubl Client")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, e| match e.id.as_ref() {
@@ -811,4 +898,14 @@ fn build_tray(app: &AppHandle, hotkey: &str) -> tauri::Result<()> {
         .build(app)?;
     update_tray(app, "paused");
     Ok(())
+}
+
+/// Clip list for the in-game clips window (bridge), newest first, with thumbnails being made.
+pub fn bridge_list() -> Vec<ClipInfo> {
+    let Some(app) = crate::events::app() else { return Vec::new() };
+    let st = app.state::<ClipsState>();
+    let dir = clips_dir(&st);
+    let l = library::list(&dir);
+    st.thumbs.ensure(&dir, &l);
+    l
 }

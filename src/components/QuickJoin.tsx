@@ -6,7 +6,7 @@ import { InstIcon, Modal } from "./common";
 import CreateInstance from "./CreateInstance";
 import { tr } from "../i18n";
 import { uiPrefs } from "../ui";
-import justiceLogo from "../assets/justicesmp.png";
+import kuublLogo from "../assets/justicesmp.png";
 import ertenixLogo from "../assets/ertenix.png";
 
 export interface QuickServer {
@@ -27,7 +27,7 @@ export interface QuickServer {
 }
 
 export const QUICK_SERVERS: QuickServer[] = [
-  { id: "justicesmp", name: "Justice SMP", address: "justicesmp.online", fallback: "178.95.164.26:30000", logo: justiceLogo, wide: true, logoHeight: 24, version: "1.21.11", accent: "#e11d38" },
+  { id: "justicesmp", name: "Justice SMP", address: "justicesmp.online", fallback: "178.95.164.26:30000", logo: kuublLogo, wide: true, logoHeight: 24, version: "1.21.11", accent: "#e11d38" },
   { id: "ertenix", name: "Ertenix", address: "ertenix.net", logo: ertenixLogo, wide: true, accent: "#38bdf8" },
 ];
 

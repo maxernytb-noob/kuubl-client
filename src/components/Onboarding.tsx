@@ -27,7 +27,7 @@ export default function Onboarding() {
                 <Logo size={64} />
                 <div>
                   <h2 style={{ margin: 0, fontSize: 24 }}>
-                    {tr("Vítej v", "Welcome to")} Justice <span style={{ color: "var(--red)" }}>Client</span>
+                    {tr("Vítej v", "Welcome to")} Kuubl <span style={{ color: "var(--red)" }}>Client</span>
                   </h2>
                   <div className="muted">
                     {tr("Launcher pro natáčení — čistý, rychlý, s maximem FPS.", "A launcher for content creators — clean, fast, with maximum FPS.")}

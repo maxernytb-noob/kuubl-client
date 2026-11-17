@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { KuublWordmark } from "./components/KuublMark";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useStore, type Page } from "./store";
@@ -21,6 +22,7 @@ import Onboarding from "./components/Onboarding";
 import Splash from "./components/Splash";
 import LaunchOverlay from "./components/LaunchOverlay";
 import UpdatePill from "./components/UpdateDialog";
+import DevPill from "./components/DevPill";
 import DownloadsPill from "./components/DownloadsPill";
 import { PartyPrompts } from "./components/Party";
 import MusicPlayer, { MusicNavButton } from "./components/MusicPlayer";
@@ -105,6 +107,7 @@ function TitleBar() {
         </span>
       )}
       <DownloadsPill />
+      <DevPill />
       <UpdatePill />
       <div className="winbtns">
         <button onClick={() => win.minimize()} aria-label={tr("Minimalizovat", "Minimize")}>
@@ -204,7 +207,7 @@ export default function App() {
           <LogoButton />
           {wide && (
             <span className="wordmark">
-              <b>JUSTICE</b>
+              <b><KuublWordmark height={22} /></b>
               <span>CLIENT</span>
             </span>
           )}

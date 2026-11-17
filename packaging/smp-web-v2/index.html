@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Justice SMP</title>
+<meta name="description" content="Justice SMP – Minecraft roleplay a content server. IP: justicesmp.online, Java 1.21.11.">
+<meta property="og:title" content="Justice SMP">
+<meta property="og:description" content="Minecraft roleplay a content server · IP justicesmp.online · Java 1.21.11">
+<meta property="og:image" content="https://justicesmp.online/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="fonts.css">
+<style>
+  :root {
+    --bg:#0b0d0c; --panel:#131714; --panel2:#181d19; --line:rgba(232,184,74,.14); --line2:rgba(232,184,74,.28);
+    --text:#f3eee2; --text2:#c9c3b2; --text3:#8d8878; --gold:#e8b84a; --gold2:#c8952f; --green:#4ade80; --off:#e5484d;
+  }
+  * { box-sizing:border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); color:var(--text); font-family:Inter, system-ui, sans-serif; }
+  body { display:flex; flex-direction:column; min-height:100vh; overflow-x:hidden; }
+  .bg { position:fixed; inset:0; pointer-events:none;
+    background:
+      radial-gradient(800px 420px at 50% -8%, rgba(232,184,74,.18), transparent 70%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 48px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 48px); }
+  main { position:relative; flex:1; width:min(920px, 100%); margin:0 auto; padding:56px 16px 24px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:22px; }
+  .logo { width:96px; height:96px; image-rendering:pixelated; border-radius:20px; border:1px solid var(--line2); box-shadow:0 20px 60px rgba(232,184,74,.18); }
+  .eyebrow { margin:0; font:600 12px/1 Inter, sans-serif; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); }
+  h1 { margin:0; font-family:Cinzel, Georgia, serif; font-weight:900; font-size:clamp(44px, 10vw, 84px); letter-spacing:.02em; line-height:1; }
+  h1 span { color:var(--gold); }
+  .rule { width:160px; height:2px; background:linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .sub { margin:0; color:var(--text2); font-size:17px; max-width:540px; line-height:1.55; }
+  .ip { display:flex; align-items:center; gap:8px; padding:8px 8px 8px 20px; border-radius:14px; background:var(--panel); border:1px solid var(--line2); max-width:100%; }
+  .ip code { font:600 20px/1 ui-monospace, Consolas, monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  button { font:inherit; font-weight:700; border:0; cursor:pointer; border-radius:10px; padding:12px 18px; transition:transform .15s, background .15s; }
+  button:active { transform:scale(.96); }
+  .copy { background:var(--gold); color:#1a1408; }
+  .copy:hover { background:#f2c862; }
+  .discord { display:inline-flex; align-items:center; gap:10px; padding:12px 20px; border-radius:12px; background:#5865f2; color:#fff; font-weight:700; text-decoration:none; transition:transform .15s, background .15s; }
+  .discord:hover { background:#4752c4; }
+  .discord:active { transform:scale(.96); }
+  .discord svg { width:20px; height:20px; }
+  .status { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .chip { display:flex; align-items:center; gap:8px; padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:rgba(232,184,74,.04); color:var(--text2); font-size:14px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:var(--text3); }
+  .dot.on { background:var(--green); box-shadow:0 0 12px var(--green); }
+  .dot.off { background:var(--off); }
+  h2 { margin:34px 0 0; font-family:Cinzel, Georgia, serif; font-weight:700; font-size:24px; letter-spacing:.04em; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px; width:100%; text-align:left; }
+  .card { background:linear-gradient(180deg, var(--panel2), var(--panel)); border:1px solid var(--line); border-radius:14px; padding:18px; }
+  .card b { display:block; margin-bottom:6px; font-size:16px; }
+  .card span { color:var(--text3); font-size:14px; line-height:1.5; }
+  .card span b { display:inline; color:var(--text2); font-size:inherit; margin:0; }
+  .num { font-family:Cinzel, Georgia, serif; font-weight:900; color:var(--gold); margin-right:8px; }
+  footer { position:relative; text-align:center; color:var(--text3); font-size:13px; padding:28px 16px 32px; line-height:1.7; }
+  footer a { color:var(--text2); }
+  .toast { position:fixed; left:50%; bottom:26px; transform:translate(-50%, 20px); opacity:0; background:#1a1f1b; border:1px solid var(--line2); padding:10px 16px; border-radius:12px; transition:.25s; pointer-events:none; }
+  .toast.show { opacity:1; transform:translate(-50%, 0); }
+  @media (max-width:480px) { .ip code { font-size:16px; } .ip { padding-left:14px; } }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<main>
+  <img class="logo" src="logo.svg" alt="">
+  <p class="eyebrow">Minecraft server</p>
+  <h1>Justice <span>SMP</span></h1>
+  <div class="rule"></div>
+  <p class="sub">Roleplay a content server, na kterém se točí videa. Připoj se přes Javu 1.21.11.</p>
+
+  <div class="ip">
+    <code id="ip">justicesmp.online</code>
+    <button class="copy" id="copy" type="button">Kopírovat IP</button>
+  </div>
+
+  <div class="status">
+    <span class="chip"><span class="dot" id="dot"></span><span id="state">Zjišťuji stav…</span></span>
+    <span class="chip">Java 1.21.11</span>
+  </div>
+
+  <a class="discord" href="https://discord.gg/HJ5QWDfdkJ" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.32 4.37a19.8 19.8 0 0 0-4.89-1.52.07.07 0 0 0-.08.04c-.21.37-.44.86-.61 1.25a18.3 18.3 0 0 0-5.49 0 12.6 12.6 0 0 0-.62-1.25.08.08 0 0 0-.08-.04 19.7 19.7 0 0 0-4.88 1.52.07.07 0 0 0-.03.03C.53 9.05-.32 13.58.1 18.06a.08.08 0 0 0 .03.05 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-1.99a.08.08 0 0 0-.04-.1 13.1 13.1 0 0 1-1.87-.9.08.08 0 0 1-.01-.12l.37-.29a.07.07 0 0 1 .08-.01c3.93 1.79 8.18 1.79 12.06 0a.07.07 0 0 1 .08.01l.37.29a.08.08 0 0 1 0 .13 12.3 12.3 0 0 1-1.88.89.08.08 0 0 0-.04.11c.36.7.78 1.36 1.23 1.99a.08.08 0 0 0 .08.03 19.8 19.8 0 0 0 6-3.03.08.08 0 0 0 .03-.06c.5-5.18-.84-9.67-3.55-13.66a.06.06 0 0 0-.03-.03ZM8.02 15.33c-1.18 0-2.16-1.09-2.16-2.42s.96-2.42 2.16-2.42c1.21 0 2.18 1.1 2.16 2.42 0 1.33-.96 2.42-2.16 2.42Zm7.97 0c-1.18 0-2.15-1.09-2.15-2.42s.95-2.42 2.15-2.42c1.21 0 2.18 1.1 2.16 2.42 0 1.33-.95 2.42-2.16 2.42Z"/></svg>
+    Připoj se na Discord
+  </a>
+
+  <h2>Jak se připojit</h2>
+  <div class="grid">
+    <div class="card"><b><span class="num">1</span>Spusť Minecraft</b><span>Java Edition 1.21.11 s libovolným launcherem.</span></div>
+    <div class="card"><b><span class="num">2</span>Přidej server</b><span>Multiplayer → Přidat server → adresa <b>justicesmp.online</b>.</span></div>
+    <div class="card"><b><span class="num">3</span>Připoj se</b><span>Při prvním připojení si zaregistruj heslo přes <b>/register</b>. Novinky a pomoc najdeš na <a href="https://discord.gg/HJ5QWDfdkJ" target="_blank" rel="noopener" style="color:var(--gold)">Discordu</a>.</span></div>
+  </div>
+</main>
+<footer>
+  Justice SMP · <a href="https://discord.gg/HJ5QWDfdkJ" target="_blank" rel="noopener">Discord</a> · projekt studia <a href="https://bythorn.dev/">Bythorn</a><br>
+  Není oficiální produkt Minecraftu. Není schváleno společností Mojang ani Microsoft a není s nimi spojeno.
+</footer>
+<div class="toast" id="toast">IP zkopírována</div>
+<script>
+  const toast = document.getElementById("toast");
+  document.getElementById("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText("justicesmp.online"); } catch {}
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 1600);
+  });
+  // Live status from a public status API.
+  fetch("https://api.mcsrvstat.us/3/justicesmp.online")
+    .then((r) => r.json())
+    .then((s) => {
+      const dot = document.getElementById("dot"), st = document.getElementById("state");
+      if (s.online) {
+        dot.classList.add("on");
+        st.textContent = `Online · ${s.players?.online ?? 0}/${s.players?.max ?? "?"} hráčů`;
+      } else {
+        dot.classList.add("off");
+        st.textContent = "Server je offline";
+      }
+    })
+    .catch(() => (document.getElementById("state").textContent = "Stav nejde zjistit"));
+</script>
+</body>
+</html>

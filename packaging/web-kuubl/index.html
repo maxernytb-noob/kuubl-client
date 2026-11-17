@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kuubl Client</title>
+<meta name="description" content="Kuubl Client je launcher pro Minecraft zdarma: instance a mody, Kuubl Mod ve hře, kamarádi a sdílení světů, hudba a klipy jedním tlačítkem.">
+<meta property="og:title" content="Kuubl Client">
+<meta property="og:description" content="Launcher pro Minecraft zdarma: mody, Kuubl Mod, kamarádi, sdílení světů a klipy.">
+<meta property="og:image" content="img/launcher-hero.webp">
+<meta name="theme-color" content="#131210">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="d-under" viewBox="0 0 320 24"><path d="M4 14C70 7 170 5 316 9" /><path d="M26 20C110 15 200 14 286 17" /></symbol>
+  <symbol id="d-arrow" viewBox="0 0 120 70"><path d="M6 10C30 52 70 62 108 46" /><path d="M92 34L109 46L90 58" /></symbol>
+  <symbol id="d-arrow-r" viewBox="0 0 90 30"><path d="M4 18C30 8 54 8 82 15" /><path d="M70 6L83 15L70 25" /></symbol>
+  <symbol id="d-loop" viewBox="0 0 140 60"><path d="M10 34C14 12 62 4 104 10C140 16 136 46 96 52C58 57 14 54 8 36C5 26 18 18 30 16" /></symbol>
+  <symbol id="i-win" viewBox="0 0 24 24"><path d="M3 5.5 10 4.5v7H3zM12 4.2 21 3v8.5h-9zM3 12.5h7v7L3 18.5zM12 12.5h9V21l-9-1.2z"/></symbol>
+  <symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 21h16"/></symbol>
+</svg>
+
+<a class="skip" href="#main"><span data-cs>Přeskočit na obsah</span><span data-en>Skip to content</span></a>
+
+<header class="nav">
+  <div class="container nav-in">
+    <a class="brand" href="#top" aria-label="Kuubl Client">
+      <img src="img/kuubl-icon-ember.svg" width="32" height="32" alt="">
+      <img src="img/kuubl-wordmark-bone.svg" width="72" height="30" alt="kuubl">
+    </a>
+    <nav class="links" aria-label="Sekce">
+      <a href="#launcher">Launcher</a>
+      <a href="#mod">Kuubl Mod</a>
+      <a href="#friends"><span data-cs>Kamarádi</span><span data-en>Friends</span></a>
+      <a href="#clips"><span data-cs>Klipy</span><span data-en>Clips</span></a>
+      <a href="#faq"><span data-cs>Otázky</span><span data-en>FAQ</span></a>
+    </nav>
+    <button class="lang" id="lang" type="button" aria-label="English">EN</button>
+    <a class="btn btn-primary btn-s" href="#download"><span data-cs>Stáhnout</span><span data-en>Download</span></a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- Hero -->
+  <section class="hero" id="top">
+    <div class="container hero-grid">
+      <div class="hero-head">
+        <h1 data-cs>Minecraft launcher, který hraje s&nbsp;tebou.</h1>
+        <h1 data-en>The Minecraft launcher that plays with you.</h1>
+        <svg class="doodle hero-under" aria-hidden="true"><use href="#d-under"/></svg>
+      </div>
+      <div class="hero-side">
+        <p class="lead" data-cs>Instance, mody, kamarádi, hudba a klipy v jednom. Zdarma a bez reklam.</p>
+        <p class="lead" data-en>Instances, mods, friends, music and clips in one place. Free, no ads.</p>
+        <div class="actions">
+          <a class="btn btn-primary" id="dl-main" href="KuublClient-setup.exe" download>
+            <svg class="ico" aria-hidden="true"><use href="#i-win"/></svg>
+            <span data-cs>Stáhnout pro Windows</span><span data-en>Download for Windows</span>
+          </a>
+          <a class="link" id="dl-alt" href="#download"><span data-cs>Linux a další verze</span><span data-en>Linux and other builds</span></a>
+        </div>
+        <p class="meta"><span data-cs>Windows 10 a 11, Linux.</span><span data-en>Windows 10 and 11, Linux.</span> <span class="ver" data-ver></span></p>
+      </div>
+    </div>
+    <div class="container">
+      <figure class="hero-shot">
+        <img src="img/launcher-hero.webp" width="2124" height="1211" alt="Kuubl Client: domovská obrazovka s nejnovějšími verzemi Minecraftu a tlačítkem Hrát" fetchpriority="high">
+        <figcaption class="note hero-note">
+          <svg class="doodle note-arrow" aria-hidden="true"><use href="#d-arrow"/></svg>
+          <span data-cs>Vybereš verzi, klikneš Hrát. Zbytek nachystá launcher.</span>
+          <span data-en>Pick a version, hit Play. The launcher does the rest.</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Launcher -->
+  <section class="sec" id="launcher">
+    <div class="container">
+      <div class="sec-head">
+        <h2 data-cs>Každá hra ve vlastní instanci.</h2>
+        <h2 data-en>Every game in its own instance.</h2>
+        <p class="sub" data-cs>Vanilla, Fabric, Quilt, Forge i NeoForge vedle sebe. Karta ukáže svět nebo server, kde jsi hrál naposledy.</p>
+        <p class="sub" data-en>Vanilla, Fabric, Quilt, Forge and NeoForge side by side. Each card shows the world or server you last played on.</p>
+      </div>
+      <div class="switcher">
+        <div class="tabs" role="tablist" aria-label="Launcher">
+          <button class="tab" role="tab" type="button" aria-selected="true" aria-controls="lview" data-i="0">
+            <b data-cs>Domů</b><b data-en>Home</b>
+            <span data-cs>Nejnovější verze s oficiálními obrázky, hraješ jedním klikem.</span>
+            <span data-en>The newest versions with their official art, play in one click.</span>
+          </button>
+          <button class="tab" role="tab" type="button" aria-selected="false" aria-controls="lview" data-i="1">
+            <b data-cs>Instance</b><b data-en>Instances</b>
+            <span data-cs>Karty s obrázkem posledního světa a filtry podle loaderu.</span>
+            <span data-en>Cards with your last world and loader filters.</span>
+          </button>
+          <button class="tab" role="tab" type="button" aria-selected="false" aria-controls="lview" data-i="2">
+            <b data-cs>Mody</b><b data-en>Mods</b>
+            <span data-cs>Mody, modpacky, shadery a resource packy z Modrinthu a CurseForge.</span>
+            <span data-en>Mods, modpacks, shaders and resource packs from Modrinth and CurseForge.</span>
+          </button>
+          <button class="tab" role="tab" type="button" aria-selected="false" aria-controls="lview" data-i="3">
+            <b data-cs>Vzhled</b><b data-en>Appearance</b>
+            <span data-cs>5 motivů, vlastní barva, pozadí a pořadí panelu.</span>
+            <span data-en>5 themes, your own colour, a background and sidebar order.</span>
+          </button>
+        </div>
+        <div class="frame view" id="lview" role="tabpanel" aria-live="polite">
+          <img class="on" src="img/launcher-home.webp" width="2124" height="1211" alt="Domovská obrazovka launcheru" loading="lazy">
+          <img src="img/launcher-instances.webp" width="2124" height="1211" alt="Seznam instancí" loading="lazy">
+          <img src="img/launcher-mods.webp" width="2124" height="1211" alt="Prohlížeč modů" loading="lazy">
+          <img src="img/launcher-settings.webp" width="2124" height="1211" alt="Nastavení vzhledu" loading="lazy">
+        </div>
+      </div>
+      <dl class="facts">
+        <div><dt data-cs>Modrinth a CurseForge v jednom</dt><dt data-en>Modrinth and CurseForge in one</dt>
+          <dd data-cs>Hledání a závislosti, které se stáhnou samy.</dd><dd data-en>Search, and dependencies that download themselves.</dd></div>
+        <div><dt data-cs>Hotové balíčky</dt><dt data-en>Ready-made packs</dt>
+          <dd data-cs>Cinematic, SMP, PvP a PvP 1.8.9, se Simple Voice Chatem.</dd><dd data-en>Cinematic, SMP, PvP and PvP 1.8.9, with Simple Voice Chat.</dd></div>
+        <div><dt data-cs>Chytré nastavení</dt><dt data-en>Smart setup</dt>
+          <dd data-cs>RAM a Java se nastaví samy, pády launcher rozebere.</dd><dd data-en>RAM and Java set themselves, crashes get analysed.</dd></div>
+        <div><dt data-cs>Režim natáčení</dt><dt data-en>Recording mode</dt>
+          <dd data-cs>Flashback, čisté nastavení pro záběry a OBS, které začne nahrávat samo.</dd><dd data-en>Flashback, clean settings for footage and OBS that starts by itself.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Mods -->
+  <section class="sec" id="mods">
+    <div class="container mods">
+      <div class="sec-head">
+        <h2 data-cs>Dobré mody jsou tam od začátku.</h2>
+        <h2 data-en>Good mods are there from the start.</h2>
+        <p class="sub" data-cs>Nová instance dostane balíček optimalizací a Kuubl Mod. Co nechceš, vypneš. Vlastní mody přetáhneš do okna.</p>
+        <p class="sub" data-en>A new instance gets the optimization pack and Kuubl Mod. Turn off what you don’t want. Drag in your own mods.</p>
+      </div>
+      <ul class="modwall" aria-label="Mody v balíčku">
+        <li class="hi">Sodium</li><li>Lithium</li><li>Entity Culling</li><li>ImmediatelyFast</li><li class="hi">Iris Shaders</li><li>FerriteCore</li><li>ModernFix</li><li>Dynamic FPS</li><li class="hi">Flashback</li><li>Distant Horizons</li><li>Zoomify</li><li>Simple Voice Chat</li><li>Xaero’s Minimap</li><li>AppleSkin</li><li>Continuity</li><li>Jade</li><li>Mod Menu</li><li class="hi">Kuubl Mod</li>
+      </ul>
+      <dl class="facts facts-3">
+        <div><dt data-cs>Přenes si modpack</dt><dt data-en>Bring your modpack</dt>
+          <dd data-cs>Import <code>.mrpack</code>, CurseForge zip i <code>.dawnpack</code>.</dd><dd data-en>Import <code>.mrpack</code>, CurseForge zip and <code>.dawnpack</code>.</dd></div>
+        <div><dt data-cs>Oprava jedním klikem</dt><dt data-en>One-click repair</dt>
+          <dd data-cs>Duplicity, chybějící závislosti a konflikty verzí, s náhledem a vrácením.</dd><dd data-en>Duplicates, missing dependencies and version conflicts, with preview and undo.</dd></div>
+        <div><dt data-cs>Stahování na pozadí</dt><dt data-en>Background downloads</dt>
+          <dd data-cs>Fronta s pauzou a zrušením, launcher mezitím používáš dál.</dd><dd data-en>A queue with pause and cancel while you keep using the launcher.</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <!-- Kuubl Mod -->
+  <section class="sec band" id="mod">
+    <div class="container modsec">
+      <div class="modsec-text">
+        <h2 data-cs>Vlastní menu přímo ve hře.</h2>
+        <h2 data-en>Your own menu, right in the game.</h2>
+        <p class="sub" data-cs>Zmáčkni <kbd>Pravý Shift</kbd> a zapni, co potřebuješ. HUD rozložíš myší, uložíš jako preset a obarvíš motivem.</p>
+        <p class="sub" data-en>Press <kbd>Right Shift</kbd> and switch on what you need. Drag the HUD around, save it as a preset and colour it with a theme.</p>
+        <ul class="modules" aria-label="Moduly">
+          <li>FPS</li><li>CPS</li><li>Ping</li><li>Keystrokes</li>
+          <li><span data-cs>Souřadnice</span><span data-en>Coordinates</span></li>
+          <li><span data-cs>Brnění</span><span data-en>Armor</span></li>
+          <li><span data-cs>Efekty</span><span data-en>Effects</span></li>
+          <li>Zoom</li><li>Freelook</li>
+          <li><span data-cs>Zaměřovač</span><span data-en>Crosshair</span></li>
+          <li><span data-cs>Čisté HUD</span><span data-en>Clean HUD</span></li>
+          <li><span data-cs>Čas a počasí</span><span data-en>Time and weather</span></li>
+          <li><span data-cs>Vanilla mód</span><span data-en>Vanilla mode</span></li>
+          <li>Now Playing</li>
+        </ul>
+        <p class="small" data-cs>Minecraft 1.21.10, 1.21.11 a 26.1 až 26.3 na Fabricu, NeoForge i Forge. Launcher ho přidá sám a jedním přepínačem ho vypneš.</p>
+        <p class="small" data-en>Minecraft 1.21.10, 1.21.11 and 26.1 to 26.3 on Fabric, NeoForge and Forge. The launcher adds it for you, one switch turns it off.</p>
+      </div>
+      <div class="modsec-shots">
+        <figure class="frame shot-main"><img src="img/mod-menu.webp" width="1280" height="720" alt="Menu modulů Kuubl Modu ve hře" loading="lazy"></figure>
+        <figure class="shot-pair">
+          <div class="frame"><img src="img/mod-hud.webp" width="1280" height="720" alt="Nastavení modulu" loading="lazy"></div>
+          <figcaption class="note">
+            <svg class="doodle note-arrow-r" aria-hidden="true"><use href="#d-arrow-r"/></svg>
+            <span data-cs>Každý modul má vlastní nastavení.</span><span data-en>Every module has its own settings.</span>
+          </figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Friends -->
+  <section class="sec" id="friends">
+    <div class="container split">
+      <div class="frame"><img src="img/launcher-friends.webp" width="2124" height="1211" alt="Kamarádi a chat v launcheru" loading="lazy"></div>
+      <div class="split-text">
+        <h2 data-cs>Hraj s kámoši bez serveru.</h2>
+        <h2 data-en>Play with friends, no server needed.</h2>
+        <p class="sub" data-cs>Přidej si kamarády podle jména, piš si s nimi a pozvi je do svého světa jedním klikem.</p>
+        <p class="sub" data-en>Add friends by name, chat with them and invite them into your world with one click.</p>
+        <ol class="relay" aria-label="Sdílení světa">
+          <li><b data-cs>ty</b><b data-en>you</b><span data-cs>otevřeš svět</span><span data-en>open your world</span></li>
+          <li aria-hidden="true" class="relay-arrow"><svg class="doodle"><use href="#d-arrow-r"/></svg></li>
+          <li><b>Kuubl relay</b><span data-cs>šifrované spojení</span><span data-en>encrypted link</span></li>
+          <li aria-hidden="true" class="relay-arrow"><svg class="doodle"><use href="#d-arrow-r"/></svg></li>
+          <li><b data-cs>kamarád</b><b data-en>friend</b><span data-cs>klikne Připojit</span><span data-en>clicks Join</span></li>
+        </ol>
+        <ul class="ticks">
+          <li data-cs>Chat v launcheru, v menu i ve hře na klávese <kbd>U</kbd>.</li>
+          <li data-en>Chat in the launcher, on the title screen and in game on <kbd>U</kbd>.</li>
+          <li data-cs>Žádné porty ani hosting, svět běží u tebe.</li>
+          <li data-en>No ports, no hosting, the world runs on your PC.</li>
+          <li data-cs>Klipy a modpacky pošleš přímo do chatu.</li>
+          <li data-en>Send clips and modpacks straight into the chat.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Clips -->
+  <section class="sec" id="clips">
+    <div class="container clips">
+      <div class="clips-key">
+        <span class="keycap" aria-hidden="true">F8</span>
+        <svg class="doodle key-loop" aria-hidden="true"><use href="#d-loop"/></svg>
+      </div>
+      <div class="clips-text">
+        <h2 data-cs>Ten moment už neuteče.</h2>
+        <h2 data-en>Never miss that moment again.</h2>
+        <p class="sub" data-cs>Launcher drží v paměti posledních až 5 minut hry. Stane se něco epického, zmáčkneš <kbd>F8</kbd> a klip je na disku.</p>
+        <p class="sub" data-en>The launcher keeps up to the last 5 minutes of play in memory. Something epic happens, you press <kbd>F8</kbd> and the clip is on disk.</p>
+        <ul class="ticks">
+          <li data-cs>Kóduje grafická karta: NVENC na Windows, gpu-screen-recorder na Linuxu.</li>
+          <li data-en>The graphics card encodes: NVENC on Windows, gpu-screen-recorder on Linux.</li>
+          <li data-cs>Hra a mikrofon na samostatných stopách.</li>
+          <li data-en>Game and mic on separate tracks.</li>
+        </ul>
+      </div>
+      <div class="frame clips-shot"><img src="img/launcher-clips.webp" width="2124" height="1211" alt="Knihovna klipů v launcheru" loading="lazy"></div>
+    </div>
+  </section>
+
+  <!-- Extras -->
+  <section class="sec" id="extras">
+    <div class="container extras">
+      <figure class="extras-pic frame"><img src="img/web-capes.webp" width="800" height="546" alt="Výběr plášťů" loading="lazy"></figure>
+      <div class="extras-list">
+        <h2 data-cs>A pár věcí navíc.</h2>
+        <h2 data-en>And a few extras.</h2>
+        <dl class="stack">
+          <div><dt data-cs>28 plášťů a knihovna skinů</dt><dt data-en>28 capes and a skin library</dt>
+            <dd data-cs>Plášť uvidí ostatní hráči Kuublu kolem tebe. Skiny přepínáš jedním klikem, i na offline účtu.</dd>
+            <dd data-en>Other Kuubl players around you see your cape. Switch skins in one click, offline accounts too.</dd></div>
+          <div><dt data-cs>Hudba bez odcházení ze hry</dt><dt data-en>Music without leaving the game</dt>
+            <dd data-cs>Přehrávač ukáže, co hraje ve Spotify nebo prohlížeči. Ve hře <kbd>End</kbd> pauza, <kbd>Page Down</kbd> a <kbd>Page Up</kbd> přeskočí.</dd>
+            <dd data-en>The player shows what’s on in Spotify or a browser. In game <kbd>End</kbd> pauses, <kbd>Page Down</kbd> and <kbd>Page Up</kbd> skip.</dd></div>
+          <div><dt data-cs>Samo se aktualizuje</dt><dt data-en>Updates itself</dt>
+            <dd data-cs>Podepsané aktualizace jedním klikem, zálohy a snapshoty světů.</dd>
+            <dd data-en>Signed one-click updates, backups and world snapshots.</dd></div>
+          <div><dt data-cs>8 tajemství</dt><dt data-en>8 secrets</dt>
+            <dd data-cs>V launcheru je schovaných osm easter eggů. Hodně štěstí.</dd>
+            <dd data-en>Eight easter eggs are hidden in the launcher. Good luck.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section class="sec" id="download">
+    <div class="container">
+      <div class="dl-head">
+        <img class="dl-icon" src="img/kuubl-icon-ember.svg" width="72" height="72" alt="">
+        <div>
+          <h2 data-cs>Stáhni si Kuubl Client.</h2>
+          <h2 data-en>Get Kuubl Client.</h2>
+          <p class="sub" data-cs>Zdarma. Aktualizace pak chodí samy přímo v launcheru. <span class="ver" data-ver></span></p>
+          <p class="sub" data-en>Free. Updates then arrive by themselves inside the launcher. <span class="ver" data-ver></span></p>
+        </div>
+      </div>
+      <ul class="dl-list">
+        <li class="dl-row" id="row-win">
+          <div class="dl-name"><b>Windows 10 / 11</b><span data-cs>Instalačka, 64 bit</span><span data-en>Installer, 64-bit</span></div>
+          <div class="dl-how"></div>
+          <a class="btn btn-primary" href="KuublClient-setup.exe" download><svg class="ico" aria-hidden="true"><use href="#i-dl"/></svg>KuublClient-setup.exe</a>
+        </li>
+        <li class="dl-row" id="row-deb">
+          <div class="dl-name"><b>Linux .deb</b><span>Ubuntu, Linux Mint, Debian, Pop!_OS</span></div>
+          <div class="dl-how"><code>sudo apt install ./kuubl-client.deb</code></div>
+          <a class="btn btn-ghost" href="kuubl-client.deb" download><svg class="ico" aria-hidden="true"><use href="#i-dl"/></svg>kuubl-client.deb</a>
+        </li>
+        <li class="dl-row">
+          <div class="dl-name"><b>Arch Linux</b><span>Arch, CachyOS, EndeavourOS, Manjaro</span></div>
+          <div class="dl-how"><code>sudo pacman -U kuubl-client.pkg.tar.zst</code></div>
+          <a class="btn btn-ghost" href="kuubl-client.pkg.tar.zst" download><svg class="ico" aria-hidden="true"><use href="#i-dl"/></svg>kuubl-client.pkg.tar.zst</a>
+        </li>
+        <li class="dl-row">
+          <div class="dl-name"><b>AppImage</b><span data-cs>Jakékoliv distro, nic se neinstaluje</span><span data-en>Any distro, nothing to install</span></div>
+          <div class="dl-how"><code>chmod +x KuublClient.AppImage</code></div>
+          <a class="btn btn-ghost" href="KuublClient.AppImage" download><svg class="ico" aria-hidden="true"><use href="#i-dl"/></svg>KuublClient.AppImage</a>
+        </li>
+      </ul>
+      <details class="help">
+        <summary><span data-cs>Windows ukáže modré varování? Tady je proč a co s tím.</span><span data-en>Windows shows a blue warning? Here’s why and what to do.</span></summary>
+        <div class="help-body">
+          <p data-cs>Kuubl Client zatím nemá placený certifikát pro podpis kódu, takže ho SmartScreen nezná. Každá aktualizace je ale podepsaná naším klíčem a launcher jinou verzi nepřijme.</p>
+          <p data-en>Kuubl Client doesn’t have a paid code-signing certificate yet, so SmartScreen doesn’t know it. Every update is signed with our key though, and the launcher rejects anything else.</p>
+          <ol>
+            <li data-cs>Po spuštění instalačky klikni na <b>Další informace</b>.</li>
+            <li data-en>After starting the installer, click <b>More info</b>.</li>
+            <li data-cs>Objeví se tlačítko <b>Přesto spustit</b>, klikni na něj.</li>
+            <li data-en>A <b>Run anyway</b> button appears, click it.</li>
+            <li data-cs>Blokuje stažení prohlížeč? Otevři stahování (<kbd>Ctrl</kbd>+<kbd>J</kbd>) a u souboru zvol <b>Ponechat</b>.</li>
+            <li data-en>Browser blocks the download? Open downloads (<kbd>Ctrl</kbd>+<kbd>J</kbd>) and choose <b>Keep</b> on the file.</li>
+          </ol>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="sec" id="faq">
+    <div class="container faq">
+      <h2 data-cs>Časté otázky.</h2>
+      <h2 data-en>Common questions.</h2>
+      <div class="faq-list">
+        <details>
+          <summary><span data-cs>Je Kuubl Client zdarma?</span><span data-en>Is Kuubl Client free?</span></summary>
+          <p data-cs>Ano. Launcher i Kuubl Mod jsou zdarma a bez reklam.</p>
+          <p data-en>Yes. The launcher and Kuubl Mod are free and ad-free.</p>
+        </details>
+        <details>
+          <summary><span data-cs>Potřebuju koupený Minecraft?</span><span data-en>Do I need to own Minecraft?</span></summary>
+          <p data-cs>Na online servery ano: přihlásíš se účtem Microsoft přímo u Microsoftu, launcher tvoje heslo nikdy nevidí. Bez koupené hry si přidáš offline účet pro singleplayer, LAN, sdílené světy a servery bez ověření. Kamarádi a chat fungují i s ním.</p>
+          <p data-en>For online servers, yes: you sign in with Microsoft directly, the launcher never sees your password. Without owning the game you can add an offline account for singleplayer, LAN, shared worlds and servers without authentication. Friends and chat work with it too.</p>
+        </details>
+        <details>
+          <summary><span data-cs>Je to bezpečné?</span><span data-en>Is it safe?</span></summary>
+          <p data-cs>Každá aktualizace je podepsaná naším klíčem a launcher jinou verzi nepřijme. Proč Windows ukáže varování, najdeš <a href="#download">u stažení</a>.</p>
+          <p data-en>Every update is signed with our key and the launcher rejects anything else. Why Windows shows a warning is explained <a href="#download">under Download</a>.</p>
+        </details>
+        <details>
+          <summary><span data-cs>Můžu s ním hrát na jakémkoliv serveru?</span><span data-en>Can I play on any server with it?</span></summary>
+          <p data-cs>Ano. Kuubl Mod obsahuje jen HUD a vizuální věci, žádné cheaty. Pravidla konkrétního serveru ale dodržuj.</p>
+          <p data-en>Yes. Kuubl Mod only has HUD and visual features, no cheats. Still follow the rules of the server you play on.</p>
+        </details>
+        <details>
+          <summary><span data-cs>Jak funguje sdílení světa? Musím otevírat porty?</span><span data-en>How does world sharing work? Do I need to open ports?</span></summary>
+          <p data-cs>Nemusíš. Svět běží u tebe, Kuubl Mod ho otevře a launcher ho přes naši relay přepošle pozvaným kamarádům. Stačí, aby všichni měli Kuubl Client.</p>
+          <p data-en>No. The world runs on your PC, Kuubl Mod opens it and the launcher forwards it through our relay to invited friends. Everyone just needs Kuubl Client.</p>
+        </details>
+        <details>
+          <summary><span data-cs>Funguje to na Linuxu nebo Macu?</span><span data-en>Does it work on Linux or Mac?</span></summary>
+          <p data-cs>Na Linuxu ano: balíček .deb, balíček pro Arch a AppImage pro jakékoliv distro. Mac zatím podporovaný není.</p>
+          <p data-en>On Linux, yes: a .deb, an Arch package and an AppImage for any distro. Mac isn’t supported yet.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="container foot-in">
+    <div class="foot-brand">
+      <img src="img/kuubl-wordmark-bone.svg" width="144" height="60" alt="kuubl">
+      <p data-cs>Launcher pro Minecraft zdarma, na hraní i natáčení.</p>
+      <p data-en>A free Minecraft launcher for playing and recording.</p>
+    </div>
+    <nav class="foot-links" aria-label="Patička">
+      <a href="#launcher">Launcher</a>
+      <a href="#mod">Kuubl Mod</a>
+      <a href="#download"><span data-cs>Stáhnout</span><span data-en>Download</span></a>
+      <a href="#faq"><span data-cs>Otázky</span><span data-en>FAQ</span></a>
+      <a href="terms.html"><span data-cs>Podmínky použití</span><span data-en>Terms</span></a>
+      <a href="privacy.html"><span data-cs>Ochrana soukromí</span><span data-en>Privacy</span></a>
+    </nav>
+    <div class="legal">
+      <p>NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.</p>
+      <p data-cs>Není oficiální produkt Minecraftu. Není schváleno ani spojeno s Mojang nebo Microsoftem.</p>
+      <p>© 2026 Kuubl Client</p>
+    </div>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

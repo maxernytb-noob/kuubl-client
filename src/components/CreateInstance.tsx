@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { api, type GameVersion, type Loader, type LoaderVersion } from "../api";
 import { Icon, INSTANCE_ICONS } from "../icons";
-import { errText, LOADER_LABEL, useStore } from "../store";
+import { errText, KUUBL_MOD_VERSIONS, LOADER_LABEL, useStore } from "../store";
 import { Modal, Switch, InstIcon } from "./common";
 import { tr } from "../i18n";
 import IconPicker from "./IconPicker";
@@ -53,7 +53,17 @@ export default function CreateInstance({ onClose }: { onClose: () => void }) {
       .catch(() => setLoaderErr(tr("Nepodařilo se načíst verze loaderu", "Couldn't load loader versions")));
   }, [loader, version]);
 
-  const shown = useMemo(() => versions.filter((v) => (snapshots ? true : v.kind === "release")), [versions, snapshots]);
+  // The modern packs (Sodium, Iris…) are only put together for versions Kuubl Client supports;
+  // on other versions half of them don't exist or clash.
+  const kuublOnly = packs.some((p) => p !== "pvp18");
+  const shown = useMemo(
+    () => versions.filter((v) => (kuublOnly ? KUUBL_MOD_VERSIONS.test(v.id) : snapshots || v.kind === "release")),
+    [versions, snapshots, kuublOnly],
+  );
+
+  useEffect(() => {
+    if (kuublOnly && shown.length && !shown.some((v) => v.id === version)) setVersion(shown[0].id);
+  }, [kuublOnly, shown, version]);
   const needsModLoader = packs.length > 0 || optimize;
   const modLoaderOk = !needsModLoader || loader !== "vanilla";
 
@@ -148,7 +158,7 @@ export default function CreateInstance({ onClose }: { onClose: () => void }) {
         <div className="col">
           <div className="card pad col">
             <b>{tr("Ze souboru", "From a file")}</b>
-            <span className="muted small">{tr("Modrinth .mrpack, CurseForge .zip, Dawn Client .dawnpack nebo export z Justice Clientu.", "Modrinth .mrpack, CurseForge .zip, Dawn Client .dawnpack or a Justice Client export.")}</span>
+            <span className="muted small">{tr("Modrinth .mrpack, CurseForge .zip, Dawn Client .dawnpack nebo export z Kuubl Clientu.", "Modrinth .mrpack, CurseForge .zip, Dawn Client .dawnpack or a Kuubl Client export.")}</span>
             <div>
               <button className="btn" onClick={importFile} disabled={busy}>
                 {busy ? <span className="spinner" /> : <Icon name="folder" size={16} />} {tr("Vybrat soubor", "Choose file")}
@@ -157,8 +167,8 @@ export default function CreateInstance({ onClose }: { onClose: () => void }) {
           </div>
           <div className="card pad col">
             <b>{tr("Ze sdíleného kódu", "From a share code")}</b>
-            <span className="muted small">{tr("Kamarád ti poslal kód začínající JUSTICE1: — vlož ho sem a dostaneš stejné mody.", "A friend sent you a code starting with JUSTICE1: — paste it here to get the same mods.")}</span>
-            <textarea className="input" rows={3} placeholder="JUSTICE1:..." value={code} onChange={(e) => setCode(e.target.value)} />
+            <span className="muted small">{tr("Kamarád ti poslal kód začínající KUUBL1: — vlož ho sem a dostaneš stejné mody.", "A friend sent you a code starting with KUUBL1: — paste it here to get the same mods.")}</span>
+            <textarea className="input" rows={3} placeholder="KUUBL1:..." value={code} onChange={(e) => setCode(e.target.value)} />
             <div>
               <button className="btn primary" onClick={importCode} disabled={busy || !code.trim()}>
                 {busy ? <span className="spinner" /> : <Icon name="download" size={16} />} {tr("Importovat", "Import")}
@@ -278,6 +288,9 @@ export default function CreateInstance({ onClose }: { onClose: () => void }) {
                   </option>
                 ))}
               </Select>
+              {kuublOnly && (
+                <span className="hint">{tr("Balíčky jsou jen pro verze, které podporuje Kuubl Client.", "Packs are only for versions Kuubl Client supports.")}</span>
+              )}
             </div>
             <div className="field">
               <label>{tr("Verze loaderu", "Loader version")}</label>

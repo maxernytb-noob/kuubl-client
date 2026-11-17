@@ -15,7 +15,7 @@ pub const DL_CANCEL: u8 = 2;
 
 pub static CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()
-        .user_agent("JusticeClient/0.1.0 (github.com/justice-client; youtube.com/@maxernMC)")
+        .user_agent("KuublClient/0.1.0 (github.com/kuubl-client; youtube.com/@maxernMC)")
         .connect_timeout(Duration::from_secs(15))
         .timeout(Duration::from_secs(300))
         .build()

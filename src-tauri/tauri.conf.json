@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Justice Client",
-  "version": "0.8.1",
-  "identifier": "cz.justice.client",
+  "productName": "Kuubl Client",
+  "version": "1.0.0",
+  "identifier": "cz.kuubl.client",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Justice Client",
+        "title": "Kuubl Client",
         "width": 1180,
         "height": 720,
         "minWidth": 480,
@@ -46,13 +46,20 @@
     ],
     "windows": {
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "installerHooks": "./nsis-hooks.nsh"
       }
     },
     "category": "Game",
     "shortDescription": "Minecraft launcher for recording and PvP",
     "linux": {
       "deb": {
+        "conflicts": [
+          "justice-client"
+        ],
+        "replaces": [
+          "justice-client"
+        ],
         "depends": [
           "libgl1",
           "libx11-6",
@@ -68,15 +75,15 @@
     },
     "createUpdaterArtifacts": true,
     "resources": [
-      "resources/justice-mod-*.jar"
+      "resources/kuubl-mod-*.jar"
     ]
   },
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUyQTdBQTRDQTBGRThBOUIKUldTYml2NmdUS3FuVWlJWThURHVaY2pGNnZ6b0FseUhmSnBFRHgxajVTZUsvZVU2cnZjN2M5eUUK",
       "endpoints": [
-        "https://justiceclient.online/latest.json",
-        "https://ertenix.net/justice/latest.json"
+        "https://ertenix.net/kuubl/latest.json",
+        "https://justiceclient.online/latest.json"
       ],
       "windows": {
         "installMode": "passive"

@@ -3,7 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
-import { clips as clipsApi, type Clip, type ClipsDevices, type ClipsSettings, type ClipsStatus, type Monitor } from "../api";
+import { clips as clipsApi, social, type SocialUser, type Clip, type ClipsDevices, type ClipsSettings, type ClipsStatus, type Monitor } from "../api";
 import { Icon } from "../icons";
 import { errText, fmtAgo, fmtSize, useStore } from "../store";
 import { Empty, Modal, SkeletonList, Switch } from "../components/common";
@@ -63,6 +63,7 @@ export default function ClipsPage() {
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [view, setView] = useState<"mine" | "feed">("mine");
   const [publishing, setPublishing] = useState<Clip | null>(null);
+  const [sharing, setSharing] = useState<Clip | null>(null);
 
   const reload = useCallback(() => clipsApi.list().then(setList).catch((e) => toast(errText(e), "error")), [toast]);
   const refreshStatus = useCallback(() => clipsApi.status().then(setStatus).catch(() => {}), []);
@@ -87,6 +88,29 @@ export default function ClipsPage() {
       un.forEach((p) => p.then((f) => f()));
     };
   }, [reload, refreshStatus, toast]);
+
+  // Opened from the game ("Play" in the in-game clips window): pick that clip once the list is here.
+  useEffect(() => {
+    const take = () => {
+      const w = window as unknown as { __jcOpenClip?: { path?: string; id?: string } };
+      const want = w.__jcOpenClip;
+      if (!want) return;
+      if (want.id) {
+        setView("feed");
+        w.__jcOpenClip = undefined;
+        return;
+      }
+      const c = (list ?? []).find((x) => x.path === want.path);
+      if (c) {
+        setView("mine");
+        setEditing(c);
+        w.__jcOpenClip = undefined;
+      }
+    };
+    take();
+    window.addEventListener("jc-open-clip", take);
+    return () => window.removeEventListener("jc-open-clip", take);
+  }, [list]);
 
   const games = useMemo(() => {
     const m = new Map<string, number>();
@@ -180,10 +204,11 @@ export default function ClipsPage() {
                   "ffmpeg is missing (clip thumbnails and trimming). Install it: “sudo pacman -S ffmpeg”.",
                 )
               : tr(
-                  "Chybí ffmpeg. Nainstaluj ho příkazem „winget install Gyan.FFmpeg“ v terminálu, nebo vyber ffmpeg.exe v nastavení Clips.",
-                  "ffmpeg is missing. Install it with “winget install Gyan.FFmpeg” in a terminal, or pick ffmpeg.exe in the Clips settings.",
+                  "Chybí ffmpeg (nahrávání, náhledy a střih klipů). Launcher ho stáhne sám, nebo vyber ffmpeg.exe v nastavení Clips.",
+                  "ffmpeg is missing (recording, thumbnails and trimming). The launcher can download it, or pick ffmpeg.exe in the Clips settings.",
                 )}
           </span>
+          {!IS_LINUX && <FfmpegDownload />}
         </div>
       )}
       {status?.hotkeyError && (
@@ -230,7 +255,7 @@ export default function ClipsPage() {
       ) : (
         <div className="clip-grid">
           {shown.map((c, i) => (
-            <ClipCard key={c.path} clip={c} thumb={thumbs[c.path] ?? c.thumb} fresh={fresh === c.path} delay={Math.min(i, 12) * 25} onOpen={() => setEditing(c)} onDelete={() => remove(c)} onPublish={() => setPublishing(c)} />
+            <ClipCard key={c.path} clip={c} thumb={thumbs[c.path] ?? c.thumb} fresh={fresh === c.path} delay={Math.min(i, 12) * 25} onOpen={() => setEditing(c)} onDelete={() => remove(c)} onPublish={() => setPublishing(c)} onShare={() => setSharing(c)} />
           ))}
         </div>
       )}
@@ -251,6 +276,7 @@ export default function ClipsPage() {
         />
       )}
       {/* After the editor so it stacks on top of it when opened from the editor. */}
+      {sharing && <ShareClip clip={sharing} onClose={() => setSharing(null)} />}
       {publishing && <PublishClip clip={publishing} onClose={() => setPublishing(null)} onPublished={() => { setView("feed"); setEditing(null); }} />}
       {showSettings && settings && (
         <ClipsSettingsModal settings={settings} status={status} save={saveSettings} onClose={() => setShowSettings(false)} />
@@ -259,7 +285,7 @@ export default function ClipsPage() {
   );
 }
 
-function ClipCard({ clip, thumb, fresh, delay, onOpen, onDelete, onPublish }: { clip: Clip; thumb: string | null; fresh: boolean; delay: number; onOpen: () => void; onDelete: () => void; onPublish: () => void }) {
+function ClipCard({ clip, thumb, fresh, delay, onOpen, onDelete, onPublish, onShare }: { clip: Clip; thumb: string | null; fresh: boolean; delay: number; onOpen: () => void; onDelete: () => void; onPublish: () => void; onShare: () => void }) {
   return (
     <div className={`clip-card ${fresh ? "fresh" : ""}`} style={{ animationDelay: `${delay}ms` }} onClick={onOpen}>
       <div className="cthumb">
@@ -279,6 +305,9 @@ function ClipCard({ clip, thumb, fresh, delay, onOpen, onDelete, onPublish }: { 
         </div>
       </div>
       <div className="actions" onClick={(e) => e.stopPropagation()}>
+        <button className="btn ghost sm icon" title={tr("Poslat kamarádovi / zkopírovat odkaz", "Send to a friend / copy a link")} onClick={onShare}>
+          <Icon name="users" size={15} />
+        </button>
         <button className="btn ghost sm icon" title={tr("Publikovat do feedu", "Publish to the feed")} onClick={onPublish}>
           <Icon name="share" size={15} />
         </button>
@@ -290,6 +319,73 @@ function ClipCard({ clip, thumb, fresh, delay, onOpen, onDelete, onPublish }: { 
         </button>
       </div>
     </div>
+  );
+}
+
+/** One click sharing: send the clip to friends in Kuubl chat or copy a link (e.g. for Discord). */
+function ShareClip({ clip, onClose }: { clip: Clip; onClose: () => void }) {
+  const { toast } = useStore();
+  const [friends, setFriends] = useState<SocialUser[] | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [sent, setSent] = useState<string[]>([]);
+  const up = useRef<{ url: string; size: number } | null>(null);
+  useEffect(() => {
+    social
+      .friends()
+      .then((f) => setFriends([...f.friends].sort((a, b) => Number(!!b.online) - Number(!!a.online))))
+      .catch(() => setFriends([]));
+  }, []);
+  // uploaded once, then reused for every friend and the link
+  const upload = async () => (up.current ??= await social.upload(clip.path));
+  const run = async (key: string, f: () => Promise<void>) => {
+    setBusy(key);
+    try {
+      await f();
+    } catch (e) {
+      toast(errText(e), "error");
+    } finally {
+      setBusy(null);
+    }
+  };
+  const sendTo = (u: SocialUser) =>
+    run(u.uuid, async () => {
+      const r = await upload();
+      await social.send(u.uuid, "clip", clip.name, { url: r.url, size: r.size, duration: clip.duration });
+      setSent((s) => [...s, u.uuid]);
+    });
+  const copyLink = () =>
+    run("link", async () => {
+      const r = await upload();
+      await navigator.clipboard.writeText(r.url);
+      toast(tr("Odkaz zkopírovaný – vlož ho třeba na Discord", "Link copied – paste it on Discord or anywhere"), "success");
+    });
+  return (
+    <Modal title={tr("Sdílet klip", "Share clip")} onClose={() => !busy && onClose()}>
+      <div className="small muted" style={{ marginBottom: 10 }}>
+        {tr("Klip se nahraje na server Kuubl (max 300 MB) a vydrží 30 dní.", "The clip is uploaded to the Kuubl server (max 300 MB) and kept for 30 days.")}
+      </div>
+      <button className="btn primary" style={{ width: "100%", marginBottom: 12 }} disabled={busy !== null} onClick={copyLink}>
+        <Icon name="copy" size={15} /> {busy === "link" ? tr("Nahrávám…", "Uploading…") : tr("Zkopírovat odkaz", "Copy link")}
+      </button>
+      {!friends ? (
+        <SkeletonList rows={3} />
+      ) : !friends.length ? (
+        <div className="muted small">{tr("Přidej si kamarády v záložce Kamarádi a můžeš jim posílat klipy.", "Add friends on the Friends page to send them clips.")}</div>
+      ) : (
+        <div className="list" style={{ maxHeight: 340, overflow: "auto" }}>
+          {friends.map((u) => (
+            <div key={u.uuid} className="row" style={{ padding: "6px 4px", gap: 10 }}>
+              <img src={`https://mc-heads.net/avatar/${u.uuid}/28`} width={28} height={28} style={{ borderRadius: 6 }} alt="" />
+              <span className="grow ellipsis">{u.name}</span>
+              {u.online && <span className="small muted">online</span>}
+              <button className="btn sm" disabled={busy !== null || sent.includes(u.uuid)} onClick={() => sendTo(u)}>
+                {sent.includes(u.uuid) ? <><Icon name="check" size={13} /> {tr("Posláno", "Sent")}</> : busy === u.uuid ? "…" : tr("Poslat", "Send")}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Modal>
   );
 }
 
@@ -644,6 +740,58 @@ function HotkeyButton({ value, onChange }: { value: string; onChange: (v: string
   );
 }
 
+/** Windows: downloads ffmpeg into the launcher's data (≈200 MB) with a progress percentage. */
+function FfmpegDownload() {
+  const { toast } = useStore();
+  const [pct, setPct] = useState<number | null>(null);
+  const run = async () => {
+    setPct(0);
+    const un = await listen<{ done: number; total: number }>("ffmpeg-progress", (e) => {
+      if (e.payload.total > 0) setPct(Math.floor((e.payload.done / e.payload.total) * 100));
+    });
+    try {
+      await clipsApi.installFfmpeg();
+      toast(tr("ffmpeg je stažený, Clips jsou připravené", "ffmpeg downloaded, Clips are ready"), "success");
+    } catch (e) {
+      toast(errText(e), "error");
+    } finally {
+      un();
+      setPct(null);
+    }
+  };
+  return (
+    <button className="btn sm primary" style={{ flex: "none", whiteSpace: "nowrap" }} disabled={pct !== null} onClick={run}>
+      <Icon name="download" size={14} /> {pct === null ? tr("Stáhnout ffmpeg", "Download ffmpeg") : `${pct} %`}
+    </button>
+  );
+}
+
+/** Windows: downloads offline voice recognition (Vosk + a ≈40 MB model) for voice clips. */
+function VoiceDownload({ lang }: { lang: string }) {
+  const { toast } = useStore();
+  const [pct, setPct] = useState<number | null>(null);
+  const run = async () => {
+    setPct(0);
+    const un = await listen<{ done: number; total: number }>("voice-progress", (e) => {
+      if (e.payload.total > 0) setPct(Math.floor((e.payload.done / e.payload.total) * 100));
+    });
+    try {
+      await clipsApi.installVoice(lang);
+      toast(tr("Hlasové klipy jsou připravené", "Voice clips are ready"), "success");
+    } catch (e) {
+      toast(errText(e), "error");
+    } finally {
+      un();
+      setPct(null);
+    }
+  };
+  return (
+    <button className="btn sm primary" style={{ flex: "none", whiteSpace: "nowrap" }} disabled={pct !== null} onClick={run}>
+      <Icon name="download" size={14} /> {pct === null ? tr("Stáhnout (≈55 MB)", "Download (≈55 MB)") : `${pct} %`}
+    </button>
+  );
+}
+
 function Row({ title, text, children, sub, disabled }: { title: string; text?: React.ReactNode; children: React.ReactNode; sub?: boolean; disabled?: boolean }) {
   return (
     <div className={`setting ${sub ? "sub" : ""}`} style={disabled ? { opacity: 0.45, pointerEvents: "none" } : undefined}>
@@ -715,11 +863,41 @@ function ClipsSettingsModal({ settings: s, status, save, onClose }: { settings: 
           text={
             status?.hotkeyError ??
             (IS_LINUX
-              ? tr("Globálně funguje na X11. Na Waylandu si ji nastav jako zkratku systému: justice-client --save-clip.", "Works globally on X11. On Wayland bind it as a system shortcut: justice-client --save-clip.")
+              ? tr("Globálně funguje na X11. Na Waylandu si ji nastav jako zkratku systému: kuubl-client --save-clip.", "Works globally on X11. On Wayland bind it as a system shortcut: kuubl-client --save-clip.")
               : tr("Funguje globálně, i ve hře.", "Works globally, even in-game."))
           }
         >
           <HotkeyButton value={s.hotkey} onChange={(k) => save({ hotkey: k })} />
+        </Row>
+        {!IS_LINUX && (
+          <>
+            <Row
+              title={tr("Uložit klip hlasem", "Save clips by voice")}
+              text={
+                s.voiceLang === "cs"
+                  ? tr("„Kuubl, natoč to“ uloží klip, „Kuubl, udělej fotku“ screenshot. Rozpoznávání běží offline v počítači, jen když hraješ.", "“Kuubl, natoč to” saves a clip, “Kuubl, udělej fotku” a screenshot. Recognition runs offline on your PC, only while you play.")
+                  : tr("„Kuubl, clip that“ uloží klip, „Kuubl, screenshot“ screenshot. Rozpoznávání běží offline v počítači, jen když hraješ.", "“Kuubl, clip that” saves a clip, “Kuubl, screenshot” takes a screenshot. Recognition runs offline on your PC, only while you play.")
+              }
+            >
+              {s.voice && !status?.voiceInstalled ? <VoiceDownload lang={s.voiceLang} /> : <Switch checked={s.voice} onChange={(x) => save({ voice: x })} />}
+            </Row>
+            <Row title={tr("Jazyk hlasového příkazu", "Voice command language")} sub disabled={!s.voice}>
+              <Select className="input" value={s.voiceLang} onChange={(e) => save({ voiceLang: e.target.value as "en" | "cs" })}>
+                <option value="en">English – „Kuubl, clip that“</option>
+                <option value="cs">Čeština – „Kuubl, natoč to“ (řekni to samostatně)</option>
+              </Select>
+            </Row>
+          </>
+        )}
+        <Row
+          title={tr("Automatické klipy", "Automatic clips")}
+          text={tr("Kuubl Mod sám uloží klip, když se něco stane. Funguje ve hrách s Kuubl Modem.", "Kuubl Mod saves a clip by itself when something happens. Works in games with Kuubl Mod.")}
+        >
+          <div className="row" style={{ gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <button className={`chip ${s.autoKill ? "on" : ""}`} onClick={() => save({ autoKill: !s.autoKill })}>{tr("Zabití hráče", "Player kill")}</button>
+            <button className={`chip ${s.autoDeath ? "on" : ""}`} onClick={() => save({ autoDeath: !s.autoDeath })}>{tr("Smrt", "Death")}</button>
+            <button className={`chip ${s.autoAdvancement ? "on" : ""}`} onClick={() => save({ autoAdvancement: !s.autoAdvancement })}>{tr("Achievement", "Advancement")}</button>
+          </div>
         </Row>
         <Row title={tr("Délka klipu", "Clip length")} text={tr(`Kolik sekund zpátky se uloží · ≈ ${ram} MB RAM`, `How many seconds back get saved · ≈ ${ram} MB RAM`)}>
           {slider("bufferSecs", 15, 300, 5, (n) => (n >= 60 ? `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")} min` : `${n} s`))}
@@ -819,6 +997,7 @@ function ClipsSettingsModal({ settings: s, status, save, onClose }: { settings: 
           >
             {tr("Vybrat", "Browse")}
           </button>
+          {!IS_LINUX && !status?.ffmpeg && <FfmpegDownload />}
         </Row>
         <Row title={tr("Diagnostika", "Diagnostics")} text={tr("Log nahrávání (ffmpeg, audio zařízení).", "Recording log (ffmpeg, audio devices).")}>
           <button className="btn sm" onClick={async () => setLog(log ? null : await clipsApi.log())}>

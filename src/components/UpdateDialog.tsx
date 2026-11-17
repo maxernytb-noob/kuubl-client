@@ -23,7 +23,7 @@ export default function UpdatePill() {
         <Modal
           title={
             <span className="row">
-              <Icon name="sparkles" style={{ color: "var(--red)" }} /> Justice Client {update.version}
+              <Icon name="sparkles" style={{ color: "var(--red)" }} /> Kuubl Client {update.version}
             </span>
           }
           onClose={() => !installing && setOpen(false)}
@@ -86,8 +86,8 @@ function LinuxSteps({ kind }: { kind: LinuxPackage }) {
   if (kind === "other") return null;
   const [file, cmd] =
     kind === "deb"
-      ? ["justice-client.deb", "sudo apt install ./justice-client.deb"]
-      : ["justice-client.pkg.tar.zst", "sudo pacman -U justice-client.pkg.tar.zst"];
+      ? ["kuubl-client.deb", "sudo apt install ./kuubl-client.deb"]
+      : ["kuubl-client.pkg.tar.zst", "sudo pacman -U kuubl-client.pkg.tar.zst"];
   return (
     <div className="small muted" style={{ userSelect: "text" }}>
       {tr(`Stáhni nový ${file} ze stránky a nainstaluj ho příkazem`, `Download the new ${file} from the website and install it with`)}{" "}

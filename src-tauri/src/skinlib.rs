@@ -75,6 +75,11 @@ fn store(bytes: Vec<u8>, name: &str, variant: &str) -> Result<String> {
     Ok(id)
 }
 
+/// A skin made in the in-game editor (PNG bytes).
+pub fn add_png(bytes: Vec<u8>, name: &str, variant: &str) -> Result<String> {
+    store(bytes, name, variant)
+}
+
 pub fn add_from_file(path: &str, name: &str, variant: &str) -> Result<String> {
     store(std::fs::read(path)?, name, variant)
 }

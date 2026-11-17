@@ -31,8 +31,9 @@ pub struct Instance {
     pub recording_mode: bool,
     /// Disable heavy visual mods (Distant Horizons, dynamic lights…) at launch.
     pub light_mode: bool,
-    /// Opt-out of the bundled Justice Mod (in-game menu) for this instance.
-    pub no_justice_mod: bool,
+    /// Opt-out of the bundled Kuubl Mod (in-game menu) for this instance.
+    #[serde(alias = "noJusticeMod")]
+    pub no_kuubl_mod: bool,
 }
 
 pub fn dir(id: &str) -> PathBuf {
@@ -49,6 +50,14 @@ pub fn load(id: &str) -> Result<Instance> {
     let v = net::read_json(&json_path(id)).map_err(|_| anyhow!(l!("Instance {id} neexistuje", "Instance {id} doesn't exist")))?;
     let mut i: Instance = serde_json::from_value(v)?;
     i.id = id.to_string();
+    // Rebrand: the launcher-managed "Justice" group and its "Justice <version>" instances become "Kuubl".
+    if i.group == "Justice" || i.group == "Verdict" {
+        i.group = "Kuubl".into();
+        if let Some(ver) = i.name.strip_prefix("Justice ").or_else(|| i.name.strip_prefix("Verdict ")) {
+            i.name = format!("Kuubl {ver}");
+        }
+        let _ = save(&i);
+    }
     Ok(i)
 }
 
@@ -134,6 +143,102 @@ pub fn duplicate(id: &str) -> Result<Instance> {
     i.last_played = 0;
     save(&i)?;
     Ok(i)
+}
+
+/// Copies settings from one instance into another. `parts`: "game" (options.txt: video, sound,
+/// controls), "kuubl" (Kuubl Mod menu + HUD), "mods" (other mod configs), "packs" (resource
+/// packs), "shaders" (shader packs), "servers" (server list), "worlds" (saves), "screenshots". Folders are merged; files the target
+/// already has are first backed up to `minecraft/settings-backup/<time>/`. Returns the number of files copied.
+pub fn copy_settings(from: &str, to: &str, parts: &[String]) -> Result<usize> {
+    if from == to {
+        return Err(anyhow!(l!("Vyber jinou instanci", "Pick a different instance")));
+    }
+    let (src, dst) = (game_dir(from), game_dir(to));
+    if !src.is_dir() {
+        return Err(anyhow!(l!("Instance {from} neexistuje", "Instance {from} doesn't exist")));
+    }
+    let backup = dst.join("settings-backup").join(chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string());
+    let has = |p: &str| parts.iter().any(|x| x == p);
+    let mut items: Vec<(String, bool)> = Vec::new(); // (relative path, is folder)
+    if has("game") {
+        for f in ["options.txt", "optionsof.txt", "optionsshaders.txt"] {
+            items.push((f.into(), false));
+        }
+    }
+    if has("servers") {
+        items.push(("servers.dat".into(), false));
+    }
+    if has("worlds") {
+        items.push(("saves".into(), true));
+    }
+    if has("screenshots") {
+        items.push(("screenshots".into(), true));
+    }
+    if has("packs") {
+        items.push(("resourcepacks".into(), true));
+    }
+    if has("shaders") {
+        items.push(("shaderpacks".into(), true));
+    }
+    if has("kuubl") {
+        items.push(("config/kuubl.json".into(), false));
+    }
+    if has("mods") {
+        items.push(("config".into(), true));
+        items.push(("defaultconfigs".into(), true));
+    }
+    let skip_kuubl = !has("kuubl");
+    let mut n = 0;
+    let mut copy_file = |rel: &std::path::Path| -> Result<()> {
+        let (a, b) = (src.join(rel), dst.join(rel));
+        if b.is_file() {
+            let k = backup.join(rel);
+            std::fs::create_dir_all(k.parent().unwrap())?;
+            std::fs::copy(&b, &k)?;
+        }
+        std::fs::create_dir_all(b.parent().unwrap())?;
+        std::fs::copy(&a, &b)?;
+        n += 1;
+        Ok(())
+    };
+    for (rel, folder) in items {
+        let a = src.join(&rel);
+        if !folder {
+            if a.is_file() {
+                copy_file(std::path::Path::new(&rel))?;
+            }
+            continue;
+        }
+        if !a.is_dir() {
+            continue;
+        }
+        for f in files_in(&a) {
+            let r = f.strip_prefix(&src)?.to_path_buf();
+            if skip_kuubl && r == std::path::Path::new("config").join("kuubl.json") {
+                continue;
+            }
+            // held open by a running game, and useless in a copy
+            if r.file_name().is_some_and(|n| n == "session.lock") {
+                continue;
+            }
+            copy_file(&r)?;
+        }
+    }
+    Ok(n)
+}
+
+/// Every file under `dir`, recursively.
+fn files_in(dir: &std::path::Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    for e in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            out.extend(files_in(&p));
+        } else if p.is_file() {
+            out.push(p);
+        }
+    }
+    out
 }
 
 /// Where the player was last in this instance: a server or a singleplayer world, with a picture.

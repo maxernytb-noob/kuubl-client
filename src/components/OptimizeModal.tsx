@@ -9,6 +9,7 @@ import { Modal, TaskProgress } from "./common";
 const GROUPS: { key: OptimizePlan["changes"][number]["group"]; icon: string; title: [string, string] }[] = [
   { key: "mods", icon: "zap", title: ["Výkonové mody", "Performance mods"] },
   { key: "conflicts", icon: "alert", title: ["Konflikty", "Conflicts"] },
+  { key: "duplicates", icon: "copy", title: ["Duplicitní verze modů", "Duplicate mod versions"] },
   { key: "video", icon: "monitor", title: ["Nastavení grafiky", "Video settings"] },
   { key: "sodium", icon: "cpu", title: ["Sodium", "Sodium"] },
   { key: "memory", icon: "box", title: ["Paměť", "Memory"] },

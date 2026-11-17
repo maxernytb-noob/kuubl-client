@@ -1,4 +1,4 @@
-//! PvP totals reported by Justice Mod (player kills, deaths, best combo) for the profile and the
+//! PvP totals reported by Kuubl Mod (player kills, deaths, best combo) for the profile and the
 //! friends leaderboard. The mod sends what happened since its last report; we keep the sums.
 
 use crate::{net, settings};

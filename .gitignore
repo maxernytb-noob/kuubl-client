@@ -5,3 +5,5 @@ src-tauri/gen/
 src-tauri/cf_key.txt
 src-tauri/target-linux/
 packaging/release/
+packaging/arch/*.tar.gz
+packaging/dev-release/

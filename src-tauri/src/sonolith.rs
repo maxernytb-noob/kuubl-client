@@ -33,7 +33,7 @@ const ALLOWED: [&str; 24] = [
 pub struct Status {
     /// Sonolith's API endpoint exists (Sonolith runs with the API on).
     pub available: bool,
-    /// We have a token (the user connected Justice Client once).
+    /// We have a token (the user connected Kuubl Client once).
     pub registered: bool,
     /// A session is open right now.
     pub connected: bool,
@@ -141,7 +141,7 @@ async fn open() -> Result<Box<dyn Io>> {
 // ---------------- Token ----------------
 
 fn token_path() -> PathBuf {
-    dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("JusticeClient").join("sonolith.token")
+    dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("KuublClient").join("sonolith.token")
 }
 
 fn token() -> Option<String> {
@@ -180,7 +180,7 @@ fn line(method: &str, id: Option<u64>, params: Value) -> String {
     format!("{m}\n")
 }
 
-/// Asks the user to let Justice Client connect. Keeps the connection open until Sonolith answers.
+/// Asks the user to let Kuubl Client connect. Keeps the connection open until Sonolith answers.
 pub async fn register() -> Result<()> {
     if STATUS.lock().unwrap().pending {
         return Ok(());
@@ -191,9 +191,9 @@ pub async fn register() -> Result<()> {
     let reason = |cs: &str, en: &str| if crate::i18n::is_en() { en.to_string() } else { cs.to_string() };
     let params = json!({
         "appId": APP_ID,
-        "name": "Justice Client",
+        "name": "Kuubl Client",
         "description": reason("Minecraft launcher: ukazuje a ovládá tvoji hudbu v launcheru.", "Minecraft launcher: shows and controls your music in the launcher."),
-        "publisher": "Justice Client",
+        "publisher": "Kuubl Client",
         "homepage": "https://justiceclient.online",
         "icon": icon_data_uri(),
         "apiVersion": API_VERSION,

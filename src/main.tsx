@@ -29,11 +29,13 @@ window.addEventListener("unhandledrejection", (e) => logError(`unhandled: ${Stri
 async function boot() {
   // In a plain browser (vite dev preview) there is no Tauri backend: load sample data first.
   if (import.meta.env.DEV && !("__TAURI_INTERNALS__" in window)) await import("./devMock");
-  const [{ createRoot }, { default: App }, { StoreProvider }] = await Promise.all([
+  const [{ createRoot }, { default: App }, { StoreProvider }, { initUiSounds }] = await Promise.all([
     import("react-dom/client"),
     import("./App"),
     import("./store"),
+    import("./uiSounds"),
   ]);
+  initUiSounds();
   createRoot(document.getElementById("root")!).render(
     <StoreProvider>
       <App />

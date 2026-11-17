@@ -40,7 +40,7 @@ function Appearance() {
   useEffect(() => setHex(s?.accentColor ?? ""), [s?.accentColor]);
   if (!s) return null;
   const valid = normalizeHex(hex);
-  const current = normalizeHex(s.accentColor) ?? "#e11d38";
+  const current = normalizeHex(s.accentColor) ?? "#f0661f";
   return (
     <div className="card pad">
       <div className="setting" style={{ paddingTop: 0, alignItems: "flex-start" }}>
@@ -95,7 +95,7 @@ function Appearance() {
               className="input mono"
               value={hex}
               maxLength={7}
-              placeholder="#e11d38"
+              placeholder="#f0661f"
               onChange={(e) => {
                 setHex(e.target.value);
                 const n = normalizeHex(e.target.value);
@@ -153,7 +153,7 @@ function DataDir() {
   const move = async () => {
     const d = await open({ directory: true, defaultPath: s.dataDir });
     if (!d) return;
-    const dest = await join(d as string, "JusticeClient");
+    const dest = await join(d as string, "KuublClient");
     setMoving(true);
     try {
       await api.moveDataDir(dest);
@@ -370,7 +370,7 @@ function MusicSettings() {
         m.includes("denied")
           ? tr("Připojení jsi v Sonolithu odmítl. Zkusit znovu půjde za chvíli.", "You declined in Sonolith. You can try again in a moment.")
           : m.includes("blocked")
-            ? tr("Justice Client je v Sonolithu zablokovaný. Odblokuješ ho v Sonolithu: Nastavení → Připojené aplikace.", "Justice Client is blocked in Sonolith. Unblock it in Sonolith: Settings → Connected apps.")
+            ? tr("Kuubl Client je v Sonolithu zablokovaný. Odblokuješ ho v Sonolithu: Nastavení → Připojené aplikace.", "Kuubl Client is blocked in Sonolith. Unblock it in Sonolith: Settings → Connected apps.")
             : m.includes("expired")
               ? tr("Žádost vypršela. Zkus to znovu a potvrď ji v Sonolithu.", "The request expired. Try again and confirm it in Sonolith.")
               : errText(e),
@@ -406,7 +406,7 @@ function MusicSettings() {
           </div>
           <div className="grow">
             <b>Sonolith</b>
-            <span>{tr("Přehrávač hudby doporučený pro nejlepší zážitek s Justice Clientem", "The music player recommended for the best experience with Justice Client")}</span>
+            <span>{tr("Přehrávač hudby doporučený pro nejlepší zážitek s Kuubl Clientem", "The music player recommended for the best experience with Kuubl Client")}</span>
           </div>
           <span className={`snl-dot ${st?.connected ? "on" : st?.pending ? "wait" : ""}`}>{state}</span>
         </div>
@@ -637,8 +637,8 @@ export default function SettingsPage({ section }: { section?: string }) {
                 </a>{" "}
                 →{" "}
                 {tr(
-                  "API keys. Justice Client má klíč zabudovaný — sem vlož jen vlastní, pokud ho chceš použít místo něj.",
-                  "API keys. Justice Client has a key built in — only put your own here if you want to use it instead.",
+                  "API keys. Kuubl Client má klíč zabudovaný — sem vlož jen vlastní, pokud ho chceš použít místo něj.",
+                  "API keys. Kuubl Client has a key built in — only put your own here if you want to use it instead.",
                 )}
               </span>
             </div>
@@ -649,8 +649,8 @@ export default function SettingsPage({ section }: { section?: string }) {
               <b>{tr("Discord status", "Discord status")}</b>
               <span>
                 {tr(
-                  "Ukáže na Discordu „Hraje Justice Client“, verzi a co zrovna hraješ.",
-                  "Shows “Playing Justice Client” on Discord, with the version and what you're playing.",
+                  "Ukáže na Discordu „Hraje Kuubl Client“, verzi a co zrovna hraješ.",
+                  "Shows “Playing Kuubl Client” on Discord, with the version and what you're playing.",
                 )}
               </span>
             </div>
@@ -668,7 +668,7 @@ export default function SettingsPage({ section }: { section?: string }) {
         <div className="card pad row">
           <div className="grow">
             <b>
-              Justice <span style={{ color: "var(--red)" }}>Client</span> {system?.version}
+              Kuubl <span style={{ color: "var(--red)" }}>Client</span> {system?.version}
             </b>
             <div className="small muted">
               {tr(

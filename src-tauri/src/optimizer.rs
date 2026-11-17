@@ -84,6 +84,95 @@ fn mod_files(mods: &Path) -> Vec<String> {
         .collect()
 }
 
+/// (jar file, mod id, version) for every Fabric jar that declares them, read from its fabric.mod.json.
+fn mod_versions(mods: &Path) -> Vec<(String, String, String)> {
+    use std::io::Read;
+    let mut out = vec![];
+    for file in mod_files(mods) {
+        let Ok(f) = std::fs::File::open(mods.join(&file)) else { continue };
+        let Ok(mut zip) = zip::ZipArchive::new(f) else { continue };
+        let Ok(mut entry) = zip.by_name("fabric.mod.json") else { continue };
+        let mut s = String::new();
+        if entry.read_to_string(&mut s).is_err() {
+            continue;
+        }
+        // fabric.mod.json sometimes has trailing control chars; be lenient.
+        let v: Value = match serde_json::from_str(s.trim_matches(|c: char| c.is_control())) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        if let (Some(id), Some(ver)) = (v["id"].as_str(), v["version"].as_str()) {
+            out.push((file, id.to_string(), ver.to_string()));
+        }
+    }
+    out
+}
+
+/// The version Fabric actually loaded for a mod id last run, from latest.log's "Loading N mods:" list.
+/// We dedup around this, never around "newest": the loader already picks the combination that satisfies
+/// every mod's breaks/depends (e.g. Iris may need an older Sodium), and forcing the newest once broke a
+/// real pack. So we only ever switch off jars the loader isn't using.
+fn loaded_version(log: &str, id: &str) -> Option<String> {
+    let mut in_list = false;
+    for line in log.lines() {
+        if !in_list {
+            if line.contains("Loading ") && line.contains(" mods:") {
+                in_list = true;
+            }
+            continue;
+        }
+        // Entries look like "\t- sodium 0.8.15-beta.1+mc1.21.11" (sub-mods are indented further with |--).
+        let t = line.trim_start().trim_start_matches(['-', '|', ' ']);
+        if let Some(rest) = t.strip_prefix(id) {
+            if rest.starts_with(char::is_whitespace) {
+                if let Some(ver) = rest.split_whitespace().next() {
+                    return Some(ver.to_string());
+                }
+            }
+        }
+        // A blank line or a line that isn't part of the indented list ends it.
+        if line.trim().is_empty() && !t.is_empty() {
+            break;
+        }
+    }
+    None
+}
+
+fn same_version(a: &str, b: &str) -> bool {
+    a == b || a.split('+').next() == b.split('+').next()
+}
+
+/// Mods with more than one version installed at once: returns the jars (file, mod id) to switch off —
+/// every one EXCEPT the version Fabric actually loaded, read from the instance's log. If we can't tell
+/// which version loaded (no log, or the loaded one isn't on disk), we leave that mod alone rather than
+/// risk disabling the copy the loader needs.
+fn duplicate_versions(game: &Path) -> Vec<(String, String)> {
+    let mods = game.join("mods");
+    let mut by_id: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+    for (file, id, ver) in mod_versions(&mods) {
+        by_id.entry(id).or_default().push((file, ver));
+    }
+    let dups: Vec<(String, Vec<(String, String)>)> = by_id.into_iter().filter(|(_, l)| l.len() >= 2).collect();
+    if dups.is_empty() {
+        return vec![];
+    }
+    let log = std::fs::read_to_string(game.join("logs").join("latest.log")).unwrap_or_default();
+    let mut out = vec![];
+    for (id, list) in dups {
+        let Some(loaded) = loaded_version(&log, &id) else { continue };
+        // Only act when the loaded version is one we can see on disk; then disable the others.
+        if !list.iter().any(|(_, v)| same_version(v, &loaded)) {
+            continue;
+        }
+        for (file, ver) in &list {
+            if !same_version(ver, &loaded) {
+                out.push((file.clone(), id.clone()));
+            }
+        }
+    }
+    out
+}
+
 /// options.txt as ordered key/value pairs (unknown lines kept as they are).
 fn read_options(path: &Path) -> Vec<(String, String)> {
     std::fs::read_to_string(path)
@@ -116,9 +205,16 @@ fn video_rules(tier: &str) -> Vec<(&'static str, String, Box<dyn Fn(&str) -> boo
         // Fabulous is a second full-screen pass for translucency; most players can't tell it apart.
         ("graphicsMode", l!("Grafika", "Graphics"), Box::new(|v| v.trim() == "2" || v.contains("fabulous")), "1".into()),
         ("biomeBlendRadius", l!("Prolínání biomů", "Biome blend"), Box::new(move |v| num(v) > 2), "1".into()),
+        // VSync caps FPS to the monitor and adds a frame of input lag — worst in PvP. Off on every tier.
+        ("enableVsync", l!("VSync", "VSync"), Box::new(|v| v.trim() == "true"), "false".into()),
+        // A low FPS cap holds frames back for no reason once VSync is off; lift it to the slider's max.
+        ("maxFps", l!("Limit FPS", "FPS limit"), Box::new(move |v| num(v) > 0 && num(v) < 240), "260".into()),
     ];
-    if tier == "low" {
+    // Entity shadows get expensive in a crowded PvP fight; keep them only for high-end PCs.
+    if tier != "high" {
         r.push(("entityShadows", l!("Stíny entit", "Entity shadows"), Box::new(|v| v.trim() == "true"), "false".into()));
+    }
+    if tier == "low" {
         r.push(("particles", l!("Částice", "Particles"), Box::new(|v| v.trim() == "0"), "1".into()));
         r.push(("renderClouds", l!("Mraky", "Clouds"), Box::new(|v| v.contains("true")), "\"fast\"".into()));
         r.push(("graphicsMode", l!("Grafika", "Graphics"), Box::new(|v| v.trim() == "1" || v.contains("fancy")), "0".into()));
@@ -133,13 +229,18 @@ fn video_label(key: &str, value: &str) -> String {
         ("graphicsMode", "2") | ("graphicsMode", "fabulous") => l!("Úžasná", "Fabulous"),
         ("particles", "0") => l!("Všechny", "All"),
         ("particles", "1") => l!("Omezené", "Decreased"),
-        ("entityShadows", "true") | ("renderClouds", "true") => l!("Zapnuto", "On"),
-        ("entityShadows", "false") | ("renderClouds", "false") => l!("Vypnuto", "Off"),
+        ("entityShadows", "true") | ("renderClouds", "true") | ("enableVsync", "true") => l!("Zapnuto", "On"),
+        ("entityShadows", "false") | ("renderClouds", "false") | ("enableVsync", "false") => l!("Vypnuto", "Off"),
         ("renderClouds", "fast") => l!("Rychlé", "Fast"),
+        ("maxFps", "260") => l!("Neomezený", "Unlimited"),
+        ("maxFps", v) => l!("{} FPS", "{} FPS", v),
         ("renderDistance", v) | ("simulationDistance", v) => l!("{} chunků", "{} chunks", v),
         (_, v) => v.to_string(),
     }
 }
+
+/// (performance mod, mod it clashes with). Normalized file prefixes, as in `missing_mods`.
+const CLASHES: &[(&str, &str)] = &[("cull-fewer-leaves", "moreculling")];
 
 /// Performance mods from the pack that this instance doesn't have and that exist for its version.
 async fn missing_mods(inst: &instances::Instance) -> (Vec<String>, Vec<String>) {
@@ -153,7 +254,12 @@ async fn missing_mods(inst: &instances::Instance) -> (Vec<String>, Vec<String>) 
     // Big modpacks often bring their own world generation; these reach deep into it or into block
     // entity rendering, so they're only offered to lighter instances.
     let heavy = all_files.len() > 40;
-    let slugs: Vec<&str> = slugs.into_iter().filter(|s| !heavy || !matches!(*s, "c2me-fabric" | "zfastnoise" | "vmp-fabric" | "obe")).collect();
+    let slugs: Vec<&str> = slugs
+        .into_iter()
+        .filter(|s| !heavy || !matches!(*s, "c2me-fabric" | "zfastnoise" | "vmp-fabric" | "obe"))
+        // Installing one of these next to the other makes the game refuse to start.
+        .filter(|s| !CLASHES.iter().any(|(slug, other)| slug == s && files.iter().any(|f| f.starts_with(other))))
+        .collect();
     let ids = serde_json::to_string(&slugs).unwrap_or_default();
     let projects = net::get_json(&format!("https://api.modrinth.com/v2/projects?ids={}", urlencode(&ids))).await.unwrap_or(Value::Null);
     let mut id_of: BTreeMap<String, (String, String)> = BTreeMap::new();
@@ -247,6 +353,17 @@ pub async fn plan(id: &str) -> Result<Plan> {
             group: "conflicts".into(),
             title: l!("Vypnout {}", "Turn off {}", f),
             detail: l!("OptiFine se Sodiem padá nebo zpomaluje; Sodium dělá totéž lépe.", "OptiFine crashes or slows down next to Sodium, which does the same job better."),
+            from: None,
+            to: None,
+        });
+    }
+
+    for (file, id) in duplicate_versions(&game) {
+        changes.push(Change {
+            id: format!("disable:{file}"),
+            group: "duplicates".into(),
+            title: l!("Vypnout starší verzi modu", "Turn off an older mod version"),
+            detail: l!("Je nainstalováno víc verzí „{}“ ({}); necháme jen nejnovější, ať se mody nehádají.", "Several versions of \"{}\" are installed ({}); keep only the newest so mods don't clash.", id, file),
             from: None,
             to: None,
         });

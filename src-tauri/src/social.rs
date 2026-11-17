@@ -1,8 +1,8 @@
-//! Friends & chat (Justice Social on justiceclient.online). Sign-in proves the Minecraft account the same
+//! Friends & chat (Kuubl Social on justiceclient.online). Sign-in proves the Minecraft account the same
 //! way joining a server does: Mojang `join` with our access token, the server checks `hasJoined`.
 //! The server never sees the access token. A WebSocket delivers messages/presence as
 //! `social-event` events to the UI.
-//! Offline accounts can't prove anything to Mojang, so they get a Justice password instead; the
+//! Offline accounts can't prove anything to Mojang, so they get a Kuubl password instead; the
 //! session token is kept per account in social-sessions.json so they only type it once.
 
 use crate::{auth, events, net};
@@ -49,7 +49,7 @@ struct Session {
     name: String,
 }
 
-/// Social events with a sequence number, for the in-game chat (Justice Mod long-polls them).
+/// Social events with a sequence number, for the in-game chat (Kuubl Mod long-polls them).
 static EVENTS: Lazy<Mutex<(u64, std::collections::VecDeque<(u64, Value)>)>> = Lazy::new(|| Mutex::new((0, Default::default())));
 static EVENT_NOTIFY: Lazy<tokio::sync::Notify> = Lazy::new(tokio::sync::Notify::new);
 
@@ -102,8 +102,8 @@ fn session() -> Result<Session> {
     SESSION.lock().unwrap().clone().ok_or_else(|| anyhow!(l!("Nejsi přihlášený do přátel", "You're not signed in to friends")))
 }
 
-/// Error text the UI recognises: an offline account has to sign in with its Justice password.
-pub const NEEDS_PASSWORD: &str = "JUSTICE_NEEDS_PASSWORD";
+/// Error text the UI recognises: an offline account has to sign in with its Kuubl password.
+pub const NEEDS_PASSWORD: &str = "KUUBL_NEEDS_PASSWORD";
 
 fn sessions_path() -> std::path::PathBuf {
     crate::settings::data_dir().join("social-sessions.json")
@@ -144,7 +144,7 @@ fn start(v: &Value) -> Session {
     s
 }
 
-/// Offline account with a saved Justice session: check it still works.
+/// Offline account with a saved Kuubl session: check it still works.
 async fn login_offline_saved(acc: &auth::Account) -> Result<Value> {
     let Some(token) = stored_token(&acc.id) else { bail!(NEEDS_PASSWORD) };
     let r = net::CLIENT.get(format!("{BASE}/me")).bearer_auth(&token).send().await?;
@@ -163,7 +163,7 @@ async fn login_offline_saved(acc: &auth::Account) -> Result<Value> {
     Ok(v)
 }
 
-/// Offline accounts: create the Justice account (`register`) or sign in to it with the password.
+/// Offline accounts: create the Kuubl account (`register`) or sign in to it with the password.
 pub async fn login_password(password: &str, register: bool) -> Result<Value> {
     let acc = auth::ready_account(None).await?;
     if acc.kind == "msa" {
@@ -178,12 +178,10 @@ pub async fn login_password(password: &str, register: bool) -> Result<Value> {
     Ok(v)
 }
 
-/// Signs out for good: an offline account forgets its saved session too.
+/// Signs out for good: the account forgets its saved session too.
 pub fn sign_out() {
     if let Ok(s) = auth::active_account() {
-        if s.kind != "msa" {
-            store_token(&s.id, None);
-        }
+        store_token(&s.id, None);
     }
     logout();
     emit(json!({ "type": "signed-out" }));
@@ -201,27 +199,72 @@ pub fn account_changed() {
 }
 
 /// Sign in with the active account and open the realtime connection. Microsoft accounts prove
-/// themselves through Mojang; offline accounts use their saved Justice session.
+/// themselves through Mojang; offline accounts use their saved Kuubl session.
 pub async fn login() -> Result<Value> {
     let acc = auth::ready_account(None).await?;
     if acc.kind != "msa" {
         return login_offline_saved(&acc).await;
     }
+    // A saved Kuubl session is reused, so Mojang is only asked on the first sign-in (or when the
+    // session got revoked). Asking it on every start/account switch ran into "429 Too Many Requests".
+    if let Some(v) = msa_saved_session(&acc).await {
+        start(&v);
+        return Ok(v);
+    }
     let ch = net::get_json(&format!("{BASE}/challenge")).await?;
     let server_id = ch["serverId"].as_str().ok_or_else(|| anyhow!("bad challenge"))?.to_string();
-    let join = net::CLIENT
-        .post("https://sessionserver.mojang.com/session/minecraft/join")
-        .json(&json!({ "accessToken": acc.access_token, "selectedProfile": acc.uuid.replace('-', ""), "serverId": server_id }))
-        .send()
-        .await
-        .context("Mojang join")?;
-    if !join.status().is_success() {
-        bail!(l!("Mojang nepotvrdil účet ({})", "Mojang didn't confirm the account ({})", join.status()));
+    let body = json!({ "accessToken": acc.access_token, "selectedProfile": acc.uuid.replace('-', ""), "serverId": server_id });
+    let mut join = None;
+    // Mojang's rate limit is short: one retry after a pause usually gets through.
+    for wait in [0u64, 4, 10] {
+        if wait > 0 {
+            tokio::time::sleep(Duration::from_secs(wait)).await;
+        }
+        let r = net::CLIENT
+            .post("https://sessionserver.mojang.com/session/minecraft/join")
+            .json(&body)
+            .send()
+            .await
+            .context("Mojang join")?;
+        let st = r.status();
+        join = Some(st);
+        if st != reqwest::StatusCode::TOO_MANY_REQUESTS {
+            break;
+        }
+        lwarn!("social: Mojang join rate-limited, retrying");
+    }
+    let st = join.unwrap();
+    if st == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        bail!(l!(
+            "Mojang teď odmítá moc přihlášení najednou (429). Zkus to za minutu znovu.",
+            "Mojang is rate-limiting sign-ins right now (429). Try again in a minute."
+        ));
+    }
+    if !st.is_success() {
+        bail!(l!("Mojang nepotvrdil účet ({})", "Mojang didn't confirm the account ({})", st));
     }
     let r = net::CLIENT.post(format!("{BASE}/login")).json(&json!({ "name": acc.username, "serverId": server_id })).send().await?;
     let v: Value = parse(r).await?;
+    store_token(&acc.id, v["token"].as_str());
     start(&v);
     Ok(v)
+}
+
+/// Microsoft account with a saved Kuubl session that still belongs to it.
+async fn msa_saved_session(acc: &auth::Account) -> Option<Value> {
+    let token = stored_token(&acc.id)?;
+    let r = net::CLIENT.get(format!("{BASE}/me")).bearer_auth(&token).send().await.ok()?;
+    if r.status() == reqwest::StatusCode::UNAUTHORIZED {
+        store_token(&acc.id, None);
+        return None;
+    }
+    let me = parse(r).await.ok()?;
+    let same = me["uuid"].as_str().unwrap_or_default().replace('-', "").eq_ignore_ascii_case(&acc.uuid.replace('-', ""));
+    if !same {
+        store_token(&acc.id, None);
+        return None;
+    }
+    Some(json!({ "token": token, "uuid": me["uuid"], "name": me["name"] }))
 }
 
 type Cached = Lazy<Mutex<Option<(std::time::Instant, Value)>>>;
@@ -229,7 +272,7 @@ static CAPES: Cached = Lazy::new(|| Mutex::new(None));
 static PETS: Cached = Lazy::new(|| Mutex::new(None));
 static SKINS: Cached = Lazy::new(|| Mutex::new(None));
 
-/// A uuid -> value map from the server, refreshed at most once a minute (Justice Mod polls it).
+/// A uuid -> value map from the server, refreshed at most once a minute (Kuubl Mod polls it).
 async fn cached_map(cache: &Cached, path: &str) -> Value {
     if let Some((t, v)) = cache.lock().unwrap().as_ref() {
         if t.elapsed() < Duration::from_secs(60) {
@@ -251,7 +294,7 @@ async fn cached_map(cache: &Cached, path: &str) -> Value {
     }
 }
 
-/// uuid -> Justice cape.
+/// uuid -> Kuubl cape.
 pub async fn capes() -> Value {
     cached_map(&CAPES, "/capes").await
 }
@@ -261,6 +304,10 @@ pub async fn pets() -> Value {
 }
 
 /// Forget the cached capes (after picking a new one, so it shows in-game right away).
+pub fn skins_changed() {
+    *SKINS.lock().unwrap() = None;
+}
+
 pub fn capes_changed() {
     *CAPES.lock().unwrap() = None;
 }
@@ -286,7 +333,7 @@ pub async fn skins() -> Value {
     v
 }
 
-/// Sends an offline account's skin (or its reset) to Justice Social so other players see it.
+/// Sends an offline account's skin (or its reset) to Kuubl Social so other players see it.
 /// Best effort: without the friends sign-in it stays local until the next sign-in.
 pub async fn push_skin(acc: &auth::Account) {
     if acc.kind == "msa" || me().map(|m| m.0.replace('-', "")) != Some(acc.uuid.replace('-', "")) {
@@ -338,7 +385,7 @@ async fn parse(r: reqwest::Response) -> Result<Value> {
 /// Server errors are English; show the common ones in Czech too.
 fn translate(msg: &str) -> String {
     match msg {
-        "player doesn't use Justice Client yet" => l!("Tenhle hráč ještě nepoužívá Justice Client", "That player doesn't use Justice Client yet"),
+        "player doesn't use Justice Client yet" => l!("Tenhle hráč ještě nepoužívá Kuubl Client", "That player doesn't use Kuubl Client yet"),
         "already friends" => l!("Už jste přátelé", "You're already friends"),
         "that's you" => l!("To jsi ty :)", "That's you :)"),
         "you can only message friends" => l!("Psát můžeš jen přátelům", "You can only message friends"),
@@ -358,6 +405,10 @@ fn translate(msg: &str) -> String {
         "the invite expired" => l!("Pozvánka už neplatí", "The invite expired"),
         "only the party leader can do that" => l!("Tohle může jen vedoucí party", "Only the party leader can do that"),
         "file is over 300 MB" => l!("Soubor je větší než 300 MB", "The file is over 300 MB"),
+        "MaxPack needs a Microsoft account" => l!(
+            "MaxPack je jen pro účty s koupeným Minecraftem (Microsoft).",
+            "MaxPack is only for accounts that own Minecraft (Microsoft)."
+        ),
         other => other.to_string(),
     }
 }
@@ -420,7 +471,7 @@ pub fn set_presence(p: Value) {
     send_frame(json!({ "type": "presence", "presence": p }));
 }
 
-/// Justice Mod reports the server the game is on now (null = singleplayer/menu), so friends and the
+/// Kuubl Mod reports the server the game is on now (null = singleplayer/menu), so friends and the
 /// party follow the player when they switch servers in-game.
 pub fn set_current_server(server: Option<&str>) {
     let mut p = PRESENCE.lock().unwrap().clone();
@@ -449,6 +500,11 @@ pub async fn warp_here() -> Result<Value> {
 
 pub fn typing(to: &str) {
     send_frame(json!({ "type": "typing", "to": to }));
+}
+
+/// Plays an emote for friends and players on the same server (Kuubl Social forwards it).
+pub fn emote(id: &str) {
+    send_frame(json!({ "type": "emote", "id": id }));
 }
 
 fn send_frame(v: Value) {
