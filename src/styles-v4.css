@@ -318,3 +318,9 @@ html.ui-noanim .v4-pano .strip { animation: none; }
 @media (max-width: 900px) {
   .d-arcade .me-card .me-text { display: none; }
 }
+
+/* Clips settings: live voice check */
+.voice-check { display: flex; align-items: center; gap: 12px; padding: 8px 0 4px 0; min-width: 0; }
+.voice-check .lvl { width: 120px; height: 6px; border-radius: 3px; background: var(--panel-3); overflow: hidden; flex: none; }
+.voice-check .lvl i { display: block; height: 100%; background: var(--green); transition: width .18s; }
+.voice-check.err { color: #f87171; font-size: 12.5px; }

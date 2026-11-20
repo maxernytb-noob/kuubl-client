@@ -790,6 +790,29 @@ function FfmpegDownload() {
   );
 }
 
+/** Live check for voice clips: the mic level and the last thing the recognizer heard. */
+function VoiceCheck({ error }: { error?: string | null }) {
+  const [level, setLevel] = useState(0);
+  const [heard, setHeard] = useState<string | null>(null);
+  useEffect(() => {
+    const a = listen<number>("voice-level", (e) => setLevel(e.payload));
+    const b = listen<string>("voice-heard", (e) => setHeard(e.payload));
+    return () => {
+      a.then((f) => f());
+      b.then((f) => f());
+    };
+  }, []);
+  if (error) return <div className="voice-check err">{tr("Hlasové klipy nejdou spustit", "Voice clips can't start")}: {error}</div>;
+  return (
+    <div className="voice-check">
+      <span className="lvl"><i style={{ width: `${Math.round(level * 100)}%` }} /></span>
+      <span className="muted small ellipsis">
+        {heard ? `${tr("Slyšel jsem", "I heard")}: „${heard}“` : tr("Mluv do mikrofonu, launcher musí být v popředí nebo musí běžet hra.", "Speak into the mic; the launcher has to be in front or a game running.")}
+      </span>
+    </div>
+  );
+}
+
 /** Windows/Linux: downloads offline voice recognition (Vosk + a ≈40 MB model) for voice clips. */
 function VoiceDownload({ lang }: { lang: string }) {
   const { toast } = useStore();
@@ -911,6 +934,7 @@ function ClipsSettingsModal({ settings: s, status, save, onClose }: { settings: 
                 <option value="cs">Čeština – „natoč to“ (řekni to samostatně)</option>
               </Select>
             </Row>
+            {s.voice && status?.voiceInstalled && <VoiceCheck error={status?.voiceError} />}
           </>
         )}
         <Row

@@ -29,7 +29,13 @@ function topBy<T>(items: T[], key: (t: T) => string, secs: (t: T) => number): To
 }
 
 /** Numbers for the profile (all time) or Wrapped (one year). */
-export function useStats(year?: number) {
+/** A Wrapped period: a whole year, or one month of it (0 = January). */
+export type Period = { year: number; month?: number };
+
+/** Numbers for the profile (no period = all time) or Wrapped (a year or a month). */
+export function useStats(period?: Period) {
+  const year = period?.year;
+  const month = period?.month;
   const { instances } = useStore();
   const [history, setHistory] = useState<PlaySession[] | null>(null);
   const [clips, setClips] = useState<Clip[] | null>(null);
@@ -40,14 +46,21 @@ export function useStats(year?: number) {
     social.pvpStats().then(setPvp).catch(() => setPvp(null));
   }, []);
   return useMemo(() => {
-    const inYear = (ts: number) => !year || new Date(ts * 1000).getFullYear() === year;
+    const inYear = (ts: number) => {
+      if (!year) return true;
+      const d = new Date(ts * 1000);
+      return d.getFullYear() === year && (month === undefined || d.getMonth() === month);
+    };
     const sessions = (history ?? []).filter((s) => inYear(s.start));
     const allTime = instances.reduce((n, i) => n + (i.playtimeSecs || 0), 0);
-    // Wrapped counts the year's sessions; the profile shows the all-time total from the instances
-    const played = year ? sessions.reduce((n, s) => n + s.secs, 0) : allTime;
-    const topInstance: Top = year
-      ? topBy(sessions, (s) => s.name, (s) => s.secs)
-      : instances.reduce<Top>((b, i) => (i.playtimeSecs > (b?.secs ?? 0) ? { name: i.name, secs: i.playtimeSecs } : b), null);
+    const topAllTime = instances.reduce<Top>((b, i) => (i.playtimeSecs > (b?.secs ?? 0) ? { name: i.name, secs: i.playtimeSecs } : b), null);
+    // The year the history started (or no history yet) also gets everything played before it: the
+    // instances' totals. Kuubl/Justice only exists since 2026, so that's this year's real play time.
+    const firstYear = history?.[0] ? new Date(history[0].start * 1000).getFullYear() : new Date().getFullYear();
+    const withOld = !year || (month === undefined && year === firstYear);
+    const sessionSecs = sessions.reduce((n, s) => n + s.secs, 0);
+    const played = withOld ? Math.max(allTime, sessionSecs) : sessionSecs;
+    const topInstance: Top = withOld ? topAllTime : topBy(sessions, (s) => s.name, (s) => s.secs);
     const topServer = topBy(sessions.filter((s) => s.placeKind === "server"), (s) => s.place, (s) => s.secs);
     const topVersion = topBy(sessions, (s) => s.mc, (s) => s.secs);
     const longest = sessions.reduce<PlaySession | null>((b, s) => (!b || s.secs > b.secs ? s : b), null);
@@ -66,7 +79,7 @@ export function useStats(year?: number) {
       secrets: [found, total] as const,
       historySince: history?.[0]?.start ?? null,
     };
-  }, [history, clips, pvp, instances, year]);
+  }, [history, clips, pvp, instances, year, month]);
 }
 
 // ---------- 3D player that can be captured ----------
@@ -238,34 +251,54 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
 
 // ---------- Wrapped ----------
 
-export function WrappedModal({ onClose }: { onClose: () => void }) {
+const monthName = (m: number) => new Date(2026, m, 1).toLocaleString(tr("cs-CZ", "en-GB"), { month: "long" });
+/** "listopad 2026" / "Wrapped 2026" */
+export function periodLabel(p: Period) {
+  return p.month === undefined ? `Wrapped ${p.year}` : `${monthName(p.month)} ${p.year}`;
+}
+/** The month that just ended (shown during the first week of the next one). */
+export function lastMonth(d = new Date()): Period {
+  const prev = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+  return { year: prev.getFullYear(), month: prev.getMonth() };
+}
+/** The monthly recap is offered on Home during the first 7 days of a month. */
+export function monthlySeason(d = new Date()) {
+  return d.getDate() <= 7;
+}
+
+export function WrappedModal({ onClose, period }: { onClose: () => void; period?: Period }) {
   const { activeAccount } = useStore();
-  const year = new Date().getFullYear();
-  const st = useStats(year);
+  // without a period: this year (in early January still last year)
+  const p: Period = period ?? { year: new Date().getMonth() === 0 ? new Date().getFullYear() - 1 : new Date().getFullYear() };
+  const year = p.year;
+  const monthly = p.month !== undefined;
+  const st = useStats(p);
+  // "letos" / "v listopadu": the same slides read right for a year and for a month
+  const when = monthly ? tr(`za ${monthName(p.month!)}`, `in ${monthName(p.month!)}`) : tr("letos", "this year");
   const [i, setI] = useState(0);
   const name = activeAccount?.username ?? tr("Hráč", "Player");
   const hours = Math.round(st.played / 360) / 10;
   const slides: { c: string; icon: string; big: string; text: string }[] = [
-    { c: "#ff7a2f", icon: "clock", big: `${hours} h`, text: tr(`Tolik jsi letos odehrál přes Kuubl (${st.sessions} spuštění hry).`, `That's how long you played through Kuubl this year (${st.sessions} game sessions).`) },
+    { c: "#ff7a2f", icon: "clock", big: `${hours} h`, text: tr(`Tolik jsi ${when} odehrál přes Kuubl.`, `That's how long you played through Kuubl ${when}.`) },
     ...(st.topInstance ? [{ c: "#22d3ee", icon: "box", big: st.topInstance.name, text: tr(`Tvoje nejhranější instance: ${fmtDuration(st.topInstance.secs)}.`, `Your most played instance: ${fmtDuration(st.topInstance.secs)}.`) }] : []),
-    ...(st.topServer ? [{ c: "#60a5fa", icon: "server", big: st.topServer.name, text: tr(`Tvůj server roku: ${fmtDuration(st.topServer.secs)} na něm.`, `Your server of the year: ${fmtDuration(st.topServer.secs)} on it.`) }] : []),
+    ...(st.topServer ? [{ c: "#60a5fa", icon: "server", big: st.topServer.name, text: tr(`Tvůj server ${monthly ? "měsíce" : "roku"}: ${fmtDuration(st.topServer.secs)} na něm.`, `Your server of the ${monthly ? "month" : "year"}: ${fmtDuration(st.topServer.secs)} on it.`) }] : []),
     ...(st.topVersion ? [{ c: "#a78bfa", icon: "puzzle", big: st.topVersion.name, text: tr("Verze Minecraftu, kterou jsi hrál nejvíc.", "The Minecraft version you played the most.") }] : []),
-    { c: "#f87171", icon: "clips", big: String(st.clips), text: tr("klipů jsi letos uložil.", "clips you saved this year.") },
-    ...(st.pvp && (st.pvp.kills || st.pvp.deaths) ? [{ c: "#ef4444", icon: "zap", big: `${st.pvp.kills} / ${st.pvp.deaths}`, text: tr(`Zabití a smrti v PvP (nejlepší kombo ${st.pvp.bestCombo}).`, `PvP kills and deaths (best combo ${st.pvp.bestCombo}).`) }] : []),
+    { c: "#f87171", icon: "clips", big: String(st.clips), text: tr(`klipů jsi ${when} uložil.`, `clips you saved ${when}.`) },
+    ...(!monthly && st.pvp && (st.pvp.kills || st.pvp.deaths) ? [{ c: "#ef4444", icon: "zap", big: `${st.pvp.kills} / ${st.pvp.deaths}`, text: tr(`Zabití a smrti v PvP (nejlepší kombo ${st.pvp.bestCombo}).`, `PvP kills and deaths (best combo ${st.pvp.bestCombo}).`) }] : []),
     ...(st.longest ? [{ c: "#4ade80", icon: "trophy", big: fmtDuration(st.longest.secs), text: tr(`Nejdelší hraní v kuse: ${st.longest.name}.`, `Your longest session: ${st.longest.name}.`) }] : []),
-    { c: "#fbbf24", icon: "sparkles", big: `${st.secrets[0]} / ${st.secrets[1]}`, text: tr("nalezených tajemství v launcheru.", "secrets found in the launcher.") },
+    ...(monthly ? [] : [{ c: "#fbbf24", icon: "sparkles", big: `${st.secrets[0]} / ${st.secrets[1]}`, text: tr("nalezených tajemství v launcheru.", "secrets found in the launcher.") }]),
   ];
   const s = slides[Math.min(i, slides.length - 1)];
   const rows: [string, string][] = [
     [tr("Odehráno", "Played"), `${hours} h`],
-    [tr("Instance roku", "Instance of the year"), st.topInstance?.name ?? "—"],
-    [tr("Server roku", "Server of the year"), st.topServer?.name ?? "—"],
+    [monthly ? tr("Instance měsíce", "Instance of the month") : tr("Instance roku", "Instance of the year"), st.topInstance?.name ?? "—"],
+    [monthly ? tr("Server měsíce", "Server of the month") : tr("Server roku", "Server of the year"), st.topServer?.name ?? "—"],
     [tr("Klipy", "Clips"), String(st.clips)],
     ...(st.pvp && (st.pvp.kills || st.pvp.deaths) ? [[tr("Zabití / smrti", "Kills / deaths"), `${st.pvp.kills} / ${st.pvp.deaths}`] as [string, string]] : []),
   ];
   return (
     <Modal
-      title={`Kuubl Wrapped ${year}`}
+      title={monthly ? tr(`Tvůj ${periodLabel(p)} v Kuublu`, `Your ${periodLabel(p)} in Kuubl`) : `Kuubl Wrapped ${year}`}
       onClose={onClose}
       wide
       footer={
@@ -280,7 +313,7 @@ export function WrappedModal({ onClose }: { onClose: () => void }) {
               {tr("Dál", "Next")} <Icon name="right" size={14} />
             </button>
           ) : (
-            <ShareButtons file={`kuubl-wrapped-${year}.png`} make={() => renderCard(`Wrapped ${year}`, name, rows, null)} />
+            <ShareButtons file={`kuubl-wrapped-${year}${monthly ? `-${p.month! + 1}` : ""}.png`} make={() => renderCard(periodLabel(p), name, rows, null)} />
           )}
         </>
       }
@@ -292,8 +325,8 @@ export function WrappedModal({ onClose }: { onClose: () => void }) {
           <span className="wr-ic"><Icon name={s.icon} size={30} /></span>
           <div className="wr-big">{s.big}</div>
           <p>{s.text}</p>
-          {i === 0 && st.historySince === null && (
-            <p className="muted small">{tr("Podrobná historie se v Kuublu zapisuje od téhle verze, příští rok bude Wrapped ještě přesnější.", "Kuubl records detailed history since this version, next year's Wrapped will be even more precise.")}</p>
+          {i === 0 && !monthly && (
+            <p className="muted small">{tr("Započítaný je i všechen čas odehraný před touhle verzí. Servery a nejdelší hraní se zapisují od verze 1.1.", "All the time played before this version counts too. Servers and the longest session are recorded since version 1.1.")}</p>
           )}
         </div>
       )}

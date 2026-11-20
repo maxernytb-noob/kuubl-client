@@ -407,17 +407,26 @@ impl Resampler {
 }
 
 /// Recognises phrases from `pcm` until `stop`; `on_hit` runs for each one.
-fn recognise(lang: &str, rx: mpsc::Receiver<Vec<i16>>, stop: &AtomicBool, mut on_hit: impl FnMut(Hit)) -> anyhow::Result<()> {
+fn recognise(lang: &str, rx: mpsc::Receiver<Vec<i16>>, stop: &AtomicBool, mut on_heard: impl FnMut(&str), mut on_hit: impl FnMut(Hit)) -> anyhow::Result<()> {
     let mut v = Vosk::open(lang)?;
     while !stop.load(Ordering::Relaxed) {
         let Ok(pcm) = rx.recv_timeout(Duration::from_millis(300)) else { continue };
-        if let Some(hit) = v.feed(&pcm).and_then(|w| matched(lang, &w)) {
+        let Some(words) = v.feed(&pcm) else { continue };
+        let text = words.iter().map(|(w, _)| w.as_str()).filter(|w| *w != "[unk]").collect::<Vec<_>>().join(" ");
+        if !text.is_empty() {
+            on_heard(&text);
+        }
+        if let Some(hit) = matched(lang, &words) {
             v.reset();
             on_hit(hit);
         }
     }
     Ok(())
 }
+
+/// Last reason voice clips couldn't start (no mic, unsupported format, library failed to load…),
+/// shown in the Clips settings instead of only in the log.
+pub static LAST_ERROR: Mutex<Option<String>> = Mutex::new(None);
 
 fn listen(app: AppHandle, lang: String, mic: String, stop: Arc<AtomicBool>) -> anyhow::Result<()> {
     let host = cpal::default_host();
@@ -431,7 +440,17 @@ fn listen(app: AppHandle, lang: String, mic: String, stop: Arc<AtomicBool>) -> a
     let rate = cfg.sample_rate().0 as f64;
     let (tx, rx) = mpsc::channel::<Vec<i16>>();
     let rs = Arc::new(Mutex::new(Resampler { step: rate / 16000.0, pos: 0.0, prev: 0.0 }));
+    // the mic level for the settings' meter, at most 5× a second
+    let level_app = app.clone();
+    let last_level = Mutex::new(std::time::Instant::now());
     let send = move |mono: Vec<f32>| {
+        if let Ok(mut t) = last_level.try_lock() {
+            if t.elapsed() >= Duration::from_millis(200) {
+                *t = std::time::Instant::now();
+                let rms = (mono.iter().map(|x| x * x).sum::<f32>() / mono.len().max(1) as f32).sqrt();
+                let _ = level_app.emit("voice-level", (rms * 4.0).min(1.0));
+            }
+        }
         let mut out = Vec::with_capacity(mono.len() / 2 + 8);
         rs.lock().unwrap().push(&mono, &mut out);
         let _ = tx.send(out);
@@ -450,11 +469,35 @@ fn listen(app: AppHandle, lang: String, mic: String, stop: Arc<AtomicBool>) -> a
             err,
             None,
         )?,
+        cpal::SampleFormat::I32 => dev.build_input_stream(
+            &cfg.config(),
+            move |d: &[i32], _: &_| send(d.chunks(ch).map(|f| f.iter().map(|&s| s as f32 / 2_147_483_648.0).sum::<f32>() / ch as f32).collect()),
+            err,
+            None,
+        )?,
+        cpal::SampleFormat::U16 => dev.build_input_stream(
+            &cfg.config(),
+            move |d: &[u16], _: &_| send(d.chunks(ch).map(|f| f.iter().map(|&s| (s as f32 - 32768.0) / 32768.0).sum::<f32>() / ch as f32).collect()),
+            err,
+            None,
+        )?,
+        cpal::SampleFormat::F64 => dev.build_input_stream(
+            &cfg.config(),
+            move |d: &[f64], _: &_| send(d.chunks(ch).map(|f| (f.iter().sum::<f64>() / ch as f64) as f32).collect()),
+            err,
+            None,
+        )?,
         f => anyhow::bail!("unsupported mic format {f:?}"),
     };
     stream.play()?;
-    linfo!("voice clips: listening ({lang}, {})", dev.name().unwrap_or_default());
-    let res = recognise(&lang, rx, &stop, |hit| {
+    linfo!("voice clips: listening ({lang}, {}, {:?} {} Hz)", dev.name().unwrap_or_default(), cfg.sample_format(), cfg.sample_rate().0);
+    *LAST_ERROR.lock().unwrap() = None;
+    let heard_app = app.clone();
+    let on_heard = move |text: &str| {
+        ldebug!("voice clips: recognised \"{text}\"");
+        let _ = heard_app.emit("voice-heard", text.to_string());
+    };
+    let res = recognise(&lang, rx, &stop, on_heard, |hit| {
         linfo!("voice clips: heard {hit:?}");
         let in_game = app.try_state::<ClipsState>().is_some_and(|st| st.games.load(Ordering::SeqCst) > 0);
         match hit {
@@ -501,8 +544,10 @@ pub fn sync(app: &AppHandle) {
     *run = Some((stop.clone(), key));
     let app = app.clone();
     std::thread::spawn(move || {
-        if let Err(e) = listen(app, s.voice_lang.clone(), s.mic_device.clone(), stop) {
+        if let Err(e) = listen(app.clone(), s.voice_lang.clone(), s.mic_device.clone(), stop) {
             lwarn!("voice clips: {e}");
+            *LAST_ERROR.lock().unwrap() = Some(format!("{e:#}"));
+            let _ = app.emit("clips-status", serde_json::json!({}));
         }
     });
 }

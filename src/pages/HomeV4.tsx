@@ -15,7 +15,7 @@ import { head } from "../achievements";
 import { fixSkinAlpha } from "../skinAlpha";
 import { uiPrefs, type Design } from "../ui";
 import { tr } from "../i18n";
-import { ProfileModal, WrappedModal, wrappedSeason } from "../components/Profile";
+import { lastMonth, monthlySeason, periodLabel, ProfileModal, WrappedModal, wrappedSeason, type Period } from "../components/Profile";
 import { MusicDock } from "../components/MusicPlayer";
 import { forgetPlace, placeImg, useFriends, useLastPlace, useVersionArt } from "./Home";
 
@@ -373,21 +373,44 @@ function Stats({ friends }: { friends: SocialUser[] | null }) {
 
 /** "My profile" and, in December, the Wrapped banner: the same on every v4 Home. */
 function ProfileEntry() {
-  const [open, setOpen] = useState<"profile" | "wrapped" | null>(null);
+  const { toast } = useStore();
+  const [open, setOpen] = useState<"profile" | Period | null>(null);
+  const now = new Date();
+  // in early January the Wrapped is still last year's
+  const year: Period = { year: now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear() };
+  const month = lastMonth(now);
+  const showMonth = monthlySeason(now);
+  // once per month: a notification that the recap is ready (it also lands in the bell)
+  useEffect(() => {
+    if (!showMonth) return;
+    const key = `kuubl.monthly.${month.year}-${month.month}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+    } catch {
+      return;
+    }
+    toast(tr(`Tvůj ${periodLabel(month)} v Kuublu je připravený, najdeš ho na Domů`, `Your ${periodLabel(month)} in Kuubl is ready, find it on Home`), "info");
+  }, []);
   return (
     <>
       <div className="v4-pentry">
         <button className="v4-btn" onClick={() => setOpen("profile")}>
           <Icon name="user" size={14} /> {tr("Můj profil", "My profile")}
         </button>
+        {showMonth && (
+          <button className="v4-btn wrapped" onClick={() => setOpen(month)}>
+            <Icon name="calendar" size={14} /> {tr(`Tvůj ${periodLabel(month)}`, `Your ${periodLabel(month)}`)}
+          </button>
+        )}
         {wrappedSeason() && (
-          <button className="v4-btn wrapped" onClick={() => setOpen("wrapped")}>
-            <Icon name="sparkles" size={14} /> Kuubl Wrapped {new Date().getFullYear()}
+          <button className="v4-btn wrapped" onClick={() => setOpen(year)}>
+            <Icon name="sparkles" size={14} /> Kuubl Wrapped {year.year}
           </button>
         )}
       </div>
       {open === "profile" && <ProfileModal onClose={() => setOpen(null)} />}
-      {open === "wrapped" && <WrappedModal onClose={() => setOpen(null)} />}
+      {open && open !== "profile" && <WrappedModal period={open} onClose={() => setOpen(null)} />}
     </>
   );
 }

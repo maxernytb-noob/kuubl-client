@@ -170,6 +170,11 @@ pub async fn import_file(path: &str) -> Result<Instance> {
     import_file_h(path, None).await
 }
 
+/// Import with progress in the downloads list (the import runs in the background, see lib.rs).
+pub async fn import_file_tracked(path: &str, h: &downloads::Handle) -> Result<Instance> {
+    import_file_h(path, Some(h)).await
+}
+
 async fn import_file_h(path: &str, h: Option<&downloads::Handle>) -> Result<Instance> {
     let p = PathBuf::from(path);
     let tmp = settings::cache_dir().join("import");

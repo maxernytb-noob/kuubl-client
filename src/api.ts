@@ -358,6 +358,7 @@ export interface Clip {
   thumb: string | null;
 }
 export interface ClipsStatus {
+  voiceError?: string | null;
   state: "starting" | "recording" | "paused" | "error";
   error: string | null;
   bufferBytes: number;
@@ -419,6 +420,8 @@ export interface SocialProfile {
   cape?: string;
   /** Kuubl pet id ("" = none). */
   pet?: string;
+  /** Who may send a friend request. */
+  requests?: "everyone" | "fof" | "nobody";
 }
 export interface SocialUser {
   uuid: string;
@@ -682,6 +685,7 @@ export const api = {
   importCode: (code: string) => invoke<Instance>("import_code", { code }),
   exportPack: (instance: string, dest: string) => invoke<void>("export_pack", { instance, dest }),
   importPack: (path: string) => invoke<Instance>("import_pack", { path }),
+  importPackBg: (path: string) => invoke<number>("import_pack_bg", { path }),
   lunarProfiles: () => invoke<LunarProfile[]>("lunar_profiles"),
   importLunar: (path: string, mcVersion: string, name: string) => invoke<Instance>("import_lunar", { path, mcVersion, name }),
   /** Modrinth / CurseForge modpack -> new instance. */

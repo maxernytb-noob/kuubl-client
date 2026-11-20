@@ -19,6 +19,7 @@ const P: Record<string, string> = {
   refresh: "M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5",
   zap: "M13 2 4 14h7l-1 8 9-12h-7z",
   shirt: "M8 3 3 6l2 5 3-1v11h8V10l3 1 2-5-5-3a4 4 0 0 1-8 0z",
+  calendar: "M4 6h16v14H4zM4 10h16M8 3v5M16 3v5",
   file: "M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6",
   share: "M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13",
   copy: "M9 9h11v11H9zM5 15H4V4h11v1",

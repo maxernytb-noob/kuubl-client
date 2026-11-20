@@ -292,6 +292,8 @@ pub struct StatusInfo {
     recorder_missing: bool,
     /// Voice clips: Vosk + the model for the chosen language are downloaded.
     voice_installed: bool,
+    /// Why voice clips couldn't start, if they couldn't.
+    voice_error: Option<String>,
 }
 
 /// Windows/Linux: downloads voice recognition for the chosen language (progress as `voice-progress`).
@@ -360,6 +362,10 @@ pub fn clips_status(st: State<ClipsState>) -> StatusInfo {
         voice_installed: voice::installed(&st.settings.read().unwrap().voice_lang),
         #[cfg(not(any(windows, target_os = "linux")))]
         voice_installed: false,
+        #[cfg(any(windows, target_os = "linux"))]
+        voice_error: voice::LAST_ERROR.lock().unwrap().clone(),
+        #[cfg(not(any(windows, target_os = "linux")))]
+        voice_error: None,
     }
 }
 

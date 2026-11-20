@@ -1,6 +1,6 @@
 # Maintainer: maxem <maxernytb@gmail.com>
 pkgname=kuubl-client
-pkgver=1.1.0
+pkgver=1.1.1
 pkgrel=1
 pkgdesc="Minecraft launcher pro hraní i natáčení — mody z Modrinthu a CurseForge"
 arch=('x86_64')
@@ -28,7 +28,7 @@ optdepends=(
 options=('!lto' '!debug')
 source=("$pkgname-$pkgver.tar.gz"
         "$pkgname.desktop")
-sha256sums=('2841cf5992b5beec29458ebc5da6f8c2277afcd18a4cae3ecc218b0935a31c99'
+sha256sums=('c18efe89a8319c72c3f673e2b58dedb808dade5dc16faabcd4e24ae7dd2b4d02'
             'ebfffae194ca9f21d76f673ebc8bb238d641ec78f73875773321150a489ae9f8')
 
 prepare() {

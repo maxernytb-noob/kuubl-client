@@ -99,17 +99,13 @@ export default function CreateInstance({ onClose }: { onClose: () => void }) {
   const importFile = async () => {
     const path = await open({ filters: [{ name: "Modpack", extensions: ["mrpack", "zip", "dawnpack"] }] });
     if (!path) return;
-    setBusy(true);
+    // runs in the background with progress in the downloads list; the instance shows up when it's done
     try {
-      const inst = await api.importPack(path as string);
-      await reloadInstances();
-      toast(`${tr("Importováno", "Imported")}: ${inst.name}`, "success");
+      await api.importPackBg(path as string);
+      toast(tr("Importuji modpack, průběh uvidíš ve stahování", "Importing the modpack, follow it in downloads"), "info");
       onClose();
-      go({ page: "instance", id: inst.id });
     } catch (e) {
       toast(errText(e), "error");
-    } finally {
-      setBusy(false);
     }
   };
 

@@ -387,6 +387,11 @@ fn translate(msg: &str) -> String {
     match msg {
         "player doesn't use Justice Client yet" => l!("Tenhle hráč ještě nepoužívá Kuubl Client", "That player doesn't use Kuubl Client yet"),
         "already friends" => l!("Už jste přátelé", "You're already friends"),
+        "this player doesn't accept friend requests" => l!("Tenhle hráč nepřijímá žádosti o přátelství", "This player doesn't accept friend requests"),
+        "this player only accepts friend requests from friends of friends" => l!(
+            "Tenhle hráč přijímá žádosti jen od přátel svých přátel",
+            "This player only accepts friend requests from friends of friends"
+        ),
         "that's you" => l!("To jsi ty :)", "That's you :)"),
         "you can only message friends" => l!("Psát můžeš jen přátelům", "You can only message friends"),
         "session expired" | "not signed in" => l!("Přihlášení vypršelo, přihlas se znovu", "Your session expired, sign in again"),

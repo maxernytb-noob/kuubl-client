@@ -1109,6 +1109,27 @@ async fn import_lunar(path: String, mc_version: String, name: String) -> Res<Ins
     e(packs::import_lunar(&path, &mc_version, &name).await)
 }
 
+/// Imports a modpack file in the background, shown in the downloads list like a modpack download;
+/// the instance list refreshes when it's done (the dialog doesn't have to stay open).
+#[tauri::command]
+fn import_pack_bg(path: String) -> u64 {
+    let name = std::path::Path::new(&path).file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "Modpack".into());
+    let h = downloads::start(&name, "modpack");
+    let id = h.id;
+    tauri::async_runtime::spawn(async move {
+        let r = packs::import_file_tracked(&path, &h).await;
+        events::emit("instances-changed", ());
+        match r {
+            Ok(inst) => {
+                events::toast(&l!("Modpack {} je připravený", "Modpack {} is ready", inst.name));
+                downloads::finish(id, Ok(()));
+            }
+            Err(err) => downloads::finish(id, Err(format!("{err:#}"))),
+        }
+    });
+    id
+}
+
 #[tauri::command]
 async fn import_pack(path: String) -> Res<Instance> {
     e(packs::import_file(&path).await)
@@ -1631,7 +1652,7 @@ pub fn run() {
             optimize_undo,
             save_mod_profile, apply_mod_profile, delete_mod_profile, list_media, delete_media, obs_test,
             list_worlds, backup_world, snapshot_instance, list_backups, restore_backup, delete_backup,
-            share_code, import_code, export_pack, import_pack, install_modpack, lunar_profiles, import_lunar,
+            share_code, import_code, export_pack, import_pack, import_pack_bg, install_modpack, lunar_profiles, import_lunar,
             download_modpack, download_list, download_pause, download_resume, download_cancel, download_clear,
             modbot_chat, modbot_build, modbot_add,
             list_servers, save_server, remove_server, ping_server, discover_servers,

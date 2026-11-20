@@ -937,6 +937,16 @@ function EditProfile({ me, onClose, onSaved }: { me: SocialUser; onClose: () => 
             <input className="input" value={p.status ?? ""} maxLength={80} onChange={(e) => setP({ ...p, status: e.target.value })} placeholder={tr("Točím nové video", "Filming a new video")} />
           </div>
           <div className="field">
+            <label>{tr("Kdo ti může poslat žádost o přátelství", "Who can send you a friend request")}</label>
+            <div className="seg" style={{ margin: 0 }}>
+              {([["everyone", tr("Všichni", "Everyone")], ["fof", tr("Přátelé přátel", "Friends of friends")], ["nobody", tr("Nikdo", "Nobody")]] as const).map(([v, l]) => (
+                <button key={v} className={(p.requests ?? "everyone") === v ? "on" : ""} onClick={() => setP({ ...p, requests: v })}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="field">
             <label>Bio</label>
             <textarea className="input" rows={4} value={p.bio ?? ""} maxLength={300} onChange={(e) => setP({ ...p, bio: e.target.value })} placeholder={tr("Pár slov o sobě…", "A few words about you…")} />
           </div>
