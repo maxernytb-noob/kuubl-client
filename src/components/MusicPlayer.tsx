@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { media, type MediaState } from "../api";
 import { useStore } from "../store";
 import { Icon } from "../icons";
@@ -9,7 +10,8 @@ import { coverClicked, playNotes } from "./Secrets";
 
 // ---------- Shared state (nav button + player) ----------
 // The music comes from the system's media controls (Windows) or MPRIS (Linux): Sonolith, Spotify, a browser…
-type Music = { state: MediaState | null; at: number; hidden: boolean; prefer: string | null };
+// `docked`: the player lives in the Home's music slot (MusicDock) whenever that slot is on screen.
+type Music = { state: MediaState | null; at: number; hidden: boolean; prefer: string | null; docked: boolean; dock: HTMLElement | null };
 const ls = (k: string) => {
   try {
     return localStorage.getItem(k);
@@ -22,7 +24,7 @@ const lsSet = (k: string, v: string | null) => {
     v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v);
   } catch {}
 };
-let music: Music = { state: null, at: 0, hidden: ls("jc.player.hidden") === "1", prefer: ls("jc.media.source") };
+let music: Music = { state: null, at: 0, hidden: ls("jc.player.hidden") === "1", prefer: ls("jc.media.source"), docked: ls("jc.player.docked") === "1", dock: null };
 const subs = new Set<() => void>();
 function set(p: Partial<Music>) {
   music = { ...music, ...p };
@@ -32,6 +34,10 @@ const useMusic = () => useSyncExternalStore((f) => (subs.add(f), () => subs.dele
 function setHidden(h: boolean) {
   lsSet("jc.player.hidden", h ? "1" : "0");
   set({ hidden: h });
+}
+function setDocked(d: boolean) {
+  lsSet("jc.player.docked", d ? "1" : "0");
+  set({ docked: d, hidden: d ? false : music.hidden });
 }
 function setPrefer(id: string | null) {
   lsSet("jc.media.source", id);
@@ -122,6 +128,11 @@ function useDrag(ref: React.RefObject<HTMLDivElement | null>, mounted: boolean) 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // docked in the Home slot: no floating position at all (a saved one would push it out of the slot)
+    if (!mounted) {
+      Object.assign(el.style, { left: "", top: "", right: "", bottom: "", transform: "" });
+      return;
+    }
     const KEY = "jc.player.pos", M = 16, SNAP = 40;
     type Anchor = { ax: "l" | "r"; dx: number; ay: "t" | "b"; dy: number };
     const fromRect = (r: DOMRect): Anchor => {
@@ -155,10 +166,21 @@ function useDrag(ref: React.RefObject<HTMLDivElement | null>, mounted: boolean) 
       start = { dx: e.clientX - r.left, dy: e.clientY - r.top, x0: r.left, y0: r.top, w: r.width, h: r.height };
       el.classList.add("dragging");
       el.classList.remove("snap");
+      music.dock?.classList.add("armed");
       e.preventDefault();
     };
+    const overDock = (x: number, y: number) => {
+      const r = music.dock?.getBoundingClientRect();
+      return !!r && r.width > 0 && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+    };
+    let lastX = 0, lastY = 0;
     const move = (e: PointerEvent) => {
       if (!start) return;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      const hot = overDock(e.clientX, e.clientY);
+      music.dock?.classList.toggle("over", hot);
+      el.classList.toggle("to-dock", hot);
       const x = Math.max(M, Math.min(innerWidth - start.w - M, e.clientX - start.dx));
       const y = Math.max(M, Math.min(innerHeight - start.h - M, e.clientY - start.dy));
       tx = Math.round(x - start.x0);
@@ -174,7 +196,9 @@ function useDrag(ref: React.RefObject<HTMLDivElement | null>, mounted: boolean) 
       el.style.transform = "";
       tx = ty = 0;
       start = null;
-      el.classList.remove("dragging");
+      el.classList.remove("dragging", "to-dock");
+      music.dock?.classList.remove("armed", "over");
+      if (moved && overDock(lastX, lastY)) return setDocked(true);
       if (!moved) return;
       const a = fromRect(r);
       // Close to an edge: stick to it.
@@ -211,12 +235,38 @@ function useDrag(ref: React.RefObject<HTMLDivElement | null>, mounted: boolean) 
   }, [ref, mounted]);
 }
 
+/** The Home's slot for the player: an invitation while empty, the player itself once dropped in. */
+export function MusicDock() {
+  const m = useMusic();
+  const reg = useCallback((el: HTMLDivElement | null) => {
+    if (el) set({ dock: el });
+    else if (music.dock) set({ dock: null });
+  }, []);
+  return (
+    <div className={`mp-dock ${m.docked ? "filled" : ""}`} ref={reg}>
+      {!m.docked && (
+        <div className="mp-dock-hint">
+          <span className="ic"><Icon name="music" size={18} /></span>
+          <div className="grow">
+            <b>{tr("Místo pro hudbu", "A spot for music")}</b>
+            <span>{tr("Přetáhni sem přehrávač, nebo ho sem rovnou připni.", "Drag the player here, or pin it right away.")}</span>
+          </div>
+          <button className="btn sm" onClick={() => setDocked(true)}>
+            <Icon name="download" size={13} /> {tr("Připnout", "Pin here")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function MusicPlayer() {
   const { toast } = useStore();
   usePoll();
   const m = useMusic();
   const ref = useRef<HTMLDivElement>(null);
-  useDrag(ref, !m.hidden);
+  const docked = m.docked && !!m.dock;
+  useDrag(ref, !m.hidden && !docked);
   const [panel, setPanel] = useState(false);
   const [popping, setPopping] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -277,7 +327,7 @@ export default function MusicPlayer() {
     return () => clearTimeout(t);
   }, [panel]);
 
-  if (m.hidden) return null;
+  if (m.hidden && !docked) return null;
   const cmd = (c: "playPause" | "next" | "previous" | "seek", v?: number) =>
     fromSnl
       ? snlCall(c === "playPause" ? "player.toggle" : c === "next" ? "player.next" : c === "previous" ? "player.previous" : "player.seek", c === "seek" ? { positionMs: Math.round((v ?? 0) * 1000) } : undefined).catch((e) => toast(String(e), "error"))
@@ -292,9 +342,15 @@ export default function MusicPlayer() {
     setTimeout(() => setPopping(false), 800);
   };
 
-  return (
-    <div ref={ref} className={`mplayer ${panel ? "open" : ""} ${popping ? "popping" : ""} ${playing ? "" : "paused"}`}>
-      <div className="mp-grip" title={tr("Přetáhni přehrávač kamkoli · dvojklik = zpět do rohu", "Drag the player anywhere · double-click = back to the corner")} />
+  const body = (
+    <div ref={ref} className={`mplayer ${docked ? "docked" : ""} ${panel ? "open" : ""} ${popping ? "popping" : ""} ${playing ? "" : "paused"}`}>
+      {docked ? (
+        <button className="mp-undock" title={tr("Odepnout, přehrávač zase plave", "Unpin, the player floats again")} onClick={() => setDocked(false)}>
+          <Icon name="x" size={13} />
+        </button>
+      ) : (
+        <div className="mp-grip" title={tr("Přetáhni přehrávač kamkoli · na Domů ho můžeš pustit pod kamarády · dvojklik = zpět do rohu", "Drag the player anywhere · on Home you can drop it under your friends · double-click = back to the corner")} />
+      )}
       {!s ? (
         <div className="mp-empty">
           <div className="mp-cover idle">
@@ -380,6 +436,8 @@ export default function MusicPlayer() {
       )}
     </div>
   );
+  // docked: rendered inside the Home's slot; elsewhere it floats as usual
+  return docked ? createPortal(body, m.dock!) : body;
 }
 
 /** Song progress. Ticks on its own so the rest of the player doesn't re-render every second. */

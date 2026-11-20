@@ -250,7 +250,7 @@ const handlers: Record<string, (a: any) => unknown> = {
   game_versions: () => ["26.3", "26.2", "26.1.2", "26.1", "1.21.11", "1.21.10", "1.21.9", "1.21.8", "1.21.4", "1.21.1", "1.20.6", "1.20.4", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2", "1.8.9"].map((id) => ({ id, kind: "release", releaseTime: "" })),
   loader_versions: () => [{ version: "0.17.2", stable: true }, { version: "0.17.1", stable: true }],
   instance_path: () => "D:/KuublClient/instances/x",
-  list_accounts: () => [{ id: "a", kind: OFFLINE ? "offline" : "msa", username: OFFLINE ? "Pepa_CZ" : "Maxern_", uuid: "069a79f444e94726a5befca90e38aaf5", skinUrl: "", skinVariant: "CLASSIC", active: true }],
+  list_accounts: () => [{ id: "a", kind: OFFLINE ? "offline" : "msa", username: OFFLINE ? "Pepa_CZ" : "Maxern_", uuid: "069a79f444e94726a5befca90e38aaf5", skinUrl: "", skinVariant: "CLASSIC", active: true }, { id: "b", kind: "offline", username: "maxerntest", uuid: "5f3a1c2b9d8e4f7a8b6c5d4e3f2a1b0c", skinUrl: "", skinVariant: "CLASSIC", active: false }],
   running_games: () => (LOGWIN ? ["cinematic"] : []),
   game_logs: () => LOGWIN ? SAMPLE_LOG : [],
   open_logs_window: () => null,

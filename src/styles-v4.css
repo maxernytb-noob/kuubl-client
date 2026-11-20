@@ -119,7 +119,22 @@ html.ui-noanim .v4-pano .strip { animation: none; }
 .v4-player:active { cursor: grabbing; }
 .v4-player canvas { display: block; filter: drop-shadow(0 14px 16px rgba(0,0,0,.55)); }
 .v4-stage .nametag { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 2; background: rgba(0,0,0,.55); color: #fff; padding: 3px 9px; border-radius: 4px; font: 600 12.5px "JetBrains Mono", var(--mono); }
-.v4-acct { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 3; display: inline-flex; align-items: center; gap: 8px; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line-2); border-radius: 8px; padding: 5px 10px 5px 6px; color: var(--text); font: 600 13px var(--font); cursor: pointer; }
+.v4-acctwrap { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 4; }
+.v4-acct.open .icon:last-child, .v4-acct.open svg:last-child { transform: rotate(180deg); }
+.v4-acctmenu { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: 260px; padding: 8px; border-radius: 12px; background: var(--panel); border: 1px solid var(--line-2); box-shadow: 0 18px 44px rgba(0,0,0,.55); animation: acctIn .16s ease-out; }
+@keyframes acctIn { from { opacity: 0; transform: translate(-50%, 6px); } }
+.v4-acctmenu .v4-h { margin: 4px 6px 6px; }
+.v4-acctrow { width: 100%; display: flex; align-items: center; gap: 10px; padding: 7px 8px; border: 0; border-radius: 8px; background: none; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.v4-acctrow:hover { background: var(--panel-2); }
+.v4-acctrow.on { background: color-mix(in srgb, var(--red) 12%, transparent); color: var(--text); }
+.v4-acctrow.on svg { color: var(--red); }
+.v4-acctrow b { display: block; font-size: 13.5px; }
+.v4-acctrow small { display: block; font-size: 11.5px; color: var(--text-3); }
+.v4-acctrow .avatar { border-radius: 6px; }
+.v4-acctfoot { display: flex; gap: 6px; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; }
+.v4-acctfoot button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 30px; border-radius: 7px; border: 1px solid var(--line-2); background: var(--panel-2); color: var(--text-2); font: 600 12.5px var(--font); cursor: pointer; }
+.v4-acctfoot button:hover { color: var(--text); background: var(--panel-3); }
+.v4-acct { position: relative; display: inline-flex; align-items: center; gap: 8px; background: color-mix(in srgb, var(--panel) 92%, transparent); border: 1px solid var(--line-2); border-radius: 8px; padding: 5px 10px 5px 6px; color: var(--text); font: 600 13px var(--font); cursor: pointer; }
 .v4-tools { position: absolute; right: 12px; bottom: 12px; z-index: 3; display: flex; gap: 6px; }
 .v4-tools button { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line-2); background: color-mix(in srgb, var(--panel) 92%, transparent); color: var(--text); display: grid; place-items: center; cursor: pointer; }
 .v4-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
@@ -248,6 +263,24 @@ html.ui-noanim .v4-pano .strip { animation: none; }
 /* no sidebar on the left in Arcade: pages get the same margin on both sides */
 .d-arcade .page { padding-left: 28px; }
 .d-arcade .page.v4-arcade { padding-left: 0; }
+
+/* Music slot on the v4 Home (MusicPlayer's MusicDock) */
+.mp-dock { position: relative; border-radius: 14px; transition: background .15s, box-shadow .15s; }
+.mp-dock-hint { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 14px; border: 1px dashed var(--line-2); color: var(--text-3); }
+.mp-dock-hint .ic { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; flex: none; background: color-mix(in srgb, #a78bfa 16%, var(--panel-2)); color: #c4b5fd; }
+.mp-dock-hint b { display: block; color: var(--text-2); font-size: 13.5px; }
+.mp-dock-hint span { display: block; font-size: 12px; line-height: 1.35; }
+/* while the player is being dragged the slot lights up, and more so right under the pointer */
+.mp-dock.armed .mp-dock-hint { border-color: color-mix(in srgb, #a78bfa 60%, var(--line-2)); background: color-mix(in srgb, #a78bfa 8%, transparent); }
+.mp-dock.over .mp-dock-hint { border-style: solid; border-color: #a78bfa; background: color-mix(in srgb, #a78bfa 16%, transparent); transform: scale(1.02); }
+.mplayer.to-dock { opacity: .75; }
+/* the docked player: a card in the column, not a floating window */
+.mplayer.docked { position: relative !important; inset: auto !important; width: 100%; z-index: auto; transform: none !important; box-shadow: none; border-color: var(--line); background: var(--panel); animation: mpDock .3s ease-out; }
+.mplayer.docked .mp-cover { width: 58px; height: 58px; }
+@keyframes mpDock { from { opacity: 0; transform: translateY(6px); } }
+.mp-undock { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; border-radius: 6px; border: 0; background: transparent; color: var(--text-3); display: grid; place-items: center; cursor: pointer; opacity: 0; transition: opacity .15s; z-index: 1; }
+.mplayer.docked:hover .mp-undock { opacity: 1; }
+.mp-undock:hover { background: var(--panel-3); color: var(--text); }
 
 /* Profile entry on the v4 Home */
 .v4-pentry { display: flex; gap: 8px; margin-left: auto; }

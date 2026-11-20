@@ -16,6 +16,7 @@ import { fixSkinAlpha } from "../skinAlpha";
 import { uiPrefs, type Design } from "../ui";
 import { tr } from "../i18n";
 import { ProfileModal, WrappedModal, wrappedSeason } from "../components/Profile";
+import { MusicDock } from "../components/MusicPlayer";
 import { forgetPlace, placeImg, useFriends, useLastPlace, useVersionArt } from "./Home";
 
 /** Loader colour, used for the tag and the stripe on a row. */
@@ -137,6 +138,66 @@ function PlayerModel({ account }: { account: Account }) {
   return (
     <div className="v4-player" ref={box} title={tr("Táhni myší a otoč postavou", "Drag to turn the player")}>
       <canvas ref={canvas} />
+    </div>
+  );
+}
+
+// ---------- Account switcher (the pill under the player) ----------
+
+function AccountSwitch() {
+  const { activeAccount, accounts, reloadAccounts, go, toast } = useStore();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => !box.current?.contains(e.target as Node) && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    addEventListener("mousedown", close);
+    addEventListener("keydown", esc);
+    return () => {
+      removeEventListener("mousedown", close);
+      removeEventListener("keydown", esc);
+    };
+  }, [open]);
+  const pick = async (id: string) => {
+    setOpen(false);
+    if (id === activeAccount?.id) return;
+    try {
+      await api.setActiveAccount(id);
+      await reloadAccounts();
+    } catch (e) {
+      toast(String(e), "error");
+    }
+  };
+  return (
+    <div className="v4-acctwrap" ref={box}>
+      {open && (
+        <div className="v4-acctmenu">
+          <div className="v4-h">{tr("Účty", "Accounts")}</div>
+          {accounts.map((a) => (
+            <button key={a.id} className={`v4-acctrow ${a.active ? "on" : ""}`} onClick={() => pick(a.id)}>
+              <Avatar account={a} size={28} />
+              <span className="grow" style={{ minWidth: 0 }}>
+                <b className="ellipsis">{a.username}</b>
+                <small>{a.kind === "msa" ? "Microsoft" : tr("Offline účet", "Offline account")}</small>
+              </span>
+              {a.active && <Icon name="check" size={15} />}
+            </button>
+          ))}
+          <div className="v4-acctfoot">
+            <button onClick={() => (setOpen(false), go({ page: "accounts" }))}>
+              <Icon name="plus" size={13} /> {tr("Přidat účet", "Add account")}
+            </button>
+            <button onClick={() => (setOpen(false), go({ page: "accounts" }))}>
+              <Icon name="shirt" size={13} /> {tr("Skiny", "Skins")}
+            </button>
+          </div>
+        </div>
+      )}
+      <button className={`v4-acct ${open ? "open" : ""}`} onClick={() => (accounts.length ? setOpen(!open) : go({ page: "accounts" }))}>
+        {activeAccount ? <Avatar account={activeAccount} size={22} /> : <Icon name="user" size={16} />}
+        {activeAccount?.username ?? tr("Přidat účet", "Add account")} <Icon name="down" size={13} />
+      </button>
     </div>
   );
 }
@@ -349,10 +410,7 @@ function LifeHome() {
           <HeroBackground inst={hero} />
           {activeAccount && <span className="nametag">{activeAccount.username}</span>}
           {activeAccount ? <PlayerModel account={activeAccount} /> : null}
-          <button className="v4-acct" onClick={() => go({ page: "accounts" })}>
-            {activeAccount ? <Avatar account={activeAccount} size={22} /> : <Icon name="user" size={16} />}
-            {activeAccount?.username ?? tr("Přidat účet", "Add account")} <Icon name="down" size={13} />
-          </button>
+          <AccountSwitch />
           <div className="v4-tools">
             <button title={tr("Skiny a pláště", "Skins and capes")} onClick={() => go({ page: "accounts" })}><Icon name="shirt" size={16} /></button>
             <button title={tr("Pozadí", "Background")} onClick={() => go({ page: "settings", tab: "appearance" })}><Icon name="image" size={16} /></button>
@@ -378,6 +436,7 @@ function LifeHome() {
           <Icon name="plus" size={16} /> {tr("Další servery", "More servers")}
         </button>
         <FriendsPanel friends={friends} />
+        <MusicDock />
         <div className="v4-foot">
           <button className="v4-btn accent" onClick={() => go({ page: "instances" })}>
             <Icon name="box" size={15} /> {tr("Instance", "Instances")}
