@@ -1,6 +1,6 @@
 [package]
 name = "kuubl-client"
-version = "1.1.1"
+version = "1.1.2"
 description = "Kuubl Client - Minecraft launcher for creators"
 edition = "2021"
 
