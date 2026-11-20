@@ -445,7 +445,9 @@ pub async fn set_cape(account_id: &str, cape_id: Option<&str>) -> Result<()> {
 
 /// Skins of offline accounts: served by Kuubl Social under their MD5, and kept here too so the
 /// launcher preview and your own player in-game work before (or without) the upload.
-pub const KUUBL_SKINS: &str = "https://justiceclient.online/u/skins/";
+pub const KUUBL_SKINS: &str = "https://ertenix.net/justice/u/skins/";
+/// Where skins were linked before 1.0.1 (same files; some DNS filters block that domain).
+pub const OLD_SKINS: &str = "https://justiceclient.online/u/skins/";
 
 pub fn skins_dir() -> PathBuf {
     settings::data_dir().join("skins")
@@ -453,7 +455,7 @@ pub fn skins_dir() -> PathBuf {
 
 /// The local copy of a Kuubl skin URL, if we have it.
 pub fn skin_file(url: &str) -> Option<PathBuf> {
-    let name = url.strip_prefix(KUUBL_SKINS)?;
+    let name = url.strip_prefix(KUUBL_SKINS).or_else(|| url.strip_prefix(OLD_SKINS))?;
     if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '.') || name.starts_with('.') {
         return None;
     }
@@ -545,11 +547,14 @@ pub async fn fetch_player_skin(name: &str) -> Result<(Vec<u8>, String)> {
     if r.status().as_u16() == 404 || r.status().as_u16() == 204 {
         bail!(l!("Hráč {} neexistuje (nebo nemá koupený Minecraft)", "Player {} doesn't exist (or doesn't own Minecraft)", name));
     }
+    if r.status().as_u16() == 429 {
+        bail!(l!("Mojang teď dostává moc požadavků. Zkus to znovu za minutu.", "Mojang is getting too many requests right now. Try again in a minute."));
+    }
     if !r.status().is_success() {
         bail!(l!("Mojang neodpověděl ({})", "Mojang didn't answer ({})", r.status()));
     }
     let id = r.json::<Value>().await?["id"].as_str().unwrap_or_default().to_string();
-    let profile = net::get_json(&format!("https://sessionserver.mojang.com/session/minecraft/profile/{id}")).await?;
+    let profile = session_profile(&id).await?;
     use base64::Engine;
     let textures: Value = profile["properties"]
         .as_array()
@@ -563,6 +568,27 @@ pub async fn fetch_player_skin(name: &str) -> Result<(Vec<u8>, String)> {
     let variant = if skin["metadata"]["model"] == "slim" { "slim" } else { "classic" };
     let bytes = CLIENT.get(url).send().await?.error_for_status()?.bytes().await?.to_vec();
     Ok((bytes, variant.to_string()))
+}
+
+/// A profile from Mojang's session server. It allows only a few requests per profile, so on 429 it
+/// waits a moment and tries once more, then says so in plain words.
+async fn session_profile(id: &str) -> Result<Value> {
+    let url = format!("https://sessionserver.mojang.com/session/minecraft/profile/{id}");
+    for attempt in 0..2 {
+        let r = CLIENT.get(&url).send().await?;
+        if r.status().as_u16() == 429 {
+            if attempt == 0 {
+                tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+                continue;
+            }
+            bail!(l!("Mojang teď dostává moc požadavků. Zkus to znovu za minutu.", "Mojang is getting too many requests right now. Try again in a minute."));
+        }
+        if !r.status().is_success() {
+            bail!(l!("Mojang neodpověděl ({})", "Mojang didn't answer ({})", r.status()));
+        }
+        return Ok(r.json().await?);
+    }
+    unreachable!()
 }
 
 /// The account's current skin PNG bytes + variant ("slim"/"classic"), for saving into the library.

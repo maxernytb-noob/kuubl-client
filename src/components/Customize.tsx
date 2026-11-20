@@ -8,7 +8,8 @@ import { InstGlyph, Switch, useAsync } from "./common";
 import { tr, t } from "../i18n";
 import Select from "./Select";
 import { NAV_ALL, uiPrefs, type HomeSection, type NavPage, type UiPrefs } from "../ui";
-import { setSoundPrefs, sound } from "../sounds";
+import { setSoundPrefs, sound, uiTick } from "../sounds";
+import { DesignChoices } from "./DesignPicker";
 
 const NAV_LABEL: Record<NavPage, [string, string, string]> = {
   home: ["home", "Domů", "Home"],
@@ -34,7 +35,7 @@ function Seg<T extends string>({ value, options, onChange }: { value: T; options
 
 /** Settings → Customize: launcher look, sidebar, shortcuts and the in-game menu switch. */
 export default function Customize() {
-  const { settings, saveSettings, instances } = useStore();
+  const { settings, saveSettings, instances, toast } = useStore();
   const [servers] = useAsync(() => api.listServers(), []);
   const [addKind, setAddKind] = useState<"instance" | "server">("instance");
   const [draft, setDraft] = useState<Partial<UiPrefs>>({});
@@ -63,8 +64,40 @@ export default function Customize() {
       ? instances.filter((i) => !p.shortcuts.some((s) => s.kind === "instance" && s.id === i.id)).map((i) => [i.id, i.name] as const)
       : (servers ?? []).filter((s) => s.instance && !p.shortcuts.some((x) => x.kind === "server" && x.id === s.id)).map((s) => [s.id, s.name] as const);
 
+  const pickHeroBg = async () => {
+    const f = await open({ filters: [{ name: tr("Obrázek", "Picture"), extensions: ["png", "jpg", "jpeg", "webp", "gif"] }], title: tr("Pozadí za postavou", "Background behind the player") });
+    if (typeof f === "string") set({ heroBg: "custom", heroBgImage: f });
+  };
+
   return (
     <div className="col" style={{ gap: 14 }}>
+      <div className="card pad">
+        <div className="txt" style={{ marginBottom: 12 }}>
+          <b>{tr("Design", "Design")}</b>
+          <span className="muted small" style={{ display: "block" }}>{tr("Celkový vzhled launcheru.", "The launcher's overall look.")}</span>
+        </div>
+        <DesignChoices value={v.design} onPick={(d) => set({ design: d, designPicked: true })} />
+        {v.design !== "classic" && (
+          <div className="setting" style={{ paddingBottom: 0 }}>
+            <div className="txt">
+              <b>{tr("Pozadí na Domů", "Home background")}</b>
+              <span>{tr("Co je za tvou postavou a za HRÁT.", "What's behind your player and the PLAY button.")}</span>
+            </div>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <Seg
+                value={v.heroBg}
+                options={[["sunset", tr("Západ slunce", "Sunset")], ["panorama", tr("Panorama", "Panorama")], ["drop", tr("Drop", "Drop")], ["shot", tr("Moje hra", "My game")], ["custom", tr("Vlastní", "Custom")]]}
+                onChange={(x) => (x === "custom" && !v.heroBgImage ? pickHeroBg() : set({ heroBg: x }))}
+              />
+              {v.heroBg === "custom" && (
+                <button className="btn sm ghost" onClick={pickHeroBg}>
+                  <Icon name="image" size={13} /> {tr("Změnit obrázek", "Change picture")}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
       <div className="card pad">
         <div className="setting" style={{ paddingTop: 0, alignItems: "flex-start" }}>
           <div className="bg-preview" style={{ backgroundImage: v.bgImage ? `url("${convertFileSrc(v.bgImage)}")` : undefined }} />
@@ -169,7 +202,57 @@ export default function Customize() {
               <b>{tr("Zvuky kliknutí", "Click sounds")}</b>
               <span>{tr("Jemné cvaknutí na tlačítkách a přepínačích — satisfying odezva rozhraní.", "A soft tick on buttons and toggles — satisfying interface feedback.")}</span>
             </div>
-            <Switch checked={v.clickSounds} onChange={(x) => set({ clickSounds: x })} />
+            <Switch checked={v.clickSounds} onChange={(x) => set({ clickSounds: x, clickSoundsSet: true })} />
+          </div>
+        )}
+        {v.sounds && v.clickSounds && (
+          <div className="setting">
+            <div className="txt">
+              <b>{tr("Zvuk tlačítek", "Button sound")}</b>
+              <span>{tr("Vyber sadu, nebo nahraj vlastní zvuk na kliknutí a na najetí myší (.mp3, .wav, .ogg, do 300 kB).", "Pick a set, or upload your own sound for click and hover (.mp3, .wav, .ogg, up to 300 kB).")}</span>
+            </div>
+            <div className="col" style={{ gap: 8, alignItems: "flex-end" }}>
+              <Seg
+                value={v.clickPack}
+                options={[["soft", tr("Jemné", "Soft")], ["pop", "Pop"], ["wood", tr("Dřevo", "Wood")], ["retro", "Retro"], ["custom", tr("Vlastní", "Custom")]]}
+                onChange={(x) => {
+                  set({ clickPack: x });
+                  setTimeout(() => uiTick("click"), 50);
+                }}
+              />
+              {v.clickPack === "custom" && (
+                <div className="row" style={{ gap: 8 }}>
+                  {(["customClick", "customHover"] as const).map((k) => (
+                    <label key={k} className="btn sm ghost">
+                      <Icon name="upload" size={13} /> {k === "customClick" ? tr("Klik", "Click") : tr("Najetí", "Hover")}
+                      {v[k] && <Icon name="check" size={13} />}
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        hidden
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!f) return;
+                          if (f.size > 300_000) return toast(tr("Zvuk je moc velký (max 300 kB)", "The sound is too big (max 300 kB)"), "error");
+                          const r = new FileReader();
+                          r.onload = () => {
+                            set({ [k]: String(r.result) });
+                            setTimeout(() => uiTick(k === "customClick" ? "click" : "hover"), 100);
+                          };
+                          r.readAsDataURL(f);
+                        }}
+                      />
+                    </label>
+                  ))}
+                  {(v.customClick || v.customHover) && (
+                    <button className="btn sm ghost" onClick={() => set({ customClick: "", customHover: "" })}>
+                      <Icon name="trash" size={13} />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
         <div className="setting">

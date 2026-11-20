@@ -369,3 +369,104 @@ async fn import_curseforge(dir: &Path, fallback_name: &str) -> Result<Instance> 
     events::progress_done(&inst.id);
     Ok(inst)
 }
+
+// ---------------- Lunar Client ----------------
+
+/// A Lunar Client profile with its own Fabric mods folder.
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LunarProfile {
+    pub path: String,
+    pub name: String,
+    /// Minecraft version read from the folder names ("1.21.11"), when there is one.
+    pub mc_version: Option<String>,
+    pub mods: usize,
+}
+
+fn lunar_root() -> Option<PathBuf> {
+    dirs::home_dir().map(|h| h.join(".lunarclient"))
+}
+
+fn mc_version_in(path: &Path) -> Option<String> {
+    let re = regex::Regex::new(r"^1\.\d+(\.\d+)?$|^2\d\.\d+(\.\d+)?$").ok()?;
+    path.components().rev().filter_map(|c| c.as_os_str().to_str()).find(|s| re.is_match(s)).map(String::from)
+}
+
+fn jars(dir: &Path) -> Vec<PathBuf> {
+    std::fs::read_dir(dir)
+        .map(|d| d.flatten().map(|e| e.path()).filter(|p| p.extension().is_some_and(|x| x.eq_ignore_ascii_case("jar"))).collect())
+        .unwrap_or_default()
+}
+
+/// Every mods folder under ~/.lunarclient/profiles that has at least one jar (Lunar keeps one per
+/// profile and Minecraft version; the exact layout has changed between Lunar versions, so we search).
+pub fn lunar_profiles() -> Vec<LunarProfile> {
+    let Some(root) = lunar_root() else { return vec![] };
+    let mut out = Vec::new();
+    let mut stack = vec![(root.join("profiles"), 0)];
+    while let Some((dir, depth)) = stack.pop() {
+        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+        for e in entries.flatten() {
+            let p = e.path();
+            if !p.is_dir() {
+                continue;
+            }
+            if p.file_name().is_some_and(|n| n.eq_ignore_ascii_case("mods")) {
+                let n = jars(&p).len();
+                if n > 0 {
+                    let parent = p.parent().unwrap_or(&p);
+                    let mc = mc_version_in(&p);
+                    let label = parent.strip_prefix(root.join("profiles")).unwrap_or(parent).to_string_lossy().replace('\\', " / ");
+                    out.push(LunarProfile { path: p.to_string_lossy().into_owned(), name: if label.is_empty() { "Lunar".into() } else { label }, mc_version: mc, mods: n });
+                }
+            } else if depth < 5 {
+                stack.push((p, depth + 1));
+            }
+        }
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    out
+}
+
+/// Creates a Fabric instance from a Lunar mods folder: copies the jars (and a sibling config folder),
+/// then finds them on Modrinth by hash so they get names, icons and updates.
+pub async fn import_lunar(mods_dir: &str, mc_version: &str, name: &str) -> Result<Instance> {
+    let src = PathBuf::from(mods_dir);
+    let files = jars(&src);
+    if files.is_empty() {
+        bail!(l!("V téhle složce nejsou žádné mody (.jar)", "There are no mods (.jar) in this folder"));
+    }
+    if mc_version.trim().is_empty() {
+        bail!(l!("Vyber verzi Minecraftu", "Pick a Minecraft version"));
+    }
+    let minor = mc_version.trim().strip_prefix("1.").and_then(|r| r.split('.').next()).and_then(|m| m.parse::<u32>().ok());
+    if minor.is_some_and(|m| m < 16) {
+        bail!(l!("Fabric mody z Lunaru jdou až od Minecraftu 1.16.5", "Fabric mods from Lunar need Minecraft 1.16.5 or newer"));
+    }
+    let inst = instances::create(Instance {
+        name: if name.trim().is_empty() { format!("Lunar {mc_version}") } else { name.trim().to_string() },
+        mc_version: mc_version.trim().into(),
+        loader: "fabric".into(),
+        icon: "gamepad".into(),
+        ..Default::default()
+    })?;
+    let game = instances::game_dir(&inst.id);
+    let mods = game.join("mods");
+    std::fs::create_dir_all(&mods)?;
+    let mut tracked = Vec::new();
+    for f in &files {
+        let Some(file_name) = f.file_name() else { continue };
+        let dest = mods.join(file_name);
+        std::fs::copy(f, &dest)?;
+        if let Ok(h) = net::sha1_file(&dest) {
+            tracked.push((format!("mods/{}", file_name.to_string_lossy()), h));
+        }
+    }
+    // Lunar keeps mod settings next to the mods folder.
+    if let Some(cfg) = src.parent().map(|p| p.join("config")).filter(|p| p.is_dir()) {
+        let _ = instances::copy_dir(&cfg, &game.join("config"));
+    }
+    let _ = crate::content::track_by_hashes(&inst.id, &tracked).await;
+    Ok(inst)
+}
+

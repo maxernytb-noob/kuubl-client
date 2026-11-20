@@ -243,6 +243,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const installUpdate = useCallback(async () => {
+    // Linux packages and the AppImage: the launcher downloads and installs them itself (pkexec)
+    if (update?.manual && ["arch", "deb", "appimage"].includes(update.manual.kind)) {
+      const un = await listen<{ done: number; total: number }>("update-progress", (e) => setUpdateProgress(e.payload));
+      try {
+        setUpdateProgress({ done: 0, total: 0 });
+        await api.installUpdateLinux();
+        setUpdateProgress({ done: 1, total: 1 });
+        await relaunch();
+      } catch (e) {
+        setUpdateProgress(null);
+        toast(`${tr("Aktualizace selhala", "Update failed")}: ${errText(e)}`, "error");
+      } finally {
+        un();
+      }
+      return;
+    }
     if (!update?.raw) return;
     try {
       let total = 0;

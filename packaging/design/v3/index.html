@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<title>Kuubl v3 – návrhy</title>
+<!-- Design mockups for the Kuubl redesign: ?v=a | b | c. Open through vite: /packaging/design/v3/ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Fredoka:wght@400;500;600;700&family=Rubik:wght@400;500;700;900&family=Inter:wght@400;500;600;700&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@700;800&family=Inter+Tight:wght@400;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root { --ember: #f0661f; --ember-2: #ff8a3d; --coal: #131210; --coal-2: #1c1a17; --coal-3: #26231f; --bone: #ece6da; --bone-2: #d9d1c1; --ink-soft: #8b8478; }
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { width: 1280px; height: 800px; overflow: hidden; }
+img { display: block; }
+#root { height: 100%; }
+.ico { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ================= A: "Kýbl" — chunky stickers, hard offset shadows, floating dock ================= */
+.a { font-family: "Bricolage Grotesque", sans-serif; background: var(--coal); color: var(--bone); height: 100%; display: grid; grid-template-columns: 96px 1fr; position: relative; }
+.a::before { content: ""; position: absolute; inset: 0; background: radial-gradient(900px 500px at 85% -10%, rgba(240,102,31,.18), transparent 60%), radial-gradient(600px 400px at 0% 110%, rgba(240,102,31,.08), transparent 60%); pointer-events: none; }
+.a .dock { margin: 16px 0 16px 16px; background: var(--coal-2); border: 2.5px solid var(--coal-3); border-radius: 28px; display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 10px; position: relative; z-index: 1; }
+.a .dock .logo { width: 52px; height: 52px; border-radius: 18px; background: var(--ember); display: grid; place-items: center; box-shadow: 0 4px 0 #a8410d; margin-bottom: 10px; transform: rotate(-6deg); }
+.a .dock .logo img { width: 34px; }
+.a .dock button { width: 52px; height: 52px; border-radius: 18px; border: 0; background: transparent; color: var(--ink-soft); display: grid; place-items: center; cursor: pointer; position: relative; }
+.a .dock button .ico { width: 24px; height: 24px; }
+.a .dock button.on { background: var(--bone); color: var(--coal); box-shadow: 0 4px 0 var(--bone-2); }
+.a .dock button .lab { position: absolute; left: 64px; background: var(--bone); color: var(--coal); font-weight: 800; font-size: 13px; padding: 6px 10px; border-radius: 10px; white-space: nowrap; opacity: 0; }
+
+.a .dock .sp { flex: 1; }
+.a .dock .me { width: 46px; height: 46px; border-radius: 50%; background: #3a2a20; border: 3px solid var(--ember); }
+.a main { padding: 26px 32px 0 26px; position: relative; z-index: 1; display: flex; flex-direction: column; gap: 22px; }
+.a .top { display: flex; align-items: center; gap: 14px; }
+.a .hello { font-size: 15px; color: var(--ink-soft); font-weight: 600; }
+.a .hello b { display: block; font-size: 30px; color: var(--bone); font-weight: 800; letter-spacing: -.5px; }
+.a .search { margin-left: auto; width: 380px; white-space: nowrap; height: 46px; border-radius: 16px; background: var(--coal-2); border: 2.5px solid var(--coal-3); display: flex; align-items: center; gap: 10px; padding: 0 14px; color: var(--ink-soft); font-weight: 600; font-size: 14px; }
+.a .search kbd { margin-left: auto; font: 700 11px "Rubik"; background: var(--coal-3); padding: 3px 7px; border-radius: 6px; }
+.a .hero { position: relative; height: 330px; border-radius: 30px; overflow: hidden; border: 3px solid var(--bone); box-shadow: 8px 8px 0 var(--ember); }
+.a .hero img { width: 100%; height: 100%; object-fit: cover; }
+.a .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(19,18,16,.92) 0%, rgba(19,18,16,.55) 45%, transparent 75%); }
+.a .hero .in { position: absolute; left: 34px; bottom: 30px; z-index: 1; }
+.a .tag { display: inline-flex; align-items: center; gap: 6px; background: var(--ember); color: var(--coal); font-weight: 800; font-size: 13px; padding: 6px 12px; border-radius: 999px; transform: rotate(-3deg); margin-bottom: 14px; }
+.a .hero h1 { font-size: 64px; font-weight: 800; letter-spacing: -2px; line-height: .95; }
+.a .hero p { color: var(--bone-2); font-size: 17px; margin: 8px 0 22px; font-weight: 500; }
+.a .play { display: inline-flex; align-items: center; gap: 12px; height: 64px; padding: 0 34px; border-radius: 20px; border: 3px solid var(--coal); background: var(--ember); color: var(--coal); font: 800 24px "Bricolage Grotesque"; letter-spacing: .5px; box-shadow: 0 6px 0 #a8410d; }
+.a .play .ico { width: 24px; height: 24px; fill: var(--coal); stroke: none; }
+.a .ghost { margin-left: 10px; height: 64px; width: 64px; border-radius: 20px; border: 2.5px solid var(--bone); background: transparent; color: var(--bone); display: inline-grid; place-items: center; vertical-align: top; }
+.a h2 { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+.a h2 small { font-size: 13px; color: var(--ember); font-weight: 700; margin-left: auto; }
+.a .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.a .card { background: var(--coal-2); border: 2.5px solid var(--coal-3); border-radius: 22px; overflow: hidden; transition: transform .15s; }
+.a .card:nth-child(1) { transform: rotate(-1.2deg); border-color: var(--ember); box-shadow: 5px 5px 0 var(--ember); }
+.a .card img { width: 100%; height: 92px; object-fit: cover; }
+.a .card div { padding: 11px 14px 13px; }
+.a .card b { font-size: 16px; font-weight: 800; display: block; }
+.a .card span { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+
+/* ================= B: "Žhavý" — warm gradient blobs, top pill navigation, Fredoka ================= */
+.b { font-family: "Fredoka", sans-serif; background: #1a0f0a; color: var(--bone); height: 100%; position: relative; overflow: hidden; }
+.b .blob { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .55; }
+.b .blob.one { width: 620px; height: 620px; background: var(--ember); right: -160px; top: -260px; }
+.b .blob.two { width: 420px; height: 420px; background: #c2185b; left: -160px; bottom: -200px; opacity: .3; }
+.b .blob.three { width: 300px; height: 300px; background: #ffb347; left: 45%; top: 40%; opacity: .18; }
+.b header { position: relative; z-index: 2; display: flex; align-items: center; padding: 22px 30px; gap: 22px; }
+.b header .brand { display: flex; align-items: center; gap: 10px; }
+.b header .brand img.i { width: 40px; transform: rotate(-8deg); }
+.b header .brand img.w { height: 34px; }
+.b nav { display: flex; gap: 4px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1); padding: 5px; border-radius: 999px; margin: 0 auto; backdrop-filter: blur(10px); }
+.b nav a { padding: 10px 20px; border-radius: 999px; font-weight: 600; font-size: 15px; color: rgba(236,230,218,.7); display: flex; align-items: center; gap: 8px; }
+.b nav a .ico { width: 18px; height: 18px; }
+.b nav a.on { background: var(--bone); color: #1a0f0a; }
+.b header .me { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--ember), #c2185b); padding: 3px; }
+.b header .me i { display: block; width: 100%; height: 100%; border-radius: 50%; background: #3a2a20; }
+.b main { position: relative; z-index: 1; display: grid; grid-template-columns: 1.35fr 1fr; gap: 26px; padding: 8px 30px 0; }
+.b .hero { position: relative; height: 470px; border-radius: 40px; overflow: hidden; }
+.b .hero img { width: 100%; height: 100%; object-fit: cover; }
+.b .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(26,15,10,.95) 5%, transparent 60%); }
+.b .hero .in { position: absolute; left: 34px; right: 34px; bottom: 30px; z-index: 1; }
+.b .chip .ico { width: 15px; height: 15px; vertical-align: -2px; margin-right: 4px; }
+.b .chip .ico { width: 15px; height: 15px; vertical-align: -2px; margin-right: 4px; }
+.b .chip { display: inline-block; background: rgba(255,255,255,.14); backdrop-filter: blur(6px); padding: 6px 14px; border-radius: 999px; font-weight: 600; font-size: 14px; margin-bottom: 12px; }
+.b .hero h1 { font-size: 60px; font-weight: 700; line-height: 1; }
+.b .hero p { opacity: .8; font-size: 18px; margin: 8px 0 22px; }
+.b .play { display: inline-flex; align-items: center; gap: 12px; height: 66px; padding: 0 40px; border-radius: 999px; border: 0; background: linear-gradient(135deg, var(--ember-2), var(--ember) 55%, #d94b0c); color: #fff; font: 700 24px "Fredoka"; box-shadow: 0 12px 40px rgba(240,102,31,.55), inset 0 2px 0 rgba(255,255,255,.35); }
+.b .play .ico { fill: #fff; stroke: none; width: 22px; height: 22px; }
+.b .side { display: flex; flex-direction: column; gap: 16px; }
+.b .side h2 { font-size: 22px; font-weight: 600; }
+.b .inst { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 26px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); }
+.b .inst.on { background: rgba(240,102,31,.18); border-color: rgba(240,102,31,.5); }
+.b .inst img { width: 64px; height: 64px; border-radius: 20px; object-fit: cover; }
+.b .inst b { font-size: 18px; font-weight: 600; display: block; }
+.b .inst span { font-size: 14px; opacity: .65; }
+.b .inst .go { margin-left: auto; width: 46px; height: 46px; border-radius: 50%; background: var(--bone); color: #1a0f0a; display: grid; place-items: center; }
+.b .inst .go .ico { fill: currentColor; stroke: none; width: 16px; height: 16px; }
+.b .friends { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 26px; background: rgba(255,255,255,.06); font-weight: 500; font-size: 15px; }
+.b .friends i { width: 34px; height: 34px; border-radius: 50%; border: 3px solid #1a0f0a; margin-left: -14px; background: #5a3a2a; }
+.b .friends i:first-child { margin-left: 0; background: #2a4a3a; }
+.b .friends i:nth-child(2) { background: #3a3a5a; }
+
+/* ================= C: "Den" — light bone theme, coal ink, sticker cards, Rubik ================= */
+.c { font-family: "Rubik", sans-serif; background: var(--bone); color: var(--coal); height: 100%; display: grid; grid-template-columns: 230px 1fr; }
+.c aside { background: var(--coal); color: var(--bone); margin: 14px; border-radius: 30px; padding: 22px 16px; display: flex; flex-direction: column; gap: 6px; }
+.c aside .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; }
+.c aside .brand img.i { width: 36px; transform: rotate(-8deg); }
+.c aside .brand img.w { height: 30px; }
+.c aside a { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; font-weight: 500; font-size: 16px; color: rgba(236,230,218,.65); }
+.c aside a.on { background: var(--ember); color: var(--coal); font-weight: 700; transform: rotate(-1.5deg); }
+.c aside .sec { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: rgba(236,230,218,.35); padding: 14px 14px 4px; }
+.c aside .sp { flex: 1; }
+.c aside .me { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 18px; background: rgba(255,255,255,.06); font-weight: 600; }
+.c aside .me i { width: 36px; height: 36px; border-radius: 12px; background: var(--ember); }
+.c main { padding: 30px 34px 0 20px; display: flex; flex-direction: column; gap: 22px; }
+.c .top { display: flex; align-items: flex-end; }
+.c .top h1 { font-size: 46px; font-weight: 900; letter-spacing: -1.5px; line-height: 1; }
+.c .top h1 em { font-style: normal; color: var(--ember); }
+.c .top .pill { margin-left: auto; display: flex; align-items: center; gap: 8px; background: #fff; border: 2.5px solid var(--coal); padding: 10px 16px; border-radius: 999px; font-weight: 600; box-shadow: 3px 3px 0 var(--coal); }
+.c .top .pill i { width: 10px; height: 10px; border-radius: 50%; background: #2fbf71; }
+.c .hero { display: grid; grid-template-columns: 1.4fr 1fr; gap: 0; border: 3px solid var(--coal); border-radius: 32px; overflow: hidden; background: #fff; box-shadow: 8px 8px 0 var(--coal); height: 320px; }
+.c .hero img { width: 100%; height: 100%; object-fit: cover; border-right: 3px solid var(--coal); }
+.c .hero .in { padding: 32px 30px; display: flex; flex-direction: column; justify-content: center; }
+.c .hero .tag { align-self: flex-start; background: var(--coal); color: var(--bone); padding: 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; margin-bottom: 14px; }
+.c .hero h2 { font-size: 44px; font-weight: 900; letter-spacing: -1px; line-height: 1; }
+.c .hero p { color: #6b6457; margin: 10px 0 24px; font-size: 16px; }
+.c .play { align-self: flex-start; display: inline-flex; align-items: center; gap: 12px; height: 62px; padding: 0 34px; border-radius: 18px; border: 3px solid var(--coal); background: var(--ember); color: var(--coal); font: 900 22px "Rubik"; letter-spacing: 1px; box-shadow: 4px 4px 0 var(--coal); }
+.c .play .ico { fill: var(--coal); stroke: none; }
+.c .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.c .card { background: #fff; border: 2.5px solid var(--coal); border-radius: 22px; padding: 10px; box-shadow: 4px 4px 0 var(--coal); }
+.c .card:nth-child(2) { transform: rotate(1.5deg); }
+.c .card:nth-child(4) { transform: rotate(-1deg); }
+.c .card img { width: 100%; height: 84px; object-fit: cover; border-radius: 14px; }
+.c .card b { display: block; font-weight: 700; font-size: 16px; margin: 9px 4px 1px; }
+.c .card span { font-size: 13px; color: #8a8273; margin: 0 4px; }
+.c h3 { font-size: 20px; font-weight: 800; }
+
+/* ================= D: "Kovárna" — dark, square, dense (Feather-like direction) ================= */
+.d { --bg: #0a0a0b; --p1: #111113; --p2: #17171a; --p3: #202024; --line: #232328; --tx: #ecebe8; --mu: #85858d; font-family: "Inter Tight", "Inter", sans-serif; background: var(--bg); color: var(--tx); height: 100%; display: grid; grid-template-columns: 220px 1fr; font-size: 14px; }
+.d aside { background: var(--p1); border-right: 1px solid var(--line); display: flex; flex-direction: column; }
+.d .brand { height: 64px; display: flex; align-items: center; gap: 10px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.d .brand img.i { width: 26px; }
+.d .brand img.w { height: 24px; }
+.d .brand small { margin-left: auto; font: 700 10px "JetBrains Mono", monospace; color: var(--mu); border: 1px solid var(--line); padding: 2px 5px; border-radius: 6px; }
+.d .navs { padding: 14px 10px; display: flex; flex-direction: column; gap: 2px; }
+.d .sec { font-size: 10.5px; font-weight: 700; letter-spacing: 1.6px; color: #55555c; padding: 14px 12px 6px; text-transform: uppercase; }
+.d .navs a { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; border-radius: 8px; color: var(--mu); font-weight: 600; position: relative; }
+.d .navs a .ico { width: 18px; height: 18px; stroke-width: 2; }
+.d .navs a.on { background: var(--p3); color: var(--tx); }
+.d .navs a.on::before { content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 3px; background: var(--ember); border-radius: 0 4px 4px 0; }
+.d .navs a .cnt { margin-left: auto; font-size: 11px; background: var(--ember); color: #111; font-weight: 800; padding: 1px 6px; border-radius: 6px; }
+.d aside .sp { flex: 1; }
+.d .acct { margin: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 10px; background: var(--p2); }
+.d .acct i { width: 32px; height: 32px; border-radius: 6px; background: #6b4a35; image-rendering: pixelated; }
+.d .acct b { display: block; font-size: 13.5px; }
+.d .acct span { font-size: 11.5px; color: var(--mu); }
+.d .acct .ico { margin-left: auto; width: 16px; color: var(--mu); }
+.d main { display: flex; flex-direction: column; min-width: 0; }
+.d .bar { height: 64px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; padding: 0 24px; }
+.d .bar h1 { font-size: 15px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; }
+.d .bar .search { margin-left: 24px; flex: 0 1 380px; height: 36px; background: var(--p2); border: 1px solid var(--line); border-radius: 8px; display: flex; align-items: center; gap: 8px; padding: 0 12px; color: var(--mu); }
+.d .bar .search .ico { width: 16px; }
+.d .bar kbd { margin-left: auto; font: 600 10.5px "JetBrains Mono", monospace; border: 1px solid var(--line); padding: 1px 5px; border-radius: 6px; }
+.d .bar .ib { margin-left: auto; width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; display: grid; place-items: center; color: var(--mu); position: relative; }
+.d .bar .ib + .ib { margin-left: 0; }
+.d .bar .ib .ico { width: 17px; }
+.d .bar .ib.dot::after { content: ""; position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); }
+.d .content { padding: 22px 24px; display: grid; grid-template-columns: 1fr 290px; gap: 20px; }
+.d .hero { grid-column: 1 / -1; position: relative; height: 300px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); }
+.d .hero img { width: 100%; height: 100%; object-fit: cover; }
+.d .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(10,10,11,.96) 0%, rgba(10,10,11,.7) 38%, rgba(10,10,11,0) 70%), linear-gradient(0deg, rgba(10,10,11,.6), transparent 40%); }
+.d .hero .in { position: absolute; left: 32px; bottom: 28px; z-index: 1; }
+.d .kick { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: var(--ember); margin-bottom: 10px; }
+.d .kick .ico { width: 14px; height: 14px; }
+.d .hero h2 { font-size: 46px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.d .hero p { color: #b3b2ad; margin: 8px 0 22px; font-size: 15px; }
+.d .launch { display: inline-flex; height: 52px; border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px rgba(240,102,31,.25); }
+.d .launch button { border: 0; background: var(--ember); color: #111; font: 800 17px "Inter Tight", sans-serif; letter-spacing: 2px; display: flex; align-items: center; gap: 10px; padding: 0 30px; }
+.d .launch button .ico { fill: #111; stroke: none; width: 18px; }
+.d .launch .ver { background: #d9571a; color: #111; display: flex; align-items: center; gap: 8px; padding: 0 14px; font-weight: 700; font-size: 13px; border-left: 1px solid rgba(0,0,0,.25); }
+.d .launch .ver .ico { width: 14px; }
+.d .meta { position: absolute; right: 24px; bottom: 24px; z-index: 1; display: flex; gap: 8px; }
+.d .meta span { background: rgba(10,10,11,.75); border: 1px solid var(--line); padding: 6px 10px; border-radius: 8px; font-size: 12px; color: #c9c8c3; display: flex; align-items: center; gap: 6px; }
+.d .meta span .ico { width: 13px; }
+.d h3 { font-size: 11.5px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase; color: var(--mu); display: flex; align-items: center; margin-bottom: 10px; }
+.d h3 a { margin-left: auto; color: var(--ember); letter-spacing: .5px; text-transform: none; font-size: 12.5px; font-weight: 700; }
+.d .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.d .card { background: var(--p1); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.d .card.on { border-color: var(--ember); }
+.d .card img { width: 100%; height: 78px; object-fit: cover; }
+.d .card div { padding: 9px 11px 10px; }
+.d .card b { display: block; font-size: 13.5px; }
+.d .card span { font-size: 11.5px; color: var(--mu); display: flex; align-items: center; gap: 5px; }
+.d .card span em { font-style: normal; font: 700 10px "JetBrains Mono", monospace; border: 1px solid var(--line); padding: 0 4px; border-radius: 4px; color: #a9a8a3; }
+.d .panel { background: var(--p1); border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
+.d .fr { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 8px; }
+.d .fr:hover { background: var(--p2); }
+.d .fr i { width: 28px; height: 28px; border-radius: 6px; background: #3c5a46; position: relative; }
+.d .fr i::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%; background: #34c46e; border: 2px solid var(--p1); }
+.d .fr.idle i::after { background: #e0a526; }
+.d .fr.off i::after { background: #55555c; }
+.d .fr b { display: block; font-size: 13px; }
+.d .fr span { font-size: 11.5px; color: var(--mu); }
+.d .fr .join { margin-left: auto; font-size: 11.5px; font-weight: 700; color: var(--ember); border: 1px solid rgba(240,102,31,.4); padding: 3px 8px; border-radius: 6px; }
+
+/* ================= E: "Monolit" — graphite pro tool, hairlines, list rows, mono details ================= */
+.e { --bg: #0d0d0e; --p1: #121214; --p2: #18181b; --line: #222226; --tx: #e7e6e3; --mu: #7c7c84; font-family: "Inter", sans-serif; background: var(--bg); color: var(--tx); height: 100%; display: grid; grid-template-columns: 60px 1fr 300px; font-size: 13.5px; }
+.e .rail { border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 4px; }
+.e .rail img { width: 26px; margin-bottom: 16px; }
+.e .rail a { width: 40px; height: 40px; display: grid; place-items: center; color: var(--mu); border-radius: 6px; }
+.e .rail a .ico { width: 19px; height: 19px; stroke-width: 1.9; }
+.e .rail a.on { color: var(--ember); background: rgba(240,102,31,.1); box-shadow: inset 2px 0 0 var(--ember); }
+.e .rail .sp { flex: 1; }
+.e main { display: flex; flex-direction: column; min-width: 0; }
+.e .bar { height: 52px; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 22px; gap: 10px; color: var(--mu); }
+.e .bar b { color: var(--tx); font-weight: 600; }
+.e .bar .crumb { font: 500 12px "JetBrains Mono", monospace; }
+.e .bar .search { margin-left: auto; width: 260px; height: 30px; border: 1px solid var(--line); border-radius: 6px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 12.5px; }
+.e .bar .search .ico { width: 14px; }
+.e .bar kbd { margin-left: auto; font: 600 10px "JetBrains Mono", monospace; }
+.e .body { padding: 22px; display: flex; flex-direction: column; gap: 22px; overflow: hidden; }
+.e .hero { display: grid; grid-template-columns: 340px 1fr; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--p1); }
+.e .hero img { width: 100%; height: 220px; object-fit: cover; }
+.e .hero .in { padding: 22px 24px; display: flex; flex-direction: column; }
+.e .mono { font: 600 11px "JetBrains Mono", monospace; color: var(--mu); letter-spacing: .5px; }
+.e .hero h2 { font-size: 30px; font-weight: 700; letter-spacing: -.6px; margin: 8px 0 4px; }
+.e .hero .kv { display: grid; grid-template-columns: auto 1fr; gap: 5px 16px; margin: 12px 0 auto; font-size: 12.5px; }
+.e .hero .kv span:nth-child(odd) { color: var(--mu); }
+.e .launch { align-self: flex-start; display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 22px; border: 0; border-radius: 6px; background: var(--ember); color: #111; font: 700 14px "Inter", sans-serif; letter-spacing: 1px; }
+.e .launch .ico { fill: #111; stroke: none; width: 15px; }
+.e .launch kbd { font: 600 10px "JetBrains Mono", monospace; background: rgba(0,0,0,.18); padding: 2px 5px; border-radius: 4px; }
+.e .tbl { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.e .tbl .h, .e .tbl .r { display: grid; grid-template-columns: 34px 1.6fr 1fr 1fr 90px 70px; align-items: center; gap: 12px; padding: 0 14px; }
+.e .tbl .h { height: 34px; background: var(--p1); font: 600 10.5px "JetBrains Mono", monospace; color: var(--mu); letter-spacing: .6px; text-transform: uppercase; border-bottom: 1px solid var(--line); }
+.e .tbl .r { height: 50px; border-bottom: 1px solid var(--line); }
+.e .tbl .r:last-child { border-bottom: 0; }
+.e .tbl .r.on { background: rgba(240,102,31,.06); box-shadow: inset 2px 0 0 var(--ember); }
+.e .tbl .r img { width: 34px; height: 34px; border-radius: 6px; object-fit: cover; }
+.e .tbl .r b { font-weight: 600; }
+.e .tbl .r .m { color: var(--mu); font-size: 12.5px; }
+.e .tbl .r .tag { font: 600 10.5px "JetBrains Mono", monospace; border: 1px solid var(--line); padding: 2px 6px; border-radius: 4px; justify-self: start; color: #b9b8b3; }
+.e .tbl .r .pl { justify-self: end; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 6px; display: grid; place-items: center; color: var(--tx); }
+.e .tbl .r .pl .ico { fill: currentColor; stroke: none; width: 12px; }
+.e aside { border-left: 1px solid var(--line); background: var(--p1); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.e aside h4 { font: 600 10.5px "JetBrains Mono", monospace; color: var(--mu); letter-spacing: .8px; text-transform: uppercase; display: flex; }
+.e aside h4 span { margin-left: auto; color: #34c46e; }
+.e .who { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.e .who i { width: 26px; height: 26px; border-radius: 4px; background: #3c5a46; }
+.e .who b { display: block; font-weight: 600; font-size: 13px; }
+.e .who span { font-size: 11.5px; color: var(--mu); }
+.e .who em { margin-left: auto; font-style: normal; width: 7px; height: 7px; border-radius: 50%; background: #34c46e; }
+.e .news { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--bg); margin-top: 8px; }
+.e .news b { display: block; margin: 6px 0 4px; font-weight: 600; }
+.e .news p { color: var(--mu); font-size: 12.5px; line-height: 1.45; }
+
+/* ================= F: "Arkáda" — store-like, full-bleed art, condensed caps, top tabs ================= */
+.f { --bg: #0b0c0f; --p1: #12141a; --line: #1f222b; --tx: #eef0f3; --mu: #8a90a0; font-family: "Barlow", sans-serif; background: var(--bg); color: var(--tx); height: 100%; display: flex; flex-direction: column; }
+.f header { height: 58px; display: flex; align-items: center; gap: 26px; padding: 0 28px; background: rgba(11,12,15,.85); border-bottom: 1px solid var(--line); position: relative; z-index: 2; }
+.f header .brand { display: flex; align-items: center; gap: 10px; }
+.f header .brand img.i { width: 26px; }
+.f header .brand img.w { height: 22px; }
+.f header nav { display: flex; height: 100%; }
+.f header nav a { display: flex; align-items: center; padding: 0 16px; font: 700 15px "Barlow Condensed", sans-serif; letter-spacing: 1.4px; text-transform: uppercase; color: var(--mu); border-bottom: 2px solid transparent; }
+.f header nav a.on { color: var(--tx); border-color: var(--ember); }
+.f header .r { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.f header .r .ib { width: 34px; height: 34px; display: grid; place-items: center; color: var(--mu); border: 1px solid var(--line); border-radius: 4px; }
+.f header .r .ib .ico { width: 17px; }
+.f header .r .me { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; padding-left: 8px; }
+.f header .r .me i { width: 30px; height: 30px; border-radius: 4px; background: #6b4a35; }
+.f .stage { position: relative; height: 430px; }
+.f .stage img { width: 100%; height: 100%; object-fit: cover; }
+.f .stage::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, var(--bg) 0%, rgba(11,12,15,.4) 45%, rgba(11,12,15,.2) 100%), linear-gradient(90deg, rgba(11,12,15,.85), transparent 60%); }
+.f .stage .in { position: absolute; left: 44px; bottom: 44px; z-index: 1; max-width: 560px; }
+.f .lbl { display: inline-block; font: 700 12px "Barlow Condensed", sans-serif; letter-spacing: 2px; text-transform: uppercase; background: var(--ember); color: #111; padding: 4px 10px; border-radius: 4px; margin-bottom: 14px; }
+.f .stage h1 { font: 800 76px/0.9 "Barlow Condensed", sans-serif; text-transform: uppercase; letter-spacing: .5px; }
+.f .stage p { color: #c2c6cf; font-size: 17px; margin: 12px 0 24px; }
+.f .btns { display: flex; gap: 10px; }
+.f .play { height: 54px; padding: 0 40px; border: 0; border-radius: 4px; background: var(--ember); color: #111; font: 800 22px "Barlow Condensed", sans-serif; letter-spacing: 2.5px; display: flex; align-items: center; gap: 12px; clip-path: polygon(0 0, 100% 0, 100% 70%, 92% 100%, 0 100%); }
+.f .play .ico { fill: #111; stroke: none; width: 20px; }
+.f .sec2 { height: 54px; padding: 0 22px; border: 1px solid rgba(255,255,255,.25); border-radius: 4px; background: rgba(11,12,15,.5); color: var(--tx); font: 700 16px "Barlow Condensed", sans-serif; letter-spacing: 1.5px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.f .sec2 .ico { width: 17px; }
+.f .shelf { padding: 0 44px; margin-top: -26px; position: relative; z-index: 1; }
+.f .shelf h3 { font: 700 15px "Barlow Condensed", sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--mu); margin-bottom: 12px; display: flex; }
+.f .shelf h3 a { margin-left: auto; color: var(--ember); }
+.f .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.f .tile { position: relative; height: 150px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); }
+.f .tile img { width: 100%; height: 100%; object-fit: cover; }
+.f .tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(11,12,15,.95) 10%, transparent 60%); }
+.f .tile.on { outline: 2px solid var(--ember); outline-offset: 2px; }
+.f .tile div { position: absolute; left: 12px; bottom: 10px; z-index: 1; }
+.f .tile b { display: block; font: 700 19px "Barlow Condensed", sans-serif; text-transform: uppercase; letter-spacing: .5px; }
+.f .tile span { font-size: 12.5px; color: var(--mu); }
+.f .tile.add { display: grid; place-items: center; background: var(--p1); color: var(--mu); font: 700 15px "Barlow Condensed", sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }
+.f .tile.add::after { display: none; }
+.f .tile.add .ico { width: 26px; height: 26px; display: block; margin: 0 auto 8px; }
+
+/* ================= G: "Hráč" — the player's skin as the hero, colour-coded actions, server banners ================= */
+.g { --bg: #0c0d10; --p1: #14161b; --p2: #1a1d23; --p3: #23262e; --line: #262a32; --tx: #eef0f3; --mu: #8b919c; --go: #22c55e; --go-d: #15803d; --stop: #ef4444; font-family: "Inter", sans-serif; background: var(--bg); color: var(--tx); height: 100%; display: grid; grid-template-columns: 64px 1fr 330px; gap: 0; font-size: 14px; }
+.g .rail { background: var(--p1); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding: 14px 0; gap: 6px; }
+.g .rail img { width: 30px; margin-bottom: 14px; }
+.g .rail a { width: 42px; height: 42px; display: grid; place-items: center; color: var(--mu); border-radius: 10px; }
+.g .rail a .ico { width: 20px; height: 20px; }
+.g .rail a.on { background: var(--ember); color: #111; }
+.g .rail .sp { flex: 1; }
+.g main { padding: 20px 20px 0 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.g .hi { display: flex; align-items: center; gap: 12px; }
+.g .hi img { width: 34px; height: 34px; border-radius: 6px; image-rendering: pixelated; }
+.g .hi h1 { font-size: 24px; font-weight: 800; letter-spacing: -.4px; }
+.g .hi h1 em { font-style: normal; color: var(--ember); }
+.g .stage { position: relative; height: 320px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.g .stage .bgimg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.g .stage::after { content: ""; position: absolute; inset: 0; background: radial-gradient(260px 220px at 50% 62%, rgba(240,102,31,.28), transparent 70%), linear-gradient(0deg, rgba(12,13,16,.85), transparent 45%); }
+.g .stage .skin { position: absolute; left: 50%; bottom: 58px; transform: translateX(-50%); height: 196px; z-index: 1; image-rendering: pixelated; filter: drop-shadow(0 14px 18px rgba(0,0,0,.6)); }
+.g .stage .name { position: absolute; left: 50%; top: 18px; transform: translateX(-50%); z-index: 1; background: rgba(0,0,0,.55); padding: 4px 10px; border-radius: 4px; font: 600 13px "JetBrains Mono", monospace; }
+.g .stage .acct { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); z-index: 2; display: flex; align-items: center; gap: 8px; background: rgba(20,22,27,.92); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 6px 6px; font-weight: 600; font-size: 13px; }
+.g .stage .acct img { width: 24px; height: 24px; border-radius: 4px; image-rendering: pixelated; }
+.g .stage .acct .ico { width: 14px; color: var(--mu); }
+.g .stage .tool { position: absolute; right: 12px; bottom: 12px; z-index: 2; display: flex; gap: 6px; }
+.g .stage .tool span { width: 34px; height: 34px; border-radius: 8px; background: rgba(20,22,27,.92); border: 1px solid var(--line); display: grid; place-items: center; }
+.g .stage .tool .ico { width: 16px; }
+.g .bar2 { display: flex; align-items: center; gap: 10px; color: var(--mu); font-weight: 600; font-size: 13px; }
+.g .bar2 .ico { width: 16px; }
+.g .seg { margin-left: auto; display: flex; background: var(--p1); border: 1px solid var(--line); border-radius: 8px; padding: 3px; }
+.g .seg b { padding: 4px 12px; border-radius: 6px; font-size: 12.5px; color: var(--mu); }
+.g .seg b.on { background: var(--go-d); color: #fff; }
+.g .list { display: flex; flex-direction: column; gap: 8px; }
+.g .it { display: flex; align-items: center; gap: 12px; background: var(--p1); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; }
+.g .it.run { border-color: rgba(34,197,94,.55); box-shadow: inset 3px 0 0 var(--go); }
+.g .it img { width: 38px; height: 38px; border-radius: 6px; object-fit: cover; }
+.g .it b { display: block; font-size: 14.5px; }
+.g .it span { font-size: 12px; color: var(--mu); }
+.g .it span i { font-style: normal; color: var(--go); font-weight: 700; }
+.g .it .acts { margin-left: auto; display: flex; gap: 6px; }
+.g .btn { height: 34px; padding: 0 14px; border-radius: 7px; border: 1px solid var(--line); background: var(--p2); color: var(--tx); font: 700 13px "Inter", sans-serif; display: flex; align-items: center; gap: 7px; }
+.g .btn .ico { width: 14px; height: 14px; }
+.g .btn.go { background: var(--go); border-color: var(--go); color: #062b14; }
+.g .btn.go .ico, .g .btn.stop .ico { fill: currentColor; stroke: none; }
+.g .btn.stop { background: var(--stop); border-color: var(--stop); color: #fff; }
+.g .btn.sq { width: 34px; padding: 0; justify-content: center; }
+.g aside { padding: 20px 20px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.g .ban { position: relative; height: 86px; border-radius: 12px; overflow: hidden; display: flex; align-items: center; padding: 0 18px; gap: 14px; border: 1px solid rgba(255,255,255,.08); }
+.g .ban img { width: 48px; height: 48px; image-rendering: auto; }
+.g .ban b { font: 800 22px "Barlow Condensed", sans-serif; letter-spacing: 1.5px; text-transform: uppercase; display: block; line-height: 1; }
+.g .ban span { font-size: 12px; opacity: .85; display: flex; align-items: center; gap: 5px; margin-top: 4px; }
+.g .ban span i { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; }
+.g .ban .j { margin-left: auto; height: 32px; padding: 0 12px; border-radius: 7px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.25); font-weight: 700; font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+.g .ban .j .ico { width: 13px; fill: currentColor; stroke: none; }
+.g .ban.smp { background: linear-gradient(120deg, #1d2a4a, #2b3f73 55%, #c79a3a); }
+.g .ban.ert { background: linear-gradient(120deg, #3b0f2e, #7a1d4f 55%, #e0457b); }
+.g .ban.add { background: var(--p1); border: 1px dashed var(--line); color: var(--mu); justify-content: center; font-weight: 700; height: 56px; }
+.g .ban.add .ico { width: 16px; }
+.g .card2 { background: var(--p1); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.g .card2 h4 { font-size: 12px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--mu); margin-bottom: 8px; display: flex; }
+.g .card2 h4 span { margin-left: auto; color: var(--go); }
+.g .fr { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.g .fr img { width: 28px; height: 28px; border-radius: 5px; image-rendering: pixelated; }
+.g .fr b { display: block; font-size: 13px; }
+.g .fr span { font-size: 11.5px; color: var(--mu); }
+.g .fr em { margin-left: auto; font-style: normal; font-size: 11.5px; font-weight: 700; color: #111; background: var(--ember); padding: 3px 8px; border-radius: 5px; }
+.g .foot { display: flex; gap: 10px; margin-top: auto; padding-bottom: 16px; }
+.g .foot .btn { flex: 1; justify-content: center; height: 40px; }
+.g .foot .btn.main { background: var(--ember); border-color: var(--ember); color: #111; }
+
+/* ================= H: "Život" — G with colour everywhere: aurora, per-section colours, stat tiles ================= */
+.g.h { --c-home: #ff7a2f; --c-inst: #22d3ee; --c-mods: #a78bfa; --c-ward: #f472b6; --c-srv: #60a5fa; --c-clip: #f87171; --c-fr: #4ade80; position: relative; overflow: hidden; background: #0b0a10; }
+.g.h > .aur { position: absolute; inset: -20%; z-index: 0; filter: blur(90px); opacity: .22; pointer-events: none; }
+.g.h > .aur i { position: absolute; border-radius: 50%; }
+.g.h > .aur i:nth-child(1) { width: 520px; height: 520px; left: 18%; top: 2%; background: #f0661f; }
+.g.h > .aur i:nth-child(2) { width: 460px; height: 460px; right: 4%; top: 10%; background: #c026d3; opacity: .7; }
+.g.h > .aur i:nth-child(3) { display: none; }
+.g.h > .aur i:nth-child(4) { display: none; }
+.g.h > * { position: relative; z-index: 1; }
+.g.h .rail { background: rgba(14,13,20,.7); backdrop-filter: blur(14px); border-color: rgba(255,255,255,.06); }
+.g.h .rail a { color: var(--c); opacity: .75; }
+.g.h .rail a.on { background: var(--c); color: #111; opacity: 1; }
+.g.h .hi h1 em { color: var(--ember); }
+.g.h .stage { border: 1px solid rgba(255,255,255,.08); }
+.g.h .stage::after { background: linear-gradient(0deg, rgba(11,10,16,.8), transparent 40%); }
+.g.h .stage .spark { position: absolute; z-index: 1; width: 6px; height: 6px; border-radius: 1px; background: #ffd27a; box-shadow: 0 0 10px #ffb347; transform: rotate(45deg); }
+.g.h .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.g.h .st { border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 11px; background: color-mix(in srgb, var(--c) 14%, #13121a); border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); }
+.g.h .st .ic { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--c); color: #111; }
+.g.h .st .ic .ico { width: 17px; height: 17px; }
+.g.h .st b { display: block; font-size: 17px; font-weight: 800; }
+.g.h .st span { font-size: 11.5px; color: color-mix(in srgb, var(--c) 60%, #ddd); font-weight: 600; }
+.g.h .it { background: rgba(20,19,27,.8); backdrop-filter: blur(10px); border-color: rgba(255,255,255,.07); box-shadow: inset 4px 0 0 var(--c); }
+.g.h .it.run { box-shadow: inset 4px 0 0 #22c55e, 0 0 0 1px rgba(34,197,94,.45); }
+.g.h .it .ld { font-size: 10.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); padding: 2px 7px; border-radius: 4px; margin-right: 6px; }
+.g.h .card2 { background: rgba(20,19,27,.8); backdrop-filter: blur(10px); }
+.g.h .fr img { box-shadow: 0 0 0 2px var(--c); }
+.g.h .ban { box-shadow: none; }
+.g.h .ban.smp { background: #1f3170; border-color: #2c4396; }
+.g.h .ban.ert { background: #6b1d4c; border-color: #8a2862; }
+.g.h .ban.add { background: rgba(20,19,27,.6); }
+.g.h .foot .btn.main { background: var(--ember); border-color: var(--ember); color: #111; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="box" viewBox="0 0 24 24"><path d="M12 2 3 7v10l9 5 9-5V7z M3 7l9 5 9-5 M12 12v10"/></symbol>
+  <symbol id="puzzle" viewBox="0 0 24 24"><path d="M10 3h4v3a2 2 0 1 0 4 0V3h3v6h-3a2 2 0 1 0 0 4h3v8h-7v-3a2 2 0 1 0-4 0v3H3v-7h3a2 2 0 1 0 0-4H3V3z"/></symbol>
+  <symbol id="server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+  <symbol id="cam" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="m16 10 6-3v10l-6-3z"/></symbol>
+  <symbol id="clip" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="m10 9 5 3-5 3z"/></symbol>
+  <symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6 M16 4a4 4 0 0 1 0 8 M18 15c2.5.6 4 2.5 4 6"/></symbol>
+  <symbol id="gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></symbol>
+  <symbol id="search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-5-5"/></symbol>
+  <symbol id="play" viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.9l12-7.5a1 1 0 0 0 0-1.8l-12-7.5A1 1 0 0 0 7 4.5z"/></symbol>
+  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10 21h4"/></symbol>
+  <symbol id="dl" viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 21h16"/></symbol>
+  <symbol id="globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></symbol>
+  <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5"/></symbol>
+  <symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z M14 6l4 4"/></symbol>
+  <symbol id="shirt" viewBox="0 0 24 24"><path d="M8 3 3 6l2 5 3-1v11h8V10l3 1 2-5-5-3a4 4 0 0 1-8 0z"/></symbol>
+  <symbol id="flame" viewBox="0 0 24 24"><path d="M12 3c1 4 6 5.5 6 11a6 6 0 0 1-12 0c0-3 2-4.5 2-7 2 1 3 2.5 3 4 1-2 1-5 1-8z"/></symbol>
+  <symbol id="spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+  <symbol id="music" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></symbol>
+</svg>
+<div id="root"></div>
+<script>
+const I = (n) => `<svg class="ico"><use href="#${n}"/></svg>`;
+const IMG = "../img/";
+// placeholder player renders (default Steve skin), the real launcher draws the account's own skin
+const HEAD = "https://mc-heads.net/avatar/MHF_Steve/64";
+const BODY = "https://mc-heads.net/body/MHF_Steve/240";
+const SMP = "https://justicesmp.online/logo.png";
+const inst = [
+  ["w-myworld.webp", "Survival 1.21.11", "Fabric · před 2 h"],
+  ["pvp.webp", "PvP 1.8.9", "Forge · včera"],
+  ["shaders.webp", "Shadery 26.3", "Fabric · 3 dny"],
+  ["vanilla.webp", "Vanilla 26.3", "čistá hra"],
+];
+const V = {
+  h: () => {
+    const rows = [
+      ["w-myworld.webp", "Survival 1.21.11", "Fabric", "#fbbf24", "před 2 h", false],
+      ["pvp.webp", "PvP 1.8.9", "Forge", "#60a5fa", "24 min", true],
+      ["shaders.webp", "Shadery 26.3", "Fabric", "#fbbf24", "3 dny", false],
+      ["vanilla.webp", "Vanilla 26.3", "Vanilla", "#4ade80", "týden", false],
+    ];
+    return `<div class="g h"><div class="aur"><i></i><i></i><i></i><i></i></div>
+    <div class="rail"><img src="kuubl-icon-ember.svg">
+      <a class="on" style="--c:var(--c-home)">${I("home")}</a><a style="--c:var(--c-inst)">${I("box")}</a><a style="--c:var(--c-mods)">${I("puzzle")}</a><a style="--c:var(--c-ward)">${I("shirt")}</a><a style="--c:var(--c-srv)">${I("server")}</a><a style="--c:var(--c-clip)">${I("clip")}</a><a style="--c:var(--c-fr)">${I("users")}</a>
+      <div class="sp"></div><a style="--c:#cbd5e1">${I("gear")}</a></div>
+    <main>
+      <div class="hi"><img src="${HEAD}"><h1>Vítej zpátky, <em>Steve</em></h1></div>
+      <div class="stage"><img class="bgimg" src="${IMG}sunset.webp"><span class="name">Steve</span><img class="skin" src="${BODY}">
+        <div class="acct"><img src="${HEAD}">Steve ${I("chev")}</div>
+        <div class="tool"><span>${I("shirt")}</span><span>${I("pen")}</span></div></div>
+      <div class="stats">
+        <div class="st" style="--c:#ff7a2f"><div class="ic">${I("flame")}</div><div><b>5 dní</b><span>hraješ v řadě</span></div></div>
+        <div class="st" style="--c:#f87171"><div class="ic">${I("clip")}</div><div><b>12</b><span>nových klipů</span></div></div>
+        <div class="st" style="--c:#a78bfa"><div class="ic">${I("puzzle")}</div><div><b>4</b><span>aktualizace modů</span></div></div>
+        <div class="st" style="--c:#4ade80"><div class="ic">${I("users")}</div><div><b>3</b><span>kamarádi online</span></div></div>
+      </div>
+      <div class="list">${rows.map(([i, n, ld, c, t, run]) => `<div class="it ${run ? "run" : ""}" style="--c:${c}"><img src="${IMG}${i}"><div><b>${n}</b><span><span class="ld">${ld}</span>${run ? "<i>Běží</i> · " : ""}${t}</span></div><div class="acts">${run ? `<span class="btn">${I("plus")} Spustit další</span><span class="btn stop">${I("stop")} Zastavit</span>` : `<span class="btn go">${I("play")} Hrát</span>`}<span class="btn sq">${I("gear")}</span></div></div>`).join("")}</div>
+    </main>
+    <aside>
+      <div class="ban smp"><img src="${SMP}"><div><b>Justice SMP</b><span><i></i> 34 online</span></div><span class="j">${I("play")} Připojit</span></div>
+      <div class="ban ert"><span style="width:48px;height:48px;display:grid;place-items:center;background:rgba(0,0,0,.25);border-radius:10px">${I("server")}</span><div><b>Ertenix</b><span><i></i> 112 online</span></div><span class="j">${I("play")} Připojit</span></div>
+      <div class="ban add">${I("plus")} Přidat server</div>
+      <div class="card2"><h4>Kamarádi <span>3 online</span></h4>
+        <div class="fr" style="--c:#4ade80"><img src="${HEAD}"><div><b>Chlebas</b><span>Justice SMP</span></div><em>Připojit</em></div>
+        <div class="fr" style="--c:#fbbf24"><img src="${HEAD}"><div><b>jezek</b><span>V launcheru</span></div></div>
+        <div class="fr" style="--c:#4ade80"><img src="${HEAD}"><div><b>Kuba</b><span>Survival 1.21.11</span></div><em>Připojit</em></div>
+      </div>
+      <div class="foot"><span class="btn main">${I("box")} Instance</span><span class="btn">${I("plus")} Přidat mody</span></div>
+    </aside></div>`;
+  },
+  g: () => `<div class="g">
+    <div class="rail"><img src="kuubl-icon-ember.svg">
+      <a class="on">${I("home")}</a><a>${I("box")}</a><a>${I("puzzle")}</a><a>${I("shirt")}</a><a>${I("server")}</a><a>${I("clip")}</a><a>${I("users")}</a>
+      <div class="sp"></div><a>${I("gear")}</a></div>
+    <main>
+      <div class="hi"><img src="${HEAD}"><h1>Vítej zpátky, <em>Steve</em></h1></div>
+      <div class="stage"><img class="bgimg" src="${IMG}sunset.webp"><span class="name">Steve</span><img class="skin" src="${BODY}">
+        <div class="acct"><img src="${HEAD}">Steve ${I("chev")}</div>
+        <div class="tool"><span>${I("shirt")}</span><span>${I("pen")}</span></div></div>
+      <div class="bar2">${I("clock")} Naposledy hrané <div class="seg"><b class="on">Java</b><b>Modpacky</b></div></div>
+      <div class="list">
+        <div class="it"><img src="${IMG}w-myworld.webp"><div><b>Survival 1.21.11</b><span>Fabric 1.21.11 · před 2 h</span></div><div class="acts"><span class="btn go">${I("play")} Hrát</span><span class="btn sq">${I("gear")}</span></div></div>
+        <div class="it run"><img src="${IMG}pvp.webp"><div><b>PvP 1.8.9</b><span><i>Běží</i> · Forge 1.8.9 · 24 min</span></div><div class="acts"><span class="btn">${I("plus")} Spustit další</span><span class="btn stop">${I("stop")} Zastavit</span><span class="btn sq">${I("gear")}</span></div></div>
+        <div class="it"><img src="${IMG}shaders.webp"><div><b>Shadery 26.3</b><span>Fabric 26.3 · 3 dny</span></div><div class="acts"><span class="btn go">${I("play")} Hrát</span><span class="btn sq">${I("gear")}</span></div></div>
+        <div class="it"><img src="${IMG}vanilla.webp"><div><b>Vanilla 26.3</b><span>Čistá hra · týden</span></div><div class="acts"><span class="btn go">${I("play")} Hrát</span><span class="btn sq">${I("gear")}</span></div></div>
+      </div>
+    </main>
+    <aside>
+      <div class="ban smp"><img src="${SMP}"><div><b>Justice SMP</b><span><i></i> 34 online</span></div><span class="j">${I("play")} Připojit</span></div>
+      <div class="ban ert"><span style="width:48px;height:48px;display:grid;place-items:center;background:rgba(0,0,0,.25);border-radius:10px">${I("server")}</span><div><b>Ertenix</b><span><i></i> 112 online</span></div><span class="j">${I("play")} Připojit</span></div>
+      <div class="ban add">${I("plus")} Přidat server</div>
+      <div class="card2"><h4>Kamarádi <span>3 online</span></h4>
+        <div class="fr"><img src="${HEAD}"><div><b>Chlebas</b><span>Justice SMP</span></div><em>Připojit</em></div>
+        <div class="fr"><img src="${HEAD}"><div><b>jezek</b><span>V launcheru</span></div></div>
+        <div class="fr"><img src="${HEAD}"><div><b>Kuba</b><span>Survival 1.21.11</span></div><em>Připojit</em></div>
+      </div>
+      <div class="foot"><span class="btn main">${I("box")} Instance</span><span class="btn">${I("plus")} Přidat mody</span></div>
+    </aside></div>`,
+  e: () => `<div class="e">
+    <div class="rail"><img src="kuubl-icon-ember.svg">
+      <a class="on">${I("home")}</a><a>${I("box")}</a><a>${I("puzzle")}</a><a>${I("server")}</a><a>${I("cam")}</a><a>${I("clip")}</a><a>${I("users")}</a>
+      <div class="sp"></div><a>${I("gear")}</a></div>
+    <main>
+      <div class="bar"><span class="crumb">kuubl /</span><b>Domů</b><div class="search">${I("search")} Hledat<kbd>Ctrl K</kbd></div></div>
+      <div class="body">
+        <div class="hero"><img src="${IMG}w-myworld.webp"><div class="in">
+          <span class="mono">POSLEDNÍ RELACE · PŘED 2 H</span>
+          <h2>Survival 1.21.11</h2>
+          <div class="kv"><span>Svět</span><span>Můj svět</span><span>Loader</span><span>Fabric 0.17.2</span><span>Mody</span><span>42 aktivních</span><span>Odehráno</span><span>38 h 12 min</span></div>
+          <button class="launch">${I("play")} HRÁT <kbd>Enter</kbd></button>
+        </div></div>
+        <div class="tbl">
+          <div class="h"><span></span><span>Instance</span><span>Verze</span><span>Naposledy</span><span>Mody</span><span></span></div>
+          ${inst.map(([i, n, s], k) => `<div class="r ${k === 0 ? "on" : ""}"><img src="${IMG}${i}"><b>${n}</b><span class="tag">${s.split(" · ")[0]}</span><span class="m">${s.split(" · ")[1] ?? "—"}</span><span class="m">${[42, 18, 64, 0][k]}</span><span class="pl">${I("play")}</span></div>`).join("")}
+        </div>
+      </div>
+    </main>
+    <aside>
+      <h4>Kamarádi <span>3 online</span></h4>
+      <div class="who"><i></i><div><b>Chlebas</b><span>Justice SMP</span></div><em></em></div>
+      <div class="who"><i style="background:#4a4a6a"></i><div><b>jezek</b><span>V launcheru</span></div><em style="background:#e0a526"></em></div>
+      <div class="who"><i style="background:#6a4a3a"></i><div><b>Kuba</b><span>Survival 1.21.11</span></div><em></em></div>
+      <h4 style="margin-top:14px">Novinky</h4>
+      <div class="news"><span class="mono">1.0.3 · DNES</span><b>Klipy na Linuxu, nové zvuky</b><p>Hlasové klipy i přehrávání klipů teď fungují na Linuxu.</p></div>
+    </aside></div>`,
+  f: () => `<div class="f">
+    <header><div class="brand"><img class="i" src="kuubl-icon-ember.svg"><img class="w" src="kuubl-wordmark-bone.svg"></div>
+      <nav><a class="on">Domů</a><a>Instance</a><a>Mody</a><a>Servery</a><a>Klipy</a><a>Kamarádi</a></nav>
+      <div class="r"><div class="ib">${I("search")}</div><div class="ib">${I("bell")}</div><div class="me"><i></i>Maxern_</div></div></header>
+    <div class="stage"><img src="${IMG}sunset.webp"><div class="in">
+      <span class="lbl">Pokračovat</span><h1>Shadery 26.3</h1><p>Complementary Reimagined · svět „Můj svět“ · před 2 h</p>
+      <div class="btns"><button class="play">${I("play")} HRÁT</button><button class="sec2">${I("gear")} Instance</button></div>
+    </div></div>
+    <div class="shelf"><h3>Tvoje instance <a>Vše</a></h3>
+      <div class="row">${inst.map(([i, n, s], k) => `<div class="tile ${k === 0 ? "on" : ""}"><img src="${IMG}${i}"><div><b>${n}</b><span>${s}</span></div></div>`).join("")}<div class="tile add"><div>${I("plus")}Nová instance</div></div></div>
+    </div></div>`,
+  d: () => `<div class="d">
+    <aside>
+      <div class="brand"><img class="i" src="kuubl-icon-ember.svg"><img class="w" src="kuubl-wordmark-bone.svg"><small>1.1</small></div>
+      <div class="navs">
+        <a class="on">${I("home")} Domů</a><a>${I("box")} Instance</a><a>${I("puzzle")} Mody</a><a>${I("server")} Servery</a>
+        <div class="sec">Tvorba</div><a>${I("cam")} Natáčení</a><a>${I("clip")} Klipy <span class="cnt">3</span></a>
+        <div class="sec">Komunita</div><a>${I("users")} Kamarádi</a><a>${I("music")} Hudba</a>
+      </div>
+      <div class="sp"></div>
+      <div class="navs"><a>${I("gear")} Nastavení</a></div>
+      <div class="acct"><i></i><div><b>Maxern_</b><span>Microsoft</span></div>${I("chev")}</div>
+    </aside>
+    <main>
+      <div class="bar"><h1>Domů</h1><div class="search">${I("search")} Hledat instance, mody, kamarády<kbd>Ctrl K</kbd></div><div class="ib dot">${I("bell")}</div><div class="ib">${I("dl")}</div></div>
+      <div class="content">
+        <div class="hero"><img src="${IMG}sunset.webp"><div class="in">
+          <div class="kick">${I("clock")} Pokračovat</div>
+          <h2>Shadery 26.3</h2><p>Svět „Můj svět“ · naposledy před 2 hodinami</p>
+          <div class="launch"><button>${I("play")} HRÁT</button><div class="ver">Fabric 26.3 ${I("chev")}</div></div>
+        </div><div class="meta"><span>${I("puzzle")} 42 modů</span><span>${I("clock")} 38 h odehráno</span></div></div>
+        <div>
+          <h3>Instance <a>Zobrazit vše</a></h3>
+          <div class="grid">${inst.map(([i, n, s], k) => `<div class="card ${k === 0 ? "on" : ""}"><img src="${IMG}${i}"><div><b>${n}</b><span><em>${s.split(" · ")[0]}</em> ${s.split(" · ")[1] ?? ""}</span></div></div>`).join("")}</div>
+        </div>
+        <div>
+          <h3>Kamarádi <a>3 online</a></h3>
+          <div class="panel">
+            <div class="fr"><i></i><div><b>Chlebas</b><span>Justice SMP</span></div><span class="join">Připojit</span></div>
+            <div class="fr idle"><i style="background:#4a4a6a"></i><div><b>jezek</b><span>V launcheru</span></div></div>
+            <div class="fr"><i style="background:#6a4a3a"></i><div><b>Kuba</b><span>Survival 1.21.11</span></div><span class="join">Připojit</span></div>
+          </div>
+        </div>
+      </div>
+    </main></div>`,
+  a: () => `<div class="a">
+    <div class="dock">
+      <div class="logo"><img src="kuubl-icon-coal.svg"></div>
+      <button class="on">${I("home")}<span class="lab">Domů</span></button>
+      <button>${I("box")}</button><button>${I("puzzle")}</button><button>${I("server")}</button>
+      <button>${I("cam")}</button><button>${I("clip")}</button><button>${I("users")}</button>
+      <div class="sp"></div><button>${I("gear")}</button><div class="me"></div>
+    </div>
+    <main>
+      <div class="top"><div class="hello">Čau,<b>Maxern_</b></div><div class="search">${I("search")} Hledat instance, mody, kamarády…<kbd>Ctrl K</kbd></div></div>
+      <div class="hero"><img src="${IMG}w-myworld.webp"><div class="in">
+        <div class="tag">${I("play")} Pokračuj, kde jsi skončil</div>
+        <h1>Survival 1.21.11</h1><p>Svět „Můj svět“ · naposledy před 2 hodinami</p>
+        <button class="play">${I("play")} HRÁT</button><button class="ghost">${I("gear")}</button>
+      </div></div>
+      <h2>Tvoje instance <small>Všechny →</small></h2>
+      <div class="row">${inst.map(([i, n, s]) => `<div class="card"><img src="${IMG}${i}"><div><b>${n}</b><span>${s}</span></div></div>`).join("")}</div>
+    </main></div>`,
+  b: () => `<div class="b">
+    <div class="blob one"></div><div class="blob two"></div><div class="blob three"></div>
+    <header>
+      <div class="brand"><img class="i" src="kuubl-icon-ember.svg"><img class="w" src="kuubl-wordmark-bone.svg"></div>
+      <nav><a class="on">${I("home")} Domů</a><a>${I("box")} Instance</a><a>${I("puzzle")} Mody</a><a>${I("server")} Servery</a><a>${I("clip")} Klipy</a><a>${I("users")} Kamarádi</a></nav>
+      <div class="me"><i></i></div>
+    </header>
+    <main>
+      <div class="hero"><img src="${IMG}shaders.webp"><div class="in">
+        <div class="chip">${I("clock")} Naposledy hráno</div>
+        <h1>Shadery 26.3</h1><p>Complementary Reimagined · 1 kamarád hraje taky</p>
+        <button class="play">${I("play")} Hrát</button>
+      </div></div>
+      <div class="side">
+        <h2>Rychle skočit zpět</h2>
+        ${inst.map(([i, n, s], k) => `<div class="inst ${k === 0 ? "on" : ""}"><img src="${IMG}${i}"><div><b>${n}</b><span>${s}</span></div><div class="go">${I("play")}</div></div>`).join("")}
+        <div class="friends"><i></i><i></i><i></i> 3 kamarádi online · 1 hraje Justice SMP</div>
+      </div>
+    </main></div>`,
+  c: () => `<div class="c">
+    <aside>
+      <div class="brand"><img class="i" src="kuubl-icon-ember.svg"><img class="w" src="kuubl-wordmark-bone.svg"></div>
+      <a class="on">${I("home")} Domů</a><a>${I("box")} Instance</a><a>${I("puzzle")} Mody</a><a>${I("server")} Servery</a>
+      <div class="sec">TVORBA</div><a>${I("cam")} Natáčení</a><a>${I("clip")} Klipy</a>
+      <div class="sec">KOMUNITA</div><a>${I("users")} Kamarádi</a><a>${I("music")} Hudba</a>
+      <div class="sp"></div><div class="me"><i></i> Maxern_</div>
+    </aside>
+    <main>
+      <div class="top"><h1>Čau, <em>Maxern_</em>!</h1><div class="pill"><i></i> 3 kamarádi online</div></div>
+      <div class="hero"><img src="${IMG}pvp.webp"><div class="in">
+        <div class="tag">Naposledy hráno</div><h2>PvP 1.8.9</h2><p>Server Ertenix · včera večer</p>
+        <button class="play">${I("play")} HRÁT</button>
+      </div></div>
+      <h3>Tvoje instance</h3>
+      <div class="row">${inst.map(([i, n, s]) => `<div class="card"><img src="${IMG}${i}"><b>${n}</b><span>${s}</span></div>`).join("")}</div>
+    </main></div>`,
+};
+const v = new URLSearchParams(location.search).get("v") || "a";
+document.getElementById("root").innerHTML = (V[v] || V.a)();
+</script>
+</body>
+</html>

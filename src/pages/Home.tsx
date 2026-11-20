@@ -145,7 +145,7 @@ export function InstanceCard({ inst }: { inst: Instance }) {
 
 // ---------- Friends (signed-in only) ----------
 type PresenceEvent = { type: string; uuid?: string; online?: boolean; presence?: Presence | null };
-function useFriends() {
+export function useFriends() {
   const [friends, setFriends] = useState<SocialUser[] | null>(null);
   useEffect(() => {
     let alive = true;

@@ -1,4 +1,4 @@
-//! Voice clips: "Kuubl, clip that" (or Czech "Kuubl, natoč to") saves a clip, like the hotkey.
+//! Voice clips: "clip that" (or Czech "natoč to"), optionally after "Kuubl", saves a clip like the hotkey.
 //! Offline speech recognition with Vosk restricted to a few phrases (grammar mode, cheap on CPU).
 //! The Vosk library and a small model (~40 MB) are downloaded on demand into `<data>/voice`.
 //! Runs only while the replay buffer runs (a game from the launcher is running) and the setting is on.
@@ -15,10 +15,19 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use super::ClipsState;
 
-const LIB_ZIP: (&str, &str) = (
+#[cfg(windows)]
+const LIB_ZIP: (&str, &str, u64) = (
     "https://github.com/alphacep/vosk-api/releases/download/v0.3.45/vosk-win64-0.3.45.zip",
     "f1dcc9cca460630f81ea8f71794f69c80bed6556d2a4e6237b5785e1d2dff34b",
+    14_882_445,
 );
+#[cfg(not(windows))]
+const LIB_ZIP: (&str, &str, u64) = (
+    "https://github.com/alphacep/vosk-api/releases/download/v0.3.45/vosk-linux-x86_64-0.3.45.zip",
+    "bbdc8ed85c43979f6443142889770ea95cbfbc56cffb5c5dcd73afa875c5fbb2",
+    7_185_065,
+);
+const LIB_NAME: &str = if cfg!(windows) { "libvosk.dll" } else { "libvosk.so" };
 const MODEL_EN: (&str, &str) = (
     "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
     "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498",
@@ -35,50 +44,112 @@ pub enum Hit {
     Secret,
     /// A screenshot taken by Kuubl Mod in the game.
     Screenshot,
+    /// Launcher easter egg (VERITY_PHRASES): the frontend plays the video and goes wild.
+    Verity,
 }
 
-/// Phrases per language. Every word must be in the model's vocabulary (the small Czech model has no
-/// "klip"/"ulož", hence "natoč to").
+/// The launcher's main window is in front: voice also listens then (only the easter egg acts on it).
+static LAUNCHER_FOCUSED: AtomicBool = AtomicBool::new(false);
+
+static BLUR_GEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Focus changes come in bursts (alt-tab, dialogs); starting the recognizer loads the whole model, so
+/// it starts on focus right away but only stops after the launcher has been in the background for 2 min.
+pub fn set_launcher_focused(app: &AppHandle, focused: bool) {
+    let gen = BLUR_GEN.fetch_add(1, Ordering::SeqCst) + 1;
+    if focused {
+        if !LAUNCHER_FOCUSED.swap(true, Ordering::SeqCst) {
+            sync(app);
+        }
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(120));
+        // focused again (or blurred again later) in the meantime: that event decides
+        if BLUR_GEN.load(Ordering::SeqCst) == gen && LAUNCHER_FOCUSED.swap(false, Ordering::SeqCst) {
+            sync(&app);
+        }
+    });
+}
+
+/// Commands per language, without a wake word ("clip that" is enough). Every word must be in the
+/// model's vocabulary: the small Czech model has no "klip"/"ulož"/"screenshot", hence "natoč to".
 fn phrases(lang: &str) -> &'static [(&'static str, Hit)] {
-    // Neither model knows "kuubl". Said aloud it is "kůbl", which the grammar matches to the nearest
-    // words it has: "kůl"/"cool" (Czech) and "cool"/"kuba" (English). The old "justice" still works.
     if lang == "cs" {
         &[
-            ("kůl natoč to", Hit::Clip),
-            ("cool natoč to", Hit::Clip),
-            ("kuba natoč to", Hit::Clip),
-            ("kůl udělej fotku", Hit::Screenshot),
-            ("cool udělej fotku", Hit::Screenshot),
-            ("kuba udělej fotku", Hit::Screenshot),
-            ("justice natoč to", Hit::Clip),
-            ("justice udělej fotku", Hit::Screenshot),
+            ("natoč to", Hit::Clip),
+            ("natoč tohle", Hit::Clip),
+            ("natočit", Hit::Clip),
+            ("natočit to", Hit::Clip),
+            ("uložit to", Hit::Clip),
+            ("nahrát to", Hit::Clip),
+            ("zachytit", Hit::Clip),
+            ("zachytit to", Hit::Clip),
+            ("udělej fotku", Hit::Screenshot),
+            ("udělej obrázek", Hit::Screenshot),
+            ("fotku", Hit::Screenshot),
         ]
     } else {
         &[
-            ("cool clip that", Hit::Clip),
-            ("kuba clip that", Hit::Clip),
-            ("cool clip it", Hit::Clip),
-            ("cool screenshot", Hit::Screenshot),
-            ("kuba screenshot", Hit::Screenshot),
-            ("cool take a picture", Hit::Screenshot),
-            ("justice clip that", Hit::Clip),
-            ("justice clip it", Hit::Clip),
-            ("justice screenshot", Hit::Screenshot),
-            ("justice take a picture", Hit::Screenshot),
+            ("clip that", Hit::Clip),
+            ("clip it", Hit::Clip),
+            ("clip this", Hit::Clip),
+            ("save that", Hit::Clip),
+            ("save this", Hit::Clip),
+            ("record that", Hit::Clip),
+            ("capture that", Hit::Clip),
+            ("grab that", Hit::Clip),
+            ("take a screenshot", Hit::Screenshot),
+            ("screenshot that", Hit::Screenshot),
+            ("screenshot", Hit::Screenshot),
+            ("take a picture", Hit::Screenshot),
+            ("take a photo", Hit::Screenshot),
         ]
     }
 }
 
-/// Easter-egg phrases (English model only), base64 so they aren't readable in the public source.
-const SECRET_PHRASES: &[&str] = &["Y29vbCBjbGlwIG15IGRpY2sgaW50byB0aGUgd2FsbA==", "anVzdGljZSBjbGlwIG15IGRpY2sgaW50byB0aGUgd2FsbA=="];
-
-/// All phrases for a language, including the easter egg.
-fn all_phrases(lang: &str) -> Vec<(String, Hit)> {
-    use base64::Engine;
-    let mut out: Vec<(String, Hit)> = phrases(lang).iter().map(|(p, h)| (p.to_string(), *h)).collect();
-    if lang != "cs" {
-        out.extend(SECRET_PHRASES.iter().filter_map(|s| base64::engine::general_purpose::STANDARD.decode(s).ok()).filter_map(|b| String::from_utf8(b).ok()).map(|p| (p, Hit::Secret)));
+/// Optional wake words said before a command. Neither model knows "kuubl"; said aloud it is "kůbl",
+/// which the grammar maps to the nearest words it has. The old "justice" still works.
+fn prefixes(lang: &str) -> &'static [&'static str] {
+    if lang == "cs" {
+        &["kůl", "cool", "kuba", "justice"]
+    } else {
+        &["cool", "kuba", "justice"]
     }
+}
+
+/// Easter-egg phrase (English model only), base64 so it isn't readable in the public source.
+const SECRET_PHRASES: &[&str] = &["Y2xpcCBteSBkaWNrIGludG8gdGhlIHdhbGw="];
+/// The launcher's meme easter egg, base64 for the same reason.
+const VERITY_PHRASES: &[&str] = &[
+    "Y29tbyBzZSBkaWNlIGkgYW0gdHJ5bmEgdmVyaXR5",
+    "Y29tbyBzZSBkaWNlIGknbSB0cnluYSB2ZXJpdHk=",
+    "Y29tbyBzZSBkaWNlIGkgYW0gdHJ5aW5nIHRvIHZlcml0eQ==",
+    "Y29tbyBzZSBkaWNlIHRyeW5hIHZlcml0eQ==",
+];
+
+fn decoded(list: &'static [&'static str]) -> impl Iterator<Item = String> {
+    use base64::Engine;
+    list.iter().filter_map(|s| base64::engine::general_purpose::STANDARD.decode(s).ok()).filter_map(|b| String::from_utf8(b).ok())
+}
+
+/// All phrases for a language: each command alone and after every wake word, plus the easter egg.
+/// Longer phrases come first so "take a screenshot" wins over "screenshot".
+fn all_phrases(lang: &str) -> Vec<(String, Hit)> {
+    let mut base: Vec<(String, Hit)> = phrases(lang).iter().map(|(p, h)| (p.to_string(), *h)).collect();
+    if lang != "cs" {
+        base.extend(decoded(SECRET_PHRASES).map(|p| (p, Hit::Secret)));
+        base.extend(decoded(VERITY_PHRASES).map(|p| (p, Hit::Verity)));
+    }
+    let mut out = Vec::new();
+    for (p, h) in &base {
+        for w in prefixes(lang) {
+            out.push((format!("{w} {p}"), *h));
+        }
+        out.push((p.clone(), *h));
+    }
+    out.sort_by_key(|(p, h)| (std::cmp::Reverse(matches!(h, Hit::Secret)), std::cmp::Reverse(p.split(' ').count())));
     out
 }
 
@@ -92,7 +163,7 @@ fn model_dir(lang: &str) -> PathBuf {
 
 /// Library and the model for this language are on disk.
 pub fn installed(lang: &str) -> bool {
-    dir().join("libvosk.dll").is_file() && model_dir(lang).join("am").join("final.mdl").is_file()
+    dir().join(LIB_NAME).is_file() && model_dir(lang).join("am").join("final.mdl").is_file()
 }
 
 // ---------------- download ----------------
@@ -136,7 +207,7 @@ fn unzip(zip_path: &Path, out: &Path, flat: bool) -> anyhow::Result<()> {
             continue;
         }
         let target = if flat {
-            if !rel.ends_with(".dll") {
+            if !(rel.ends_with(".dll") || rel.ends_with(".so")) {
                 continue;
             }
             out.join(rel.rsplit('/').next().unwrap())
@@ -156,8 +227,8 @@ pub async fn install(lang: &str, progress: impl Fn(u64, u64)) -> anyhow::Result<
     let d = dir();
     std::fs::create_dir_all(&d)?;
     let mut jobs: Vec<((&str, &str), PathBuf, bool, u64)> = Vec::new();
-    if !d.join("libvosk.dll").is_file() {
-        jobs.push((LIB_ZIP, d.clone(), true, 14_882_445));
+    if !d.join(LIB_NAME).is_file() {
+        jobs.push(((LIB_ZIP.0, LIB_ZIP.1), d.clone(), true, LIB_ZIP.2));
     }
     if !model_dir(lang).join("am").join("final.mdl").is_file() {
         let (m, size) = if lang == "cs" { (MODEL_CS, 46_088_666) } else { (MODEL_EN, 41_205_931) };
@@ -207,8 +278,11 @@ struct Vosk {
 impl Vosk {
     fn open(lang: &str) -> anyhow::Result<Vosk> {
         // LOAD_WITH_ALTERED_SEARCH_PATH: its MinGW runtime DLLs are found next to libvosk.dll.
+        #[cfg(windows)]
         let lib: libloading::Library =
-            unsafe { libloading::os::windows::Library::load_with_flags(dir().join("libvosk.dll"), 0x0000_0008)? }.into();
+            unsafe { libloading::os::windows::Library::load_with_flags(dir().join(LIB_NAME), 0x0000_0008)? }.into();
+        #[cfg(not(windows))]
+        let lib = unsafe { libloading::Library::new(dir().join(LIB_NAME))? };
         unsafe {
             let set_log: SetLog = *lib.get(b"vosk_set_log_level\0")?;
             set_log(-1);
@@ -276,23 +350,34 @@ impl Drop for Vosk {
     }
 }
 
-/// Minimum confidence of every word of a phrase.
+/// Confidence needed: one-word commands need every word sure; longer phrases may have a weaker
+/// word as long as the phrase as a whole is clear (long sentences rarely get 0.9 on every word).
 const MIN_CONF: f64 = 0.9;
+const MIN_WORD_CONF: f64 = 0.55;
+const MIN_AVG_CONF: f64 = 0.8;
 
-/// The phrase said in an utterance, if any: its words in a row, each heard confidently. Other words
-/// around it are fine ("okay [unk] kuubl clip that").
+fn confident(confs: &[f64]) -> bool {
+    if confs.len() <= 1 {
+        return confs.iter().all(|c| *c >= MIN_CONF);
+    }
+    let avg = confs.iter().sum::<f64>() / confs.len() as f64;
+    confs.iter().all(|c| *c >= MIN_WORD_CONF) && avg >= MIN_AVG_CONF
+}
+
+/// The phrase said in an utterance, if any: its words in a row, heard clearly enough. Other words
+/// around it are fine in English ("okay [unk] clip that").
 pub fn matched(lang: &str, words: &[(String, f64)]) -> Option<Hit> {
     // The small Czech model hears its phrases in any longer speech with full confidence, so in Czech
     // the command has to be said on its own (a pause before and after).
     let said: Vec<(String, f64)> = words.iter().filter(|(w, _)| w != "[unk]").cloned().collect();
     all_phrases(lang).iter().find_map(|(p, hit)| {
-        if lang == "cs" && said.len() != p.split(' ').count() {
+        let pw: Vec<&str> = p.split(' ').collect();
+        if lang == "cs" && said.len() != pw.len() {
             return None;
         }
-        let pw: Vec<&str> = p.split(' ').collect();
-        words
-            .windows(pw.len())
-            .any(|w| w.iter().zip(&pw).all(|((word, conf), want)| word == want && *conf >= MIN_CONF))
+        let src: &[(String, f64)] = if lang == "cs" { &said } else { words };
+        src.windows(pw.len())
+            .any(|w| w.iter().zip(&pw).all(|((word, _), want)| word == want) && confident(&w.iter().map(|(_, c)| *c).collect::<Vec<_>>()))
             .then_some(*hit)
     })
 }
@@ -371,7 +456,13 @@ fn listen(app: AppHandle, lang: String, mic: String, stop: Arc<AtomicBool>) -> a
     linfo!("voice clips: listening ({lang}, {})", dev.name().unwrap_or_default());
     let res = recognise(&lang, rx, &stop, |hit| {
         linfo!("voice clips: heard {hit:?}");
+        let in_game = app.try_state::<ClipsState>().is_some_and(|st| st.games.load(Ordering::SeqCst) > 0);
         match hit {
+            Hit::Verity => {
+                let _ = app.emit("secret-found", "verity");
+            }
+            // in the launcher (no game) only the easter egg does something
+            _ if !in_game => {}
             // Kuubl Mod takes it (it long-polls these events)
             Hit::Screenshot => crate::social::emit(serde_json::json!({ "type": "voice", "action": "screenshot" })),
             Hit::Secret => {
@@ -391,7 +482,8 @@ static RUNNING: Mutex<Option<(Arc<AtomicBool>, String)>> = Mutex::new(None);
 pub fn sync(app: &AppHandle) {
     let Some(st) = app.try_state::<ClipsState>() else { return };
     let s = st.settings.read().unwrap().clone();
-    let want = st.games.load(Ordering::SeqCst) > 0 && s.enabled && s.voice && installed(&s.voice_lang);
+    let active = st.games.load(Ordering::SeqCst) > 0 || LAUNCHER_FOCUSED.load(Ordering::SeqCst);
+    let want = active && s.enabled && s.voice && installed(&s.voice_lang);
     let key = format!("{}|{}", s.voice_lang, s.mic_device);
     let mut run = RUNNING.lock().unwrap();
     if let Some((stop, k)) = run.as_ref() {
@@ -416,6 +508,7 @@ pub fn sync(app: &AppHandle) {
 }
 
 /// CLI check: `--voice-test <lang> <file.wav>` (16-bit PCM WAV, any rate) prints what was matched.
+#[cfg_attr(not(windows), allow(dead_code))]
 pub fn test_wav(lang: &str, wav: &Path) -> anyhow::Result<Vec<Hit>> {
     let data = std::fs::read(wav)?;
     let mut fmt = None;
@@ -457,4 +550,49 @@ pub fn test_wav(lang: &str, wav: &Path) -> anyhow::Result<Vec<Hit>> {
         }
     }
     Ok(hits)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn w(s: &str, c: f64) -> Vec<(String, f64)> {
+        s.split(' ').map(|x| (x.to_string(), c)).collect()
+    }
+
+    #[test]
+    fn commands_without_wake_word() {
+        assert_eq!(matched("en", &w("clip that", 1.0)), Some(Hit::Clip));
+        assert_eq!(matched("en", &w("okay [unk] clip it", 1.0)), Some(Hit::Clip));
+        assert_eq!(matched("en", &w("cool clip that", 0.95)), Some(Hit::Clip));
+        assert_eq!(matched("en", &w("take a screenshot", 0.9)), Some(Hit::Screenshot));
+        assert_eq!(matched("en", &w("screenshot", 0.95)), Some(Hit::Screenshot));
+        assert_eq!(matched("cs", &w("natoč to", 1.0)), Some(Hit::Clip));
+        assert_eq!(matched("cs", &w("kůl natoč to", 1.0)), Some(Hit::Clip));
+        assert_eq!(matched("cs", &w("udělej fotku", 1.0)), Some(Hit::Screenshot));
+        let verity = super::decoded(super::VERITY_PHRASES).next().unwrap();
+        assert_eq!(matched("en", &w(&verity, 0.95)), Some(Hit::Verity));
+    }
+
+    #[test]
+    fn czech_needs_the_command_alone() {
+        assert_eq!(matched("cs", &w("tak natoč to prosím", 1.0)), None);
+    }
+
+    #[test]
+    fn long_phrase_tolerates_one_weaker_word() {
+        use base64::Engine;
+        let secret = String::from_utf8(base64::engine::general_purpose::STANDARD.decode(SECRET_PHRASES[0]).unwrap()).unwrap();
+        let mut words = w(&format!("cool {secret}"), 0.92);
+        words[3].1 = 0.6;
+        assert_eq!(matched("en", &words), Some(Hit::Secret));
+        assert_eq!(matched("en", &w(&secret, 0.9)), Some(Hit::Secret));
+    }
+
+    #[test]
+    fn unsure_or_other_speech_is_ignored() {
+        assert_eq!(matched("en", &w("clip that", 0.5)), None);
+        assert_eq!(matched("en", &w("screenshot", 0.7)), None);
+        assert_eq!(matched("en", &w("[unk] [unk]", 1.0)), None);
+    }
 }

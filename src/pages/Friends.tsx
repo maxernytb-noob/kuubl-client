@@ -13,6 +13,7 @@ import { ACHIEVEMENTS, BADGES, BANNERS, CAPES, earned, head, type Stats } from "
 import { McIcon } from "../components/McIcons";
 import { PartyPanel, useParty } from "../components/Party";
 import Logo from "../components/Logo";
+import { askConfirm } from "../components/AskDialog";
 
 type SocialEvent =
   | { type: "message"; message: ChatMessage }
@@ -476,7 +477,7 @@ function Chat({ me, friend, onProfile, onRemoved }: { me: SocialUser; friend: So
           title={tr("Odebrat z přátel", "Remove friend")}
           onClick={async (e) => {
             e.stopPropagation();
-            if (!confirm(tr(`Odebrat ${friend.name} z přátel?`, `Remove ${friend.name} from friends?`))) return;
+            if (!(await askConfirm(tr(`Odebrat ${friend.name}?`, `Remove ${friend.name}?`), tr("Zmizíte si navzájem ze seznamu přátel.", "You both disappear from each other's friend list."), tr("Odebrat", "Remove"), true))) return;
             await social.remove(friend.uuid);
             onRemoved();
           }}
@@ -1146,20 +1147,60 @@ type Post = { id: number; author: string; authorName: string; body: string; crea
 function KuublGroup() {
   const { toast } = useStore();
   const [posts, setPosts] = useState<Post[] | null>(null);
+  const [loadErr, setLoadErr] = useState<string | null>(null);
   const [canPost, setCanPost] = useState(false);
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(0);
 
-  const load = useCallback(
-    () =>
-      invoke<{ posts: Post[]; canPost: boolean }>("social_get", { path: "/announcements" })
-        .then((r) => {
-          setPosts(r.posts);
-          setCanPost(r.canPost);
-        })
-        .catch((e) => toast(errText(e), "error")),
-    [toast],
-  );
+  const load = useCallback(() => {
+    setLoadErr(null);
+    // never stay on the skeleton: a request that hangs counts as an error after 15 s
+    const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(tr("Server neodpovídá", "The server doesn't answer")), 15000));
+    return Promise.race([invoke<{ posts: Post[]; canPost: boolean }>("social_get", { path: "/announcements" }), timeout])
+      .then((r) => {
+        setPosts(Array.isArray(r.posts) ? r.posts : []);
+        setCanPost(r.canPost);
+      })
+      .catch((e) => setLoadErr(errText(e)));
+  }, []);
+
+  /** Uploads pictures (pasted, dropped or picked) and adds each as its own line, which shows as the image. */
+  const addPictures = async (files: File[]) => {
+    const pics = files.filter((f) => f.type.startsWith("image/"));
+    if (!pics.length) return;
+    setUploading((n) => n + pics.length);
+    for (const f of pics) {
+      try {
+        if (f.size > 15 * 1024 * 1024) throw tr("Obrázek je větší než 15 MB", "The picture is over 15 MB");
+        const ext = (f.type.split("/")[1] || "png").replace("jpeg", "jpg");
+        const data = Array.from(new Uint8Array(await f.arrayBuffer()));
+        const r = await invoke<{ url: string }>("social_upload_bytes", { name: `picture.${ext}`, data });
+        setText((t) => (t.trim() ? `${t.replace(/\s+$/, "")}\n${r.url}` : r.url));
+      } catch (e) {
+        toast(errText(e), "error");
+      } finally {
+        setUploading((n) => n - 1);
+      }
+    }
+  };
+  const pickPictures = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp,image/gif";
+    input.multiple = true;
+    input.onchange = () => addPictures(Array.from(input.files ?? []));
+    input.click();
+  };
+  const remove = async (p: Post) => {
+    if (!(await askConfirm(tr("Smazat novinku?", "Delete this post?"), tr("Zmizí všem hráčům. Nejde to vrátit.", "It disappears for every player. This can't be undone."), tr("Smazat", "Delete"), true))) return;
+    try {
+      await invoke("social_delete", { path: `/announcements/${p.id}` });
+      setPosts((l) => (l ?? []).filter((x) => x.id !== p.id));
+    } catch (e) {
+      toast(errText(e), "error");
+    }
+  };
   useEffect(() => {
     load();
     const un = listen<SocialEvent>("social-event", (e) => {
@@ -1203,7 +1244,17 @@ function KuublGroup() {
         </div>
       </div>
       <div className="jg-feed">
-        {!posts ? (
+        {loadErr ? (
+          <Empty
+            icon="alert"
+            title={tr("Novinky se nenačetly", "News didn't load")}
+            text={loadErr}
+          >
+            <button className="btn" onClick={load}>
+              <Icon name="refresh" size={14} /> {tr("Zkusit znovu", "Try again")}
+            </button>
+          </Empty>
+        ) : !posts ? (
           <SkeletonList rows={3} />
         ) : !posts.length ? (
           <Empty icon="bell" title={tr("Zatím žádné novinky", "No news yet")} text={tr("Tady se objeví oznámení o nových verzích.", "Announcements about new versions show up here.")} />
@@ -1215,19 +1266,66 @@ function KuublGroup() {
                 <span>· {fmtAgo(p.created)}</span>
               </div>
               <PostBody text={p.body} />
-              <button className={`btn sm ghost ${p.liked ? "on" : ""}`} onClick={() => like(p)}>
-                <Icon name="heart" size={13} /> {p.likes}
-              </button>
+              <div className="row" style={{ gap: 6 }}>
+                <button className={`btn sm ghost ${p.liked ? "on" : ""}`} onClick={() => like(p)}>
+                  <Icon name="heart" size={13} /> {p.likes}
+                </button>
+                {canPost && (
+                  <button className="btn sm ghost" title={tr("Smazat", "Delete")} onClick={() => remove(p)}>
+                    <Icon name="trash" size={13} />
+                  </button>
+                )}
+              </div>
             </article>
           ))
         )}
       </div>
       {canPost && (
-        <div className="jg-compose">
-          <textarea className="input" rows={3} maxLength={2000} placeholder={tr("Napiš oznámení pro všechny hráče…", "Write an announcement for every player…")} value={text} onChange={(e) => setText(e.target.value)} />
-          <button className="btn primary" disabled={busy || !text.trim()} onClick={send}>
-            <Icon name="share" size={14} /> {tr("Zveřejnit", "Post")}
-          </button>
+        <div
+          className="jg-compose"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            addPictures(Array.from(e.dataTransfer.files));
+          }}
+        >
+          <div className="grow col" style={{ gap: 8 }}>
+            <textarea
+              className="input"
+              rows={3}
+              maxLength={2000}
+              placeholder={tr("Napiš oznámení pro všechny hráče… (obrázek vložíš přes Ctrl+V)", "Write an announcement for every player… (paste a picture with Ctrl+V)")}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onPaste={(e) => {
+                const files = Array.from(e.clipboardData.files);
+                if (files.some((f) => f.type.startsWith("image/"))) {
+                  e.preventDefault();
+                  addPictures(files);
+                }
+              }}
+            />
+            {text.split("\n").some((l) => IMG_LINE.test(l.trim())) && (
+              <div className="jg-attach">
+                {text.split("\n").map((l) => l.trim()).filter((l) => IMG_LINE.test(l)).map((url) => (
+                  <span key={url} className="jg-att">
+                    <img src={url} alt="" />
+                    <button title={tr("Odebrat", "Remove")} onClick={() => setText((t) => t.split("\n").filter((x) => x.trim() !== url).join("\n"))}>
+                      <Icon name="x" size={12} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="col" style={{ gap: 6 }}>
+            <button className="btn" onClick={pickPictures} disabled={uploading > 0} title={tr("Přidat obrázek", "Add a picture")}>
+              {uploading > 0 ? <span className="spinner" /> : <Icon name="image" size={14} />} {tr("Obrázek", "Picture")}
+            </button>
+            <button className="btn primary" disabled={busy || uploading > 0 || !text.trim()} onClick={send}>
+              <Icon name="share" size={14} /> {tr("Zveřejnit", "Post")}
+            </button>
+          </div>
         </div>
       )}
     </div>

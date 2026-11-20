@@ -114,6 +114,9 @@ scp -q -i $sshKey "$root\packaging\linux\Dockerfile.deb" "$root\packaging\linux\
 if ($LASTEXITCODE -ne 0) { throw "Linux build upload failed" }
 ssh -i $sshKey $remote "cd $archStage && sed -i 's/\r`$//' vps-build-deb.sh Dockerfile.deb && cp arch/kuubl-client-$Version.tar.gz . && bash vps-build-deb.sh $archStage $Version && cp out/kuubl-client_${Version}_amd64.deb out/KuublClient-$Version-x86_64.AppImage $stage/ && cp out/kuubl-client_${Version}_amd64.deb $stage/kuubl-client.deb && cp out/KuublClient-$Version-x86_64.AppImage $stage/KuublClient.AppImage"
 if ($LASTEXITCODE -ne 0) { throw ".deb/AppImage build on the VPS failed" }
+# Checksums the Linux in-app updater (install_update_linux) and the AUR kuubl-bin package verify against.
+ssh -i $sshKey $remote "cd $stage && sha256sum kuubl-client.pkg.tar.zst kuubl-client.deb KuublClient.AppImage KuublClient-$Version-x86_64.AppImage kuubl-client-$Version-1-x86_64.pkg.tar.zst kuubl-client_${Version}_amd64.deb > SHA256SUMS"
+if ($LASTEXITCODE -ne 0) { throw "SHA256SUMS failed" }
 # Everything except latest.json first, then latest.json for new (kuubl) and old (justice) launchers.
 ssh -i $sshKey $remote "cd $stage && sudo install -d -o www-data -g www-data $www && sudo cp -r --no-preserve=mode,ownership `$(ls -A | grep -vx latest.json) $www/ && sudo chown -R www-data:www-data $www && sudo install -o www-data -g www-data -m 644 latest.json $www/latest.json && sudo install -o www-data -g www-data -m 644 latest.json $oldWww/latest.json && ls -la $www"
 if ($LASTEXITCODE -ne 0) { throw "Publishing on the server failed" }

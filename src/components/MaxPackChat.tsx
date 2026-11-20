@@ -30,8 +30,8 @@ export default function MaxPackChat({ instance, onClose, onBuilt }: { instance?:
     {
       role: "assistant",
       content: tr(
-        "Ahoj, já jsem MaxPack 👋 Řekni mi, jaký modpack chceš, a já ti poradím mody. Třeba „lehký výkonový balíček pro 1.21.11“ nebo „survival se shadery a minimapou“.",
-        "Hey, I'm MaxPack 👋 Tell me what kind of modpack you want and I'll suggest mods. Try \"a light performance pack for 1.21.11\" or \"survival with shaders and a minimap\".",
+        "Ahoj, já jsem MaxPack. Řekni mi, jaký modpack chceš, a já ti poradím mody. Třeba „lehký výkonový balíček pro 1.21.11“ nebo „survival se shadery a minimapou“.",
+        "Hey, I'm MaxPack. Tell me what kind of modpack you want and I'll suggest mods. Try \"a light performance pack for 1.21.11\" or \"survival with shaders and a minimap\".",
       ),
     },
   ]);

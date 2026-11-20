@@ -392,3 +392,25 @@ html.lowfx .mp-typing i { animation: none; }
 /* Clips settings: a dropdown next to its label, not over it */
 .clips-settings .setting > .jselect { flex: 0 1 300px; width: 300px; min-width: 180px; }
 .clips-settings .setting > .txt { flex: 1 1 auto; min-width: 0; }
+
+/* Discover servers */
+.disc-featured { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.disc-feat { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 12px; padding: 18px 20px; border-radius: 18px; border: 1px solid color-mix(in srgb, var(--feat) 45%, transparent); background: radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--feat) 22%, transparent), transparent 60%), var(--surface); }
+.disc-feat-top { display: flex; align-items: center; gap: 14px; }
+.disc-feat-icon { width: 64px; height: 64px; flex: none; border-radius: 16px; overflow: hidden; display: grid; place-items: center; background: rgba(0,0,0,.35); box-shadow: 0 10px 30px color-mix(in srgb, var(--feat) 30%, transparent); }
+.disc-feat-icon img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.disc-feat-label { font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--feat); }
+.disc-feat-name { display: block; font-size: 22px; line-height: 1.15; }
+.disc-feat-desc { margin: 0; color: var(--text-2); font-size: 14px; line-height: 1.5; }
+.disc-feat-foot { display: flex; align-items: center; gap: 8px; }
+.disc-search { position: relative; display: flex; align-items: center; flex: 1 1 240px; max-width: 360px; }
+.disc-search svg { position: absolute; left: 12px; color: var(--text-3); pointer-events: none; }
+.disc-search .input { padding-left: 34px; width: 100%; }
+.chip-btn { height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line-2); background: rgba(255,255,255,.04); color: var(--text-2); font: inherit; font-size: 13px; cursor: pointer; }
+.chip-btn:hover { background: rgba(255,255,255,.08); }
+.chip-btn.on { background: var(--accent-soft, rgba(240,102,31,.18)); border-color: color-mix(in srgb, var(--red) 45%, transparent); color: var(--text); }
+
+/* Sidebar tooltips live in a fixed layer (components/NavTip.tsx): the rail itself clips overflow. */
+.sidebar .tip { display: none !important; }
+.nav-tip { position: fixed; z-index: 1000; transform: translateY(-50%); white-space: nowrap; background: var(--panel-3); color: var(--text); border: 1px solid var(--line-2); padding: 5px 10px; border-radius: 8px; font-size: 12px; pointer-events: none; animation: navTip .12s ease-out; }
+@keyframes navTip { from { opacity: 0; transform: translate(-4px, -50%); } }

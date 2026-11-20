@@ -20,6 +20,8 @@ pub struct Settings {
     pub data_dir: String,
     pub ram_mb: u32,
     pub jvm_args: String,
+    /// Command the game is started through, e.g. `prime-run` or `DRI_PRIME=1 gamemoderun`.
+    pub wrapper_command: String,
     /// "hide" | "close" | "keep"
     pub on_launch: String,
     pub language: String,
@@ -62,6 +64,7 @@ impl Default for Settings {
             data_dir: data_dir.to_string_lossy().into_owned(),
             ram_mb: recommended_ram_mb(),
             jvm_args: String::new(),
+            wrapper_command: String::new(),
             on_launch: "hide".into(),
             language: "cs".into(),
             curseforge_key: String::new(),

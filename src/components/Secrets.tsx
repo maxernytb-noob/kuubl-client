@@ -18,6 +18,7 @@ const SECRETS: Record<string, [string, string]> = {
   diamonds: ["Diamantový déšť", "Diamond rain"],
   speedrun: ["Speedrunner", "Speedrunner"],
   clipwall: ["Přímo do zdi", "Straight into the wall"],
+  verity: ["Como se dice", "Como se dice"],
 };
 const HINTS: Record<string, [string, string]> = {
   logo: ["Logo vydrží hodně klikání…", "The logo can take a lot of clicks…"],
@@ -29,6 +30,7 @@ const HINTS: Record<string, [string, string]> = {
   diamonds: ["Hledej ty nejcennější rudy.", "Search for the most precious ore."],
   speedrun: ["Speedrunneři drží Shift.", "Speedrunners hold Shift."],
   clipwall: ["Klipy poslouchají víc, než si myslíš.", "Clips listen to more than you think."],
+  verity: ["Launcher taky poslouchá. Jak se to řekne…?", "The launcher listens too. How do you say…?"],
 };
 
 // ---------- Found list ----------
@@ -104,6 +106,65 @@ function boing() {
 }
 function wahwah() {
   [[392, 0, 0.35], [370, 0.38, 0.35], [349, 0.76, 0.35], [330, 1.14, 1.0]].forEach(([f, d, len]) => tone("sawtooth", f, len > 0.5 ? f - 18 : f, len, 0.18, d));
+}
+
+// ---------- "Como se dice I'm tryna verity" (said aloud with voice clips on, see clips/voice.rs) ----------
+let verityOn = false;
+function verity() {
+  if (verityOn) return;
+  verityOn = true;
+  const layer = document.createElement("div");
+  layer.className = "fx-verity";
+  // the meme video bounces around DVD-logo style (with its sound), two buckets fly along
+  const video = document.createElement("video");
+  video.src = "/secrets/verity.mp4";
+  video.className = "fx-verity-video";
+  video.playsInline = true;
+  video.volume = 0.9;
+  // a WebView that can't decode it still gets the sound
+  const audioOnly = () => {
+    video.remove();
+    const a = new Audio("/secrets/verity.mp3");
+    a.volume = 0.9;
+    a.play().catch(() => {});
+  };
+  video.onerror = audioOnly;
+  video.play().catch(audioOnly);
+  const items = Array.from({ length: 3 }, (_, i) => {
+    const el = i === 0 ? video : document.createElement("img");
+    if (el instanceof HTMLImageElement) {
+      el.src = "/secrets/kuubl.png";
+      el.className = "fx-verity-logo";
+    }
+    layer.append(el);
+    const spin = i === 0 ? 4 : 24;
+    return { el, x: Math.random() * innerWidth * 0.5, y: Math.random() * innerHeight * 0.4, vx: (5 + Math.random() * 6) * (Math.random() < 0.5 ? -1 : 1), vy: (4 + Math.random() * 6) * (Math.random() < 0.5 ? -1 : 1), r: 0, vr: (Math.random() - 0.5) * spin };
+  });
+  document.body.append(layer);
+  // the whole launcher wobbles along (JS, so "animations off" doesn't stop it)
+  const root = document.getElementById("root");
+  const end = performance.now() + 11300;
+  const step = (now: number) => {
+    for (const it of items) {
+      const w = it.el.offsetWidth, h = it.el.offsetHeight;
+      it.x += it.vx;
+      it.y += it.vy;
+      it.r += it.vr;
+      if (it.x < 0 || it.x + w > innerWidth) (it.vx = -it.vx * (0.9 + Math.random() * 0.3)), (it.vr = -it.vr), (it.x = Math.max(0, Math.min(innerWidth - w, it.x))), sound("open", true);
+      if (it.y < 0 || it.y + h > innerHeight) (it.vy = -it.vy * (0.9 + Math.random() * 0.3)), (it.y = Math.max(0, Math.min(innerHeight - h, it.y)));
+      it.el.style.transform = `translate(${it.x}px, ${it.y}px) rotate(${it.el === video ? Math.sin(now / 160) * 10 : it.r}deg)`;
+      if (it.el !== video) it.el.style.filter = `hue-rotate(${(now / 4) % 360}deg)`;
+    }
+    if (root) root.style.transform = `rotate(${Math.sin(now / 180) * 2.5}deg) scale(${1 + Math.sin(now / 95) * 0.025})`;
+    if (now < end) requestAnimationFrame(step);
+    else {
+      layer.remove();
+      if (root) root.style.transform = "";
+      verityOn = false;
+    }
+  };
+  requestAnimationFrame(step);
+  found("verity");
 }
 
 // ---------- Visual bits ----------
@@ -396,6 +457,7 @@ export function useSecrets() {
     addEventListener("pointerdown", down);
     // the secret voice phrase in Clips (the launcher hears it, see clips/voice.rs)
     const un = listen<string>("secret-found", (e) => {
+      if (e.payload === "verity") return verity();
       if (e.payload !== "clipwall") return;
       boing();
       toastFn?.(tr("Klip letí přímo do zdi!", "Clip flying straight into the wall!"), "info");
@@ -407,6 +469,11 @@ export function useSecrets() {
       removeEventListener("pointerdown", down);
     };
   }, []);
+}
+
+/** [found, total] for the profile and Wrapped. */
+export function secretsFound(): [number, number] {
+  return [cache.filter((id) => id in SECRETS).length, Object.keys(SECRETS).length];
 }
 
 /** "Found secrets x/8" with hints for the rest (Settings). */

@@ -10,6 +10,7 @@ import { Icon } from "../icons";
 import { errText, useStore } from "../store";
 import { Avatar, Empty } from "../components/common";
 import { tr } from "../i18n";
+import { askText } from "../components/AskDialog";
 
 export function AddAccount(_props: { compact?: boolean }) {
   const { reloadAccounts, toast } = useStore();
@@ -324,13 +325,13 @@ function SkinLibrary({ account }: { account: Account }) {
     if (path) run(() => api.skinlibAddFile(path as string, "", account.skinVariant === "SLIM" ? "slim" : "classic"), tr("Přidáno do knihovny", "Added to the library"));
   };
   const addPlayer = async () => {
-    const name = prompt(tr("Jméno hráče, jehož skin chceš uložit:", "Player whose skin to save:"))?.trim();
+    const name = await askText({ title: tr("Uložit skin hráče", "Save a player's skin"), label: tr("Herní jméno hráče, jehož skin chceš uložit do knihovny.", "The player whose skin you want to save to the library."), placeholder: "Notch", ok: tr("Uložit", "Save") });
     if (name) run(() => api.skinlibAddPlayer(name, ""), tr("Přidáno do knihovny", "Added to the library"));
   };
   const saveCurrent = () => run(() => api.skinlibAddCurrent(account.id, tr("Můj skin", "My skin")), tr("Aktuální skin uložen", "Current skin saved"));
   const apply = (s: SkinEntry) => run(async () => { await api.skinlibApply(account.id, s.id); await reloadAccounts(); }, tr(`Skin „${s.name}" nasazen`, `Skin "${s.name}" applied`));
-  const rename = (s: SkinEntry) => {
-    const name = prompt(tr("Nový název:", "New name:"), s.name)?.trim();
+  const rename = async (s: SkinEntry) => {
+    const name = await askText({ title: tr("Přejmenovat skin", "Rename skin"), initial: s.name, ok: tr("Přejmenovat", "Rename") });
     if (name && name !== s.name) run(() => api.skinlibRename(s.id, name));
   };
   const remove = (s: SkinEntry) => run(() => api.skinlibRemove(s.id));

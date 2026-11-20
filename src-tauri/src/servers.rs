@@ -151,6 +151,20 @@ fn flatten_motd(v: &Value) -> String {
     }
 }
 
+/// "Discover servers": featured servers (Justice SMP, Ertenix) and a curated list of public ones.
+/// Lives at ertenix.net/kuubl/discover.json so it can change without a launcher update; cached for an
+/// hour, with the copy built into the launcher as the fallback.
+pub async fn discover() -> Value {
+    const URL: &str = "https://ertenix.net/kuubl/discover.json";
+    let cache = settings::cache_dir().join("discover.json");
+    if let Ok(v) = net::get_json_cached(URL, &cache, 3600).await {
+        if v["servers"].is_array() {
+            return v;
+        }
+    }
+    serde_json::from_str(include_str!("../discover.json")).unwrap_or(Value::Null)
+}
+
 pub async fn ping(address: &str) -> Result<Status> {
     let address = address.trim();
     let (host, port) = match address.rsplit_once(':') {

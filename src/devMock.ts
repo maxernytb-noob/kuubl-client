@@ -1,13 +1,14 @@
+import discoverJson from "../src-tauri/discover.json";
 // Dev-only: lets the UI run in a normal browser (vite dev server) with sample data, so the look can
 // be checked without the Tauri backend. main.tsx imports this only when Tauri isn't present.
 const sampleInstances = [
-  { id: "cinematic", name: "Cinematic 1.21.11", icon: "film", group: "", mcVersion: "1.21.11", loader: "fabric", loaderVersion: "", installedId: "", ramMb: null, javaPath: "", jvmArgs: "", width: null, height: null, created: 1790000000, lastPlayed: Date.now() / 1000 - 3600, playtimeSecs: 18200, template: "cinematic", modProfile: "", modProfiles: {}, recordingMode: true, lightMode: false },
-  { id: "pvp18", name: "1.8.9 PvP", icon: "gamepad", group: "", mcVersion: "1.8.9", loader: "forge", loaderVersion: "", installedId: "", ramMb: null, javaPath: "", jvmArgs: "", width: null, height: null, created: 1790000000, lastPlayed: Date.now() / 1000 - 86400, playtimeSecs: 5400, template: "pvp18", modProfile: "", modProfiles: {}, recordingMode: false, lightMode: false },
+  { id: "cinematic", name: "Cinematic 1.21.11", icon: "film", group: "", mcVersion: "1.21.11", loader: "fabric", loaderVersion: "", installedId: "", ramMb: null, javaPath: "", jvmArgs: "", wrapperCommand: "", width: null, height: null, created: 1790000000, lastPlayed: Date.now() / 1000 - 3600, playtimeSecs: 18200, template: "cinematic", modProfile: "", modProfiles: {}, recordingMode: true, lightMode: false },
+  { id: "pvp18", name: "1.8.9 PvP", icon: "gamepad", group: "", mcVersion: "1.8.9", loader: "forge", loaderVersion: "", installedId: "", ramMb: null, javaPath: "", jvmArgs: "", wrapperCommand: "", width: null, height: null, created: 1790000000, lastPlayed: Date.now() / 1000 - 86400, playtimeSecs: 5400, template: "pvp18", modProfile: "", modProfiles: {}, recordingMode: false, lightMode: false },
 ];
 const settings = {
-  dataDir: "D:\\KuublClient", ramMb: 6144, jvmArgs: "", onLaunch: "hide", language: new URLSearchParams(location.search).get("lang") ?? "cs", curseforgeKey: "", msClientId: "", discordRpc: true,
+  dataDir: "D:\\KuublClient", ramMb: 6144, jvmArgs: "", wrapperCommand: "", onLaunch: "hide", language: new URLSearchParams(location.search).get("lang") ?? "cs", curseforgeKey: "", msClientId: "", discordRpc: true,
   discordAppId: "", streamerMode: false, backupOnExit: false, width: 1280, height: 720, highPriority: true, gc: "auto", obsEnabled: false,
-  obsUrl: "ws://127.0.0.1:4455", obsPassword: "", obsAutoRecord: false, obsScene: "", onboarded: true, accentColor: "#f0661f", bgStyle: "void", quickServers: {}, kuublMod: true, ui: { shortcuts: [{ kind: "instance", id: "cinematic" }], startPage: new URLSearchParams(location.search).get("page") ?? "home" },
+  obsUrl: "ws://127.0.0.1:4455", obsPassword: "", obsAutoRecord: false, obsScene: "", onboarded: true, accentColor: "#f0661f", bgStyle: "void", quickServers: {}, kuublMod: true, ui: { shortcuts: [{ kind: "instance", id: "cinematic" }], startPage: new URLSearchParams(location.search).get("page") ?? "home", design: new URLSearchParams(location.search).get("design") ?? "life", designPicked: !new URLSearchParams(location.search).has("picker") },
 };
 
 const clipsSettings = {
@@ -259,6 +260,8 @@ const handlers: Record<string, (a: any) => unknown> = {
     { id: "s3", name: "Hypixel", address: "mc.hypixel.net", instance: "pvp", pinned: false },
     { id: "s4", name: "Starý server", address: "old.example.cz", instance: "", pinned: false },
   ],
+  discover_servers: () => discoverJson,
+  lunar_profiles: () => [{ path: "C:/Users/you/.lunarclient/profiles/lunar/1.21.11/mods", name: "lunar / 1.21.11", mcVersion: "1.21.11", mods: 14 }, { path: "C:/Users/you/.lunarclient/profiles/pvp/1.8.9/mods", name: "pvp / 1.8.9", mcVersion: "1.8.9", mods: 6 }],
   ping_server: (a) => a.address.startsWith("old.") ? Promise.reject("offline") : a.address.includes("hypixel") ? { online: 41203, max: 200000, motd: "§aHypixel Network §c[1.8-1.21] §6§lSKYBLOCK §e§lUPDATE", version: "1.21", icon: null, pingMs: 98 } : ({ online: a.address.includes("30000") ? 12 : 57, max: a.address.includes("30000") ? 69 : 500, motd: "§c-=- KUUBL SMP -=-", version: "1.21.11", icon: null, pingMs: 24 }),
   free_space: () => 48 * 1024 ** 3,
   list_content: () => [{ projectId: "AANobbMI", title: "Sodium" }],
@@ -277,6 +280,13 @@ const handlers: Record<string, (a: any) => unknown> = {
   clips_set_settings: (a) => Object.assign(clipsSettings, a.s),
   clips_status: () => ({ state: "recording", error: null, bufferBytes: 90e6, bufferSecs: 58.4, ffmpeg: "C:\ffmpeg\ffmpeg.exe", hotkeyError: null, gameRunning: true, voiceInstalled: true }),
   clips_list: () => sampleClips,
+  fetch_image: ({ url }: { url: string }) => url,
+  play_history: () => {
+    const now = Date.now() / 1000;
+    const mk = (name: string, mc: string, placeKind: string, place: string, daysAgo: number, secs: number) => ({ instance: name, name, mc, loader: "fabric", placeKind, place, start: now - daysAgo * 86400, secs });
+    return [mk("PvP 1.21.11", "1.21.11", "server", "justicesmp.online", 40, 7200), mk("Kamoši SMP", "1.21.11", "server", "play.kamosi.cz", 20, 14400), mk("PvP 1.21.11", "1.21.11", "server", "justicesmp.online", 3, 9800), mk("Vanilla 26.3", "26.3", "world", "Builds", 1, 5400)];
+  },
+  title_panorama: () => { throw new Error("not downloaded in the preview"); },
   clips_publish: () => ({ id: "new", owner: me.uuid, ownerName: "Maxern_", url: "", thumb: "", title: "Nový klip", description: "", tags: [], hashtags: [], durationMs: 12000, width: 0, height: 720, captured: 0, created: Math.floor(Date.now() / 1000), likes: 0, liked: false, mine: true }),
   clips_feed: () => ({ clips: [
     { id: "f1", owner: me.uuid, ownerName: "Maxern_", url: "", thumb: D + "pvp2.webp", title: "Insane clutch 1v4", description: "Poslední hráč, 2 HP, žádný heal 😮‍💨", tags: ["jeb_"], hashtags: ["pvp", "clutch"], durationMs: 18000, width: 0, height: 720, captured: 0, created: Math.floor(Date.now() / 1000) - 3600, likes: 42, liked: true, mine: true },
@@ -305,18 +315,29 @@ const handlers: Record<string, (a: any) => unknown> = {
   skinlib_remove: () => null,
   party_warp_here: () => ({ sent: 1 }),
   social_get: (a) =>
-    a.path === "/me" ? me : a.path === "/friends" ? { friends, incoming: [], outgoing: [] } : a.path.startsWith("/messages/") ? { messages: msgs } : a.path === "/party" ? { party, invites: [] } : {},
+    a.path === "/me" ? me : a.path === "/friends" ? { friends, incoming: [], outgoing: [] } : a.path.startsWith("/messages/") ? { messages: msgs } : a.path === "/party" ? { party, invites: [] } : a.path === "/announcements" ? { canPost: true, posts: [{ id: 1, author: "x", authorName: "Maxern_", body: "Kuubl 1.0.3 je venku!\nhttps://ertenix.net/kuubl/img/launcher-home.webp", created: Date.now() / 1000 - 3600, likes: 12, liked: true }] } : {},
   social_put: () => me,
   clips_devices: () => ({ outputs: ["Sluchátka (TUF GAMING H1)"], inputs: ["Mikrofon (TUF GAMING H1)"], defaultOutput: "Sluchátka (TUF GAMING H1)", defaultInput: "Mikrofon (TUF GAMING H1)" }),
   clips_monitors: () => [{ index: 0, name: "", width: 1920, height: 1080, primary: true }, { index: 1, name: "", width: 1920, height: 1080, primary: false }],
   "plugin:updater|check": () => SHOTS ? null : ({ rid: 1, currentVersion: "0.2.0", version: "0.2.1", date: new Date().toISOString(), body: "- Rychlé připojení na Kamoši SMP a Ertenix", rawJson: {} }),
 };
 
+// Event listeners, so the preview can fake backend events: __devEmit("secret-found", "verity").
+const callbacks = new Map<number, (e: unknown) => void>();
+const listeners: { event: string; id: number }[] = [];
+(window as any).__devEmit = (event: string, payload: unknown) =>
+  listeners.filter((l) => l.event === event).forEach((l) => callbacks.get(l.id)?.({ event, id: 0, payload }));
+
 (window as any).__TAURI_INTERNALS__ = {
   metadata: { currentWindow: { label: "main" }, currentWebview: { windowLabel: "main", label: "main" } },
-  transformCallback: () => Math.floor(Math.random() * 1e9),
+  transformCallback: (cb: (e: unknown) => void) => {
+    const id = Math.floor(Math.random() * 1e9);
+    callbacks.set(id, cb);
+    return id;
+  },
   convertFileSrc: (p: string) => p,
   invoke: async (cmd: string, args: any) => {
+    if (cmd === "plugin:event|listen") listeners.push({ event: args.event, id: args.handler });
     if (cmd.startsWith("plugin:event|")) return 1;
     const h = handlers[cmd];
     if (h) return h(args ?? {});

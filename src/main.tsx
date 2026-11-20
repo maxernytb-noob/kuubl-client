@@ -1,8 +1,17 @@
+// v4 design fonts, bundled so they work offline
+import "@fontsource/barlow-condensed/700.css";
+import "@fontsource/barlow-condensed/800.css";
+import "@fontsource/barlow/400.css";
+import "@fontsource/barlow/600.css";
+import "@fontsource/inter-tight/400.css";
+import "@fontsource/inter-tight/600.css";
+import "@fontsource/inter-tight/800.css";
 import "./styles.css";
 import "./styles-v2.css";
 import "./styles-v2-fx.css";
 import "./styles-v3.css";
 import "./styles-v2-narrow.css";
+import "./styles-v4.css";
 
 // Linux runs on WebKitGTK, which stutters with backdrop blur and endless animations: light mode there.
 // ?lowfx=1 previews it anywhere.

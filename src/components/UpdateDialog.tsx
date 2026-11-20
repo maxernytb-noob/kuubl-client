@@ -33,7 +33,7 @@ export default function UpdatePill() {
                 <button className="btn ghost" onClick={() => setOpen(false)}>
                   {tr("Později", "Later")}
                 </button>
-                {update.manual ? (
+                {update.manual && !["arch", "deb", "appimage"].includes(update.manual.kind) ? (
                   <button className="btn primary" onClick={() => openUrl(update.manual!.url)}>
                     <Icon name="download" size={16} /> {tr("Otevřít stránku ke stažení", "Open download page")}
                   </button>
@@ -75,23 +75,14 @@ export default function UpdatePill() {
 /** How to update each Linux build: the in-app updater only replaces the Windows installer. */
 function LinuxSteps({ kind }: { kind: LinuxPackage }) {
   if (kind === "appimage")
+    return <div className="small muted">{tr("Launcher stáhne nový AppImage a nahradí jím ten starý. Instance a nastavení zůstanou.", "The launcher downloads the new AppImage and replaces the old one. Your instances and settings stay.")}</div>;
+  if (kind === "arch" || kind === "deb")
+    return <div className="small muted">{tr("Launcher stáhne nový balíček a nainstaluje ho. Systém se tě zeptá na heslo.", "The launcher downloads the new package and installs it. Your system will ask for your password.")}</div>;
+  if (kind === "aur")
     return (
-      <div className="small muted">
-        {tr(
-          "Stáhni nový AppImage ze stránky, nahraď jím ten starý a spusť ho. Instance a nastavení zůstanou.",
-          "Download the new AppImage from the website, replace the old one with it and run it. Your instances and settings stay.",
-        )}
+      <div className="small muted" style={{ userSelect: "text" }}>
+        {tr("Máš launcher z AUR, aktualizuj ho svým AUR pomocníkem:", "You installed the launcher from the AUR, update it with your AUR helper:")} <code>yay -Syu kuubl-bin</code>
       </div>
     );
-  if (kind === "other") return null;
-  const [file, cmd] =
-    kind === "deb"
-      ? ["kuubl-client.deb", "sudo apt install ./kuubl-client.deb"]
-      : ["kuubl-client.pkg.tar.zst", "sudo pacman -U kuubl-client.pkg.tar.zst"];
-  return (
-    <div className="small muted" style={{ userSelect: "text" }}>
-      {tr(`Stáhni nový ${file} ze stránky a nainstaluj ho příkazem`, `Download the new ${file} from the website and install it with`)}{" "}
-      <code>{cmd}</code>
-    </div>
-  );
+  return null;
 }

@@ -79,7 +79,21 @@ pub fn run() {
     let config = config_root.join(NEW_DIR);
     let old_config = config_root.join(OLD_DIR);
     // On Windows the config and the default data folder are the same (%APPDATA%\JusticeClient).
-    let config_moved = rename(&old_config, &config);
+    let mut config_moved = rename(&old_config, &config);
+    // The new folder can already exist (a log written by an earlier run, a test) while the settings
+    // are still in the old one; then the old files are copied over instead of renamed.
+    if !config_moved && old_config.join("settings.json").is_file() && !config.join("settings.json").is_file() {
+        let _ = std::fs::create_dir_all(&config);
+        if let Ok(entries) = std::fs::read_dir(&old_config) {
+            for e in entries.flatten() {
+                let to = config.join(e.file_name());
+                if e.path().is_file() && !to.exists() {
+                    let _ = std::fs::copy(e.path(), &to);
+                }
+            }
+        }
+        config_moved = config.join("settings.json").is_file();
+    }
     if config_moved {
         let (o, n) = (old_config.to_string_lossy().into_owned(), config.to_string_lossy().into_owned());
         for f in json_files(&config) {
@@ -117,6 +131,15 @@ pub fn run() {
                         rewrite(&clips_file, dir, &new.to_string_lossy());
                     }
                 }
+            }
+        }
+    }
+
+    // Offline skins moved from justiceclient.online/u/ to ertenix.net/justice/u/ (same files).
+    if let Ok(text) = std::fs::read_to_string(config.join("settings.json")) {
+        if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
+            if let Some(dir) = v.get("dataDir").and_then(|d| d.as_str()) {
+                rewrite(&Path::new(dir).join("accounts.json"), "https://justiceclient.online/u/", "https://ertenix.net/justice/u/");
             }
         }
     }

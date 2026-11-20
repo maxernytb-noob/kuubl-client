@@ -180,3 +180,10 @@ body.fx-disco .mp-cover { animation: v2discoCover .25s ease-in-out infinite alte
 .secret-card .sc-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 12.5px; }
 .secret-card .ok { color: #4ade80; font-weight: 600; }
 .secret-card .lock { color: var(--text-3); font-style: italic; }
+
+/* "Como se dice" easter egg (Secrets.tsx verity): bouncing buckets over everything */
+.fx-verity { position: fixed; inset: 0; z-index: 2000; pointer-events: none; overflow: hidden; }
+.fx-verity > * { position: absolute; left: 0; top: 0; will-change: transform; }
+.fx-verity-logo { width: 120px; height: 120px; image-rendering: auto; }
+.fx-verity-video { width: min(420px, 42vw); border-radius: 18px; box-shadow: 0 18px 50px rgba(0, 0, 0, .6), 0 0 0 4px #f0661f; background: #000; }
+.fx-verity-text { font: 900 46px/1 var(--font); color: #f0661f; text-shadow: 0 4px 0 #000, 0 0 24px rgba(240, 102, 31, .7); white-space: nowrap; letter-spacing: 1px; }

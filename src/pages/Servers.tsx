@@ -5,6 +5,7 @@ import { errText, LOADER_LABEL, useStore } from "../store";
 import { Empty, Modal } from "../components/common";
 import { tr } from "../i18n";
 import Select from "../components/Select";
+import DiscoverServers from "./DiscoverServers";
 
 const MC_COLORS: Record<string, string> = {
   "0": "#000", "1": "#00a", "2": "#0a0", "3": "#0aa", "4": "#a00", "5": "#a0a", "6": "#fa0", "7": "#aaa",
@@ -93,10 +94,13 @@ export default function Servers() {
   const [servers, setServers] = useState<Server[]>([]);
   const [status, setStatus] = useState<Record<string, ServerStatus | null>>({});
   const [edit, setEdit] = useState<Partial<Server> | null>(null);
+  const [tab, setTab] = useState<"mine" | "discover" | null>(null);
 
   const load = () =>
     api.listServers().then((list) => {
       setServers(list);
+      // Nothing saved yet: open Discover first.
+      setTab((t) => t ?? (list.length ? "mine" : "discover"));
       list.forEach((s) =>
         api.pingServer(s.address)
           .then((st) => setStatus((p) => ({ ...p, [s.id]: st })))
@@ -121,6 +125,12 @@ export default function Servers() {
           <div className="sub">{tr("Připojení jedním klikem s vybranou instancí", "One-click join with the chosen instance")}</div>
         </div>
         <div className="grow" />
+        <div className="seg" style={{ margin: 0 }}>
+          <button className={tab === "mine" ? "on" : ""} onClick={() => setTab("mine")}>{tr("Moje servery", "My servers")}</button>
+          <button className={tab === "discover" ? "on" : ""} onClick={() => setTab("discover")}>
+            <Icon name="globe" size={14} /> {tr("Objevit servery", "Discover servers")}
+          </button>
+        </div>
         <button className="btn icon" onClick={load} title={tr("Obnovit", "Refresh")}>
           <Icon name="refresh" size={16} />
         </button>
@@ -128,7 +138,9 @@ export default function Servers() {
           <Icon name="plus" size={16} /> {tr("Přidat server", "Add server")}
         </button>
       </div>
-      {servers.length === 0 ? (
+      {tab === "discover" ? (
+        <DiscoverServers mine={servers} onAdded={load} />
+      ) : servers.length === 0 ? (
         <Empty
           icon="server"
           title={tr("Žádné servery", "No servers")}
@@ -137,6 +149,9 @@ export default function Servers() {
             "Add your favourite servers — see the player count and join with one click.",
           )}
         >
+          <button className="btn" onClick={() => setTab("discover")}>
+            <Icon name="globe" size={16} /> {tr("Objevit servery", "Discover servers")}
+          </button>
           <button className="btn primary" onClick={() => setEdit({})}>
             <Icon name="plus" size={16} /> {tr("Přidat server", "Add server")}
           </button>

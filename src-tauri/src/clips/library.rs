@@ -243,6 +243,72 @@ pub struct SaveReq {
     pub mic_volume: f32,
 }
 
+pub const HIGHLIGHTS_PREFIX: &str = "Highlights";
+
+/// Seconds taken from the end of each clip: the saved moment is at the end (the hotkey/kill), minus
+/// the second recorded after the press.
+fn highlight_span(duration: f64) -> (f64, f64) {
+    let end = (duration - 0.8).max(0.5);
+    let start = (end - 7.0).max(0.0);
+    (start, end - start)
+}
+
+/// Glues the last seconds of every clip into `Highlights <date>.mp4` (1080p60 H.264, one audio track;
+/// clips without sound get silence so the concat keeps the streams aligned).
+pub fn highlights(ff: &Path, dir: &Path, clips: &[ClipInfo]) -> anyhow::Result<ClipInfo> {
+    let s = |x: &str| x.to_string();
+    let mut args: Vec<String> = Vec::new();
+    let mut filter = String::new();
+    let mut joined = String::new();
+    let mut silent = Vec::new();
+    for (i, c) in clips.iter().enumerate() {
+        let (from, len) = highlight_span(c.duration);
+        args.extend([s("-ss"), format!("{from:.2}"), s("-t"), format!("{len:.2}"), s("-i"), c.path.clone()]);
+        if c.audio_tracks == 0 {
+            silent.push(i);
+        }
+    }
+    // silence inputs come after the clips
+    for (k, &i) in silent.iter().enumerate() {
+        let (_, len) = highlight_span(clips[i].duration);
+        args.extend([s("-f"), s("lavfi"), s("-t"), format!("{len:.2}"), s("-i"), s("anullsrc=r=48000:cl=stereo")]);
+        let _ = k;
+    }
+    for (i, _) in clips.iter().enumerate() {
+        filter += &format!("[{i}:v:0]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,fps=60,setsar=1,format=yuv420p[v{i}];");
+        let a = match silent.iter().position(|&x| x == i) {
+            Some(k) => format!("[{}:a]", clips.len() + k),
+            None => format!("[{i}:a:0]"),
+        };
+        filter += &format!("{a}aresample=48000,aformat=channel_layouts=stereo[a{i}];");
+        joined += &format!("[v{i}][a{i}]");
+    }
+    filter += &format!("{joined}concat=n={}:v=1:a=1[v][a]", clips.len());
+    let date = chrono::Local::now().format("%Y-%m-%d").to_string();
+    let out = unique(dir, &format!("{HIGHLIGHTS_PREFIX} {date}"), "mp4");
+    args.extend([
+        s("-filter_complex"), filter, s("-map"), s("[v]"), s("-map"), s("[a]"),
+        s("-c:v"), s("libx264"), s("-preset"), s("veryfast"), s("-crf"), s("21"),
+        s("-c:a"), s("aac"), s("-b:a"), s("160k"), s("-movflags"), s("+faststart"),
+        out.to_string_lossy().into_owned(),
+    ]);
+    crate::clips::ffmpeg::run(ff, &args, 0)?;
+    list(dir)
+        .into_iter()
+        .find(|c| Path::new(&c.path) == out.as_path())
+        .ok_or_else(|| anyhow::anyhow!("the highlights video wasn't saved"))
+}
+
+#[cfg(test)]
+mod highlight_tests {
+    #[test]
+    fn span_stays_inside_the_clip() {
+        assert_eq!(super::highlight_span(30.0), (22.2, 7.0));
+        let (a, b) = super::highlight_span(4.0);
+        assert!(a == 0.0 && (b - 3.2).abs() < 1e-9);
+    }
+}
+
 pub fn unique(dir: &Path, stem: &str, ext: &str) -> PathBuf {
     let mut p = dir.join(format!("{stem}.{ext}"));
     let mut i = 2;

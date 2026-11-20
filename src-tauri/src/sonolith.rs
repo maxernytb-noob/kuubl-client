@@ -194,7 +194,7 @@ pub async fn register() -> Result<()> {
         "name": "Kuubl Client",
         "description": reason("Minecraft launcher: ukazuje a ovládá tvoji hudbu v launcheru.", "Minecraft launcher: shows and controls your music in the launcher."),
         "publisher": "Kuubl Client",
-        "homepage": "https://justiceclient.online",
+        "homepage": "https://ertenix.net/kuubl/",
         "icon": icon_data_uri(),
         "apiVersion": API_VERSION,
         "scopes": [

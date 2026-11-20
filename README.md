@@ -4,7 +4,7 @@
 
 **A fast, free Minecraft launcher built for recording and PvP — instances, mods, friends, music and clips in one black‑and‑red app.**
 
-[Download](https://justiceclient.online) · [Website](https://justiceclient.online) · [YouTube @maxernMC](https://www.youtube.com/@maxernMC)
+[Download](https://bythorn.dev/kuubl/) · [Website](https://bythorn.dev/kuubl/) · [YouTube @maxernMC](https://www.youtube.com/@maxernMC)
 
 ![Kuubl Client](docs/home.png)
 
@@ -35,7 +35,7 @@
 
 ## Download
 
-Get the latest build from [justiceclient.online](https://justiceclient.online) — **Windows** (installer), **Linux** (`.deb`, AppImage, Arch package) and **macOS** (universal `.dmg`, unsigned — right‑click → Open the first time).
+Get the latest build from [bythorn.dev/kuubl](https://bythorn.dev/kuubl/) — **Windows** (installer), **Linux** (`.deb`, AppImage, Arch package) and **macOS** (universal `.dmg`, unsigned — right‑click → Open the first time).
 
 ## Build from source
 

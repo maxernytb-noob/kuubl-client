@@ -1,0 +1,458 @@
+{
+ "version": 1,
+ "featured": [
+  {
+   "name": "Justice SMP",
+   "address": "justicesmp.online",
+   "tags": [
+    "smp",
+    "roleplay",
+    "cz"
+   ],
+   "lang": "cs",
+   "icon": "https://justicesmp.online/logo.png",
+   "web": "https://justicesmp.online",
+   "accent": "#e8b84a",
+   "description": {
+    "cs": "Roleplay a content server, na kterém se točí videa. Java 1.21.11.",
+    "en": "A roleplay and content server where videos get made. Java 1.21.11."
+   }
+  },
+  {
+   "name": "Ertenix",
+   "address": "ertenix.net",
+   "tags": [
+    "survival",
+    "pvp",
+    "minigames",
+    "cz"
+   ],
+   "lang": "cs",
+   "icon": "https://cdn.discordapp.com/app-icons/1563103735670902855/3a864386dcf575d16cd779d4dae0a60d.png?size=256",
+   "web": "https://www.ertenix.net",
+   "accent": "#7c9cff",
+   "description": {
+    "cs": "Survival SMP s ekonomikou, ranked PvP arény a minihry.",
+    "en": "Survival SMP with an economy, ranked PvP arenas and minigames."
+   }
+  }
+ ],
+ "servers": [
+  {
+   "name": "Hypixel",
+   "address": "mc.hypixel.net",
+   "tags": [
+    "minigames",
+    "skyblock",
+    "pvp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Největší minihry: SkyBlock, BedWars, SkyWars, Duels.",
+    "en": "The biggest minigames: SkyBlock, BedWars, SkyWars, Duels."
+   }
+  },
+  {
+   "name": "CubeCraft",
+   "address": "play.cubecraft.net",
+   "tags": [
+    "minigames",
+    "pvp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "EggWars, SkyWars, Parkour a další minihry.",
+    "en": "EggWars, SkyWars, Parkour and more minigames."
+   }
+  },
+  {
+   "name": "Minemen Club",
+   "address": "minemen.club",
+   "tags": [
+    "pvp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Kompetitivní PvP, ranked duely a turnaje.",
+    "en": "Competitive PvP, ranked duels and tournaments."
+   }
+  },
+  {
+   "name": "Wynncraft",
+   "address": "play.wynncraft.com",
+   "tags": [
+    "rpg"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Velké MMORPG s questy, dungeony a třídami.",
+    "en": "A huge MMORPG with quests, dungeons and classes."
+   }
+  },
+  {
+   "name": "2b2t",
+   "address": "2b2t.org",
+   "tags": [
+    "anarchy"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Nejstarší anarchy server, žádná pravidla.",
+    "en": "The oldest anarchy server, no rules."
+   }
+  },
+  {
+   "name": "ManaCube",
+   "address": "play.manacube.com",
+   "tags": [
+    "skyblock",
+    "survival",
+    "prison"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "SkyBlock, Parkour, Prison a Survival.",
+    "en": "SkyBlock, Parkour, Prison and Survival."
+   }
+  },
+  {
+   "name": "Complex Gaming",
+   "address": "hub.mc-complex.com",
+   "tags": [
+    "pixelmon",
+    "survival",
+    "skyblock"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Pixelmon, Towny, SkyBlock a další.",
+    "en": "Pixelmon, Towny, SkyBlock and more."
+   }
+  },
+  {
+   "name": "PikaNetwork",
+   "address": "play.pika-network.net",
+   "tags": [
+    "minigames",
+    "pvp",
+    "skyblock"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "BedWars, Practice, SkyBlock a OP módy.",
+    "en": "BedWars, Practice, SkyBlock and OP modes."
+   }
+  },
+  {
+   "name": "JartexNetwork",
+   "address": "play.jartexnetwork.com",
+   "tags": [
+    "minigames",
+    "pvp",
+    "prison"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "BedWars, Prison, Factions a minihry.",
+    "en": "BedWars, Prison, Factions and minigames."
+   }
+  },
+  {
+   "name": "Purple Prison",
+   "address": "purpleprison.net",
+   "tags": [
+    "prison"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Klasický prison s gangy a sezónami.",
+    "en": "Classic prison with gangs and seasons."
+   }
+  },
+  {
+   "name": "Hoplite",
+   "address": "hoplite.gg",
+   "tags": [
+    "pvp",
+    "minigames"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Battle royale a PvP módy.",
+    "en": "Battle royale and PvP modes."
+   }
+  },
+  {
+   "name": "Minehut",
+   "address": "minehut.com",
+   "tags": [
+    "community"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Tisíce serverů hráčů na jednom místě.",
+    "en": "Thousands of player-made servers in one place."
+   }
+  },
+  {
+   "name": "BlocksMC",
+   "address": "blocksmc.com",
+   "tags": [
+    "minigames",
+    "pvp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "SkyWars, BedWars a další rychlé hry.",
+    "en": "SkyWars, BedWars and other quick games."
+   }
+  },
+  {
+   "name": "OPBlocks",
+   "address": "play.opblocks.com",
+   "tags": [
+    "skyblock",
+    "prison",
+    "survival"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "OP Prison, SkyBlock a Survival.",
+    "en": "OP Prison, SkyBlock and Survival."
+   }
+  },
+  {
+   "name": "Lifesteal SMP",
+   "address": "lifesteal.net",
+   "tags": [
+    "smp",
+    "pvp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Zabij hráče a vezmi mu srdce.",
+    "en": "Kill a player and take their heart."
+   }
+  },
+  {
+   "name": "MCC Island",
+   "address": "play.mccisland.net",
+   "tags": [
+    "minigames"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Minihry z MC Championship.",
+    "en": "Minigames from MC Championship."
+   }
+  },
+  {
+   "name": "Origin Realms",
+   "address": "play.originrealms.com",
+   "tags": [
+    "rpg",
+    "survival"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Survival MMO s vlastními předměty a bossy.",
+    "en": "Survival MMO with custom items and bosses."
+   }
+  },
+  {
+   "name": "PvP Legacy",
+   "address": "pvplegacy.net",
+   "tags": [
+    "pvp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Crystal PvP a ranked duely.",
+    "en": "Crystal PvP and ranked duels."
+   }
+  },
+  {
+   "name": "Vulengate",
+   "address": "play.vulengate.com",
+   "tags": [
+    "survival",
+    "smp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Survival s ekonomikou a claimy.",
+    "en": "Survival with an economy and claims."
+   }
+  },
+  {
+   "name": "SkyBlock Network",
+   "address": "skyblock.net",
+   "tags": [
+    "skyblock"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Čistý SkyBlock s ostrovy a výzvami.",
+    "en": "Pure SkyBlock with islands and challenges."
+   }
+  },
+  {
+   "name": "Lemon Cloud",
+   "address": "play.lemoncloud.net",
+   "tags": [
+    "survival",
+    "skyblock"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Survival, SkyBlock a Parkour.",
+    "en": "Survival, SkyBlock and Parkour."
+   }
+  },
+  {
+   "name": "Advancius",
+   "address": "play.advancius.net",
+   "tags": [
+    "survival",
+    "smp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Pohodový survival s komunitou.",
+    "en": "Chill survival with a community."
+   }
+  },
+  {
+   "name": "Grand Theft Minecart",
+   "address": "mc-gtm.net",
+   "tags": [
+    "rpg",
+    "pvp"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "GTA styl: gangy, zbraně a auta.",
+    "en": "GTA style: gangs, guns and cars."
+   }
+  },
+  {
+   "name": "MineSuperior",
+   "address": "play.minesuperior.com",
+   "tags": [
+    "survival",
+    "skyblock",
+    "prison"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Survival, SkyBlock, Prison a Factions.",
+    "en": "Survival, SkyBlock, Prison and Factions."
+   }
+  },
+  {
+   "name": "Wild Network",
+   "address": "play.wildprison.net",
+   "tags": [
+    "prison"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Prison s gangy a dolováním.",
+    "en": "Prison with gangs and mining."
+   }
+  },
+  {
+   "name": "Craftmania",
+   "address": "play.craftmania.cz",
+   "tags": [
+    "survival",
+    "minigames",
+    "cz"
+   ],
+   "lang": "cs",
+   "description": {
+    "cs": "Největší český server: Survival, SkyBlock, minihry.",
+    "en": "The biggest Czech server: Survival, SkyBlock, minigames."
+   }
+  },
+  {
+   "name": "Survival-Games.cz",
+   "address": "mc.survival-games.cz",
+   "tags": [
+    "minigames",
+    "pvp",
+    "cz"
+   ],
+   "lang": "cs",
+   "description": {
+    "cs": "České minihry: SurvivalGames, BedWars, SkyWars.",
+    "en": "Czech minigames: SurvivalGames, BedWars, SkyWars."
+   }
+  },
+  {
+   "name": "MineLand",
+   "address": "mc.mineland.net",
+   "tags": [
+    "minigames",
+    "survival"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Minihry a survival.",
+    "en": "Minigames and survival."
+   }
+  },
+  {
+   "name": "CosmosMC",
+   "address": "play.cosmosmc.org",
+   "tags": [
+    "survival",
+    "skyblock"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Survival a SkyBlock.",
+    "en": "Survival and SkyBlock."
+   }
+  },
+  {
+   "name": "Insanity Craft",
+   "address": "play.insanitycraft.net",
+   "tags": [
+    "survival",
+    "skyblock"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Survival, SkyBlock a Towny.",
+    "en": "Survival, SkyBlock and Towny."
+   }
+  },
+  {
+   "name": "Mineplex",
+   "address": "us.mineplex.com",
+   "tags": [
+    "minigames"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Návrat klasických miniher.",
+    "en": "The classic minigames are back."
+   }
+  },
+  {
+   "name": "Minecraft Central",
+   "address": "mccentral.org",
+   "tags": [
+    "survival",
+    "skyblock",
+    "minigames"
+   ],
+   "lang": "en",
+   "description": {
+    "cs": "Survival, SkyBlock a minihry.",
+    "en": "Survival, SkyBlock and minigames."
+   }
+  }
+ ]
+}

@@ -19,6 +19,7 @@ mod launch;
 mod loaders;
 mod minecraft;
 mod modbot;
+mod history;
 mod net;
 mod packs;
 mod platform;
@@ -70,7 +71,7 @@ struct ManualUpdate {
     version: String,
     notes: String,
     url: String,
-    /// How this build was installed: "appimage", "deb", "arch" or "other" — the dialog shows the matching steps.
+    /// How this build was installed: "appimage", "deb", "arch", "aur" or "other" — the dialog shows the matching steps.
     kind: &'static str,
 }
 
@@ -79,6 +80,11 @@ fn linux_package_kind() -> &'static str {
         "appimage"
     } else if std::path::Path::new("/var/lib/dpkg/info/kuubl-client.list").exists() || std::path::Path::new("/var/lib/dpkg/info/justice-client.list").exists() {
         "deb"
+    } else if std::fs::read_dir("/var/lib/pacman/local")
+        .map(|d| d.flatten().any(|e| e.file_name().to_string_lossy().starts_with("kuubl-bin-")))
+        .unwrap_or(false)
+    {
+        "aur"
     } else if std::fs::read_dir("/var/lib/pacman/local")
         .map(|d| d.flatten().any(|e| e.file_name().to_string_lossy().starts_with("kuubl-client-")))
         .unwrap_or(false)
@@ -108,6 +114,110 @@ async fn check_update_manual() -> Res<Option<ManualUpdate>> {
     } else {
         Ok(None)
     }
+}
+
+/// Linux: downloads the new build (checked against SHA256SUMS on the website) and installs it like the
+/// Windows updater does: pacman/apt through pkexec (the system asks for the password), or swaps the
+/// AppImage file in place. Progress goes out as `update-progress`; the frontend relaunches after.
+#[tauri::command]
+async fn install_update_linux(app: tauri::AppHandle) -> Res<()> {
+    e(linux_install(&app).await)
+}
+
+async fn linux_install(app: &tauri::AppHandle) -> anyhow::Result<()> {
+    use sha2::Digest;
+    use std::sync::atomic::{AtomicU64, AtomicU8, Ordering};
+    use tauri::Emitter;
+    let kind = linux_package_kind();
+    let file = match kind {
+        "arch" => "kuubl-client.pkg.tar.zst",
+        "deb" => "kuubl-client.deb",
+        "appimage" => "KuublClient.AppImage",
+        _ => anyhow::bail!(l!("Tuhle instalaci launcher neumí aktualizovat sám, stáhni novou verzi ze stránky", "This install can't update itself, download the new version from the website")),
+    };
+    let base = "https://ertenix.net/kuubl/";
+    let sums = net::CLIENT.get(format!("{base}SHA256SUMS")).send().await?.error_for_status()?.text().await?;
+    let want = sums
+        .lines()
+        .find_map(|l| {
+            let (h, n) = l.split_once(char::is_whitespace)?;
+            (n.trim().trim_start_matches('*') == file).then(|| h.to_ascii_lowercase())
+        })
+        .ok_or_else(|| anyhow::anyhow!("no checksum for {file}"))?;
+    let dir = std::env::temp_dir().join("kuubl-update");
+    std::fs::create_dir_all(&dir)?;
+    let path = dir.join(file);
+    let _ = std::fs::remove_file(&path);
+    let url = format!("{base}{file}");
+    let total = net::CLIENT.head(&url).send().await.ok().and_then(|r| r.content_length()).unwrap_or(0);
+    let done = std::sync::Arc::new(AtomicU64::new(0));
+    let (d2, a2) = (done.clone(), app.clone());
+    let ticker = tauri::async_runtime::spawn(async move {
+        loop {
+            let _ = a2.emit("update-progress", serde_json::json!({ "done": d2.load(Ordering::Relaxed), "total": total }));
+            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
+        }
+    });
+    let res = net::download_streaming(&net::Job::new(url, path.clone()), &done, &AtomicU8::new(0)).await;
+    ticker.abort();
+    res?;
+    let got = hex::encode(sha2::Sha256::digest(std::fs::read(&path)?));
+    if got != want {
+        let _ = std::fs::remove_file(&path);
+        anyhow::bail!(l!("Stažená aktualizace je poškozená (nesedí kontrolní součet), zkus to znovu", "The downloaded update is corrupted (checksum mismatch), try again"));
+    }
+    linfo!("linux update: {file} downloaded, installing ({kind})");
+    if kind == "appimage" {
+        let target = std::path::PathBuf::from(std::env::var_os("APPIMAGE").ok_or_else(|| anyhow::anyhow!("APPIMAGE not set"))?);
+        let tmp = target.with_extension("new");
+        std::fs::copy(&path, &tmp)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&tmp, std::fs::Permissions::from_mode(0o755))?;
+        }
+        std::fs::rename(&tmp, &target)?;
+    } else {
+        let p = path.to_string_lossy().into_owned();
+        let args: Vec<&str> = if kind == "arch" { vec!["pacman", "-U", "--noconfirm", &p] } else { vec!["apt-get", "install", "-y", "--allow-downgrades", &p] };
+        let st = tokio::process::Command::new("pkexec").args(&args).status().await.map_err(|_| {
+            anyhow::anyhow!(l!("Chybí pkexec (polkit), nainstaluj aktualizaci ručně ze stránky", "pkexec (polkit) is missing, install the update by hand from the website"))
+        })?;
+        if !st.success() {
+            anyhow::bail!(l!("Instalace se nepovedla nebo jsi ji zrušil", "The install failed or you cancelled it"));
+        }
+    }
+    let _ = std::fs::remove_file(&path);
+    Ok(())
+}
+
+/// The title-screen panorama of a downloaded Minecraft version: the four side faces, extracted from
+/// its client jar once into `<data>/cache/panorama/<version>/`, as file paths (the page loads them
+/// through the asset protocol). Off the main thread: reading the jar takes a moment.
+#[tauri::command]
+async fn title_panorama(version: String) -> Res<Vec<String>> {
+    if version.is_empty() || !version.chars().all(|c| c.is_ascii_alphanumeric() || ".-_".contains(c)) {
+        return Err("bad version".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || -> Result<Vec<String>, String> {
+        let dir = settings::data_dir().join("cache").join("panorama").join(&version);
+        let faces: Vec<std::path::PathBuf> = (0..4).map(|i| dir.join(format!("panorama_{i}.png"))).collect();
+        if faces.iter().all(|f| f.is_file()) {
+            return Ok(faces.iter().map(|f| f.to_string_lossy().into_owned()).collect());
+        }
+        let jar = settings::meta_dir().join("versions").join(&version).join(format!("{version}.jar"));
+        let f = std::fs::File::open(&jar).map_err(|_| l!("Tahle verze ještě není stažená", "This version isn't downloaded yet").to_string())?;
+        let mut z = zip::ZipArchive::new(f).map_err(|e| e.to_string())?;
+        std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+        for (i, out) in faces.iter().enumerate() {
+            let mut entry = z.by_name(&format!("assets/minecraft/textures/gui/title/background/panorama_{i}.png")).map_err(|e| e.to_string())?;
+            let mut file = std::fs::File::create(out).map_err(|e| e.to_string())?;
+            std::io::copy(&mut entry, &mut file).map_err(|e| e.to_string())?;
+        }
+        Ok(faces.iter().map(|f| f.to_string_lossy().into_owned()).collect())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 // ---------------- Dev channel ----------------
@@ -161,8 +271,9 @@ async fn channel_install(app: tauri::AppHandle, channel: String) -> Res<()> {
 // ---------------- Settings ----------------
 
 #[tauri::command]
-fn instance_last_place(id: String) -> Option<instances::LastPlace> {
-    instances::last_place(&id)
+async fn instance_last_place(id: String) -> Option<instances::LastPlace> {
+    // reads the instance's latest.log and saves folder: not on the UI thread
+    tauri::async_runtime::spawn_blocking(move || instances::last_place(&id)).await.ok().flatten()
 }
 
 // Polled every second by the player, so failures aren't logged as errors.
@@ -390,6 +501,31 @@ async fn social_get(path: String) -> Res<serde_json::Value> {
 async fn social_post(path: String, body: serde_json::Value) -> Res<serde_json::Value> {
     e(social::post(&path, body).await)
 }
+/// Saves a PNG the page rendered (profile / Wrapped share card) where the user chose in the save dialog.
+#[tauri::command]
+fn save_png(path: String, data: Vec<u8>) -> Res<()> {
+    if !path.to_ascii_lowercase().ends_with(".png") || !data.starts_with(b"\x89PNG") {
+        return Err("only PNG pictures".into());
+    }
+    std::fs::write(&path, data).map_err(|e| e.to_string())
+}
+#[tauri::command]
+async fn social_delete(path: String) -> Res<serde_json::Value> {
+    e(social::delete(&path).await)
+}
+/// Uploads a picture the page holds in memory (pasted with Ctrl+V or dropped), not a file on disk.
+#[tauri::command]
+async fn social_upload_bytes(name: String, data: Vec<u8>) -> Res<serde_json::Value> {
+    let ext = std::path::Path::new(&name).extension().and_then(|x| x.to_str()).unwrap_or("png").to_ascii_lowercase();
+    if !["png", "jpg", "jpeg", "webp", "gif"].contains(&ext.as_str()) {
+        return Err(l!("Jde nahrát jen obrázek (PNG, JPG, WebP, GIF)", "Only pictures can be uploaded (PNG, JPG, WebP, GIF)").into());
+    }
+    let tmp = std::env::temp_dir().join(format!("kuubl-paste-{}.{ext}", uuid::Uuid::new_v4().simple()));
+    std::fs::write(&tmp, &data).map_err(|err| err.to_string())?;
+    let r = social::upload(&tmp.to_string_lossy()).await;
+    let _ = std::fs::remove_file(&tmp);
+    e(r)
+}
 #[tauri::command]
 async fn social_put(path: String, body: serde_json::Value) -> Res<serde_json::Value> {
     let r = e(social::put(&path, body).await)?;
@@ -459,6 +595,7 @@ fn update_instance(instance: Instance) -> Res<Instance> {
     cur.ram_mb = instance.ram_mb;
     cur.java_path = instance.java_path;
     cur.jvm_args = instance.jvm_args;
+    cur.wrapper_command = instance.wrapper_command;
     cur.width = instance.width;
     cur.height = instance.height;
     cur.recording_mode = instance.recording_mode;
@@ -963,6 +1100,16 @@ async fn export_pack(instance: String, dest: String) -> Res<()> {
 }
 
 #[tauri::command]
+fn lunar_profiles() -> Vec<packs::LunarProfile> {
+    packs::lunar_profiles()
+}
+
+#[tauri::command]
+async fn import_lunar(path: String, mc_version: String, name: String) -> Res<Instance> {
+    e(packs::import_lunar(&path, &mc_version, &name).await)
+}
+
+#[tauri::command]
 async fn import_pack(path: String) -> Res<Instance> {
     e(packs::import_file(&path).await)
 }
@@ -1080,6 +1227,11 @@ fn save_server(server: servers::Server) -> Res<servers::Server> {
 #[tauri::command]
 fn remove_server(id: String) -> Res<()> {
     e(servers::remove(&id))
+}
+
+#[tauri::command]
+async fn discover_servers() -> serde_json::Value {
+    servers::discover().await
 }
 
 #[tauri::command]
@@ -1479,17 +1631,17 @@ pub fn run() {
             optimize_undo,
             save_mod_profile, apply_mod_profile, delete_mod_profile, list_media, delete_media, obs_test,
             list_worlds, backup_world, snapshot_instance, list_backups, restore_backup, delete_backup,
-            share_code, import_code, export_pack, import_pack, install_modpack,
+            share_code, import_code, export_pack, import_pack, install_modpack, lunar_profiles, import_lunar,
             download_modpack, download_list, download_pause, download_resume, download_cancel, download_clear,
             modbot_chat, modbot_build, modbot_add,
-            list_servers, save_server, remove_server, ping_server,
-            log_frontend, log_path, check_update_manual, channel_check, channel_install, set_instance_icon,
-            social_login, social_logout, social_status, social_get, social_post, social_put, social_upload, social_open_clip, social_login_password, pvp_stats, party_warp_here, social_typing, world_join,
+            list_servers, save_server, remove_server, ping_server, discover_servers,
+            log_frontend, log_path, check_update_manual, install_update_linux, title_panorama, history::play_history, channel_check, channel_install, set_instance_icon,
+            social_login, social_logout, social_status, social_get, social_post, social_put, social_delete, social_upload, social_upload_bytes, save_png, social_open_clip, social_login_password, pvp_stats, party_warp_here, social_typing, world_join,
             clips::clips_get_settings, clips::clips_set_settings, clips::clips_status, clips::clips_install_ffmpeg, clips::clips_install_voice, clips::clips_save, clips::clips_set_recording,
             clips::clips_list, clips::clips_strip, clips::clips_delete, clips::clips_rename, clips::clips_reveal, clips::clips_open_dir,
             clips::clips_trim, clips::clips_devices, clips::clips_monitors, clips::clips_log, clips::clips_test_notification,
             clips::clips_publish, clips_feed, clips_like, clips_report, clips_feed_delete,
-            clips::clips_overlay_hide, clips::clips_detect_ffmpeg,
+            clips::clips_overlay_hide, clips::clips_detect_ffmpeg, clips::clips_video_url, clips::clips_highlights,
         ])
         .build(tauri::generate_context!())
         .expect("error while building Kuubl Client")
@@ -1506,6 +1658,10 @@ pub fn run() {
                     clips::shutdown(app);
                     app.exit(0);
                 }
+            }
+            #[cfg(any(windows, target_os = "linux"))]
+            tauri::RunEvent::WindowEvent { label, event: tauri::WindowEvent::Focused(f), .. } if label == "main" => {
+                clips::voice::set_launcher_focused(app, f);
             }
             tauri::RunEvent::Exit => clips::shutdown(app),
             _ => {}

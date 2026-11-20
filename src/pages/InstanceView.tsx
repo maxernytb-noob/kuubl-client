@@ -778,6 +778,10 @@ function SettingsTab({ inst, onChange }: { inst: Instance; onChange: (i: Instanc
           <label>{tr("Extra JVM argumenty", "Extra JVM arguments")}</label>
           <input className="input mono" style={{ fontSize: 12 }} placeholder="-Dnecojineho=true" value={draft.jvmArgs} onChange={(e) => set({ jvmArgs: e.target.value })} />
         </div>
+        <div className="field">
+          <label>{tr("Wrapper příkaz (prázdné = podle Nastavení)", "Wrapper command (empty = from Settings)")}</label>
+          <input className="input mono" style={{ fontSize: 12 }} placeholder="prime-run" value={draft.wrapperCommand ?? ""} onChange={(e) => set({ wrapperCommand: e.target.value })} />
+        </div>
       </div>
 
       <div className="card pad col">

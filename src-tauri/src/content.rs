@@ -189,7 +189,7 @@ async fn search_mr(q: SearchQuery<'_>) -> Result<SearchResult> {
 
 /// Without a key of the user's own, CurseForge goes through our server, which holds the key — so
 /// the key is never inside the launcher, where anyone could pull it out.
-const CF_PROXY: &str = "https://justiceclient.online/social/cf";
+const CF_PROXY: &str = "https://ertenix.net/justice/social/cf";
 
 /// CurseForge always works: with the user's key from Settings, or through the proxy.
 pub fn has_cf_key() -> bool {
@@ -762,7 +762,28 @@ async fn install_cf(inst: &Instance, pid: &str, kind: Kind, fid: Option<&str>, r
     };
     let title = m["name"].as_str().unwrap_or(pid).to_string();
     let name = file["fileName"].as_str().unwrap_or("mod.jar").to_string();
-    let Some(url) = file["downloadUrl"].as_str() else {
+    let sha1 = file["hashes"]
+        .as_array()
+        .and_then(|h| h.iter().find(|x| x["algo"] == 1))
+        .and_then(|x| x["value"].as_str().map(String::from));
+    let Some(url) = file["downloadUrl"].as_str().filter(|u| !u.is_empty()) else {
+        // The author turned off third-party downloads on CurseForge. Many such mods have the very
+        // same file on Modrinth: look it up by hash and take it from there.
+        if let Some(sha1) = &sha1 {
+            if let Ok(v) = net::get_json(&format!("{MR}/version_file/{sha1}?algorithm=sha1")).await {
+                let files = v["files"].as_array().cloned().unwrap_or_default();
+                if let Some(f) = files.iter().find(|f| f["hashes"]["sha1"].as_str() == Some(sha1)) {
+                    let folder = kind.folder();
+                    let fname = f["filename"].as_str().unwrap_or(&name).to_string();
+                    remove_previous(&inst.id, folder, pid)?;
+                    let mut job = Job::new(f["url"].as_str().unwrap_or_default(), instances::game_dir(&inst.id).join(folder).join(&fname));
+                    job.sha1 = Some(sha1.clone());
+                    net::download(&job).await?;
+                    let _ = track_by_hashes(&inst.id, &[(format!("{folder}/{fname}"), sha1.clone())]).await;
+                    return Ok(vec![]);
+                }
+            }
+        }
         let page = format!("{}/files/{}", m["links"]["websiteUrl"].as_str().unwrap_or_default(), file["id"]);
         report.manual.push((title, page));
         return Ok(vec![]);
@@ -770,10 +791,7 @@ async fn install_cf(inst: &Instance, pid: &str, kind: Kind, fid: Option<&str>, r
     let folder = kind.folder();
     remove_previous(&inst.id, folder, pid)?;
     let mut job = Job::new(url, instances::game_dir(&inst.id).join(folder).join(&name));
-    job.sha1 = file["hashes"]
-        .as_array()
-        .and_then(|h| h.iter().find(|x| x["algo"] == 1))
-        .and_then(|x| x["value"].as_str().map(String::from));
+    job.sha1 = sha1;
     net::download(&job).await?;
 
     let mut meta = load_meta(&inst.id);

@@ -13,7 +13,7 @@ mod library;
 mod recorder;
 mod settings;
 mod sys;
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "linux"))]
 pub(crate) mod voice;
 #[cfg(windows)]
 mod win;
@@ -98,6 +98,49 @@ fn inside_clips(st: &ClipsState, path: &str) -> Res<PathBuf> {
     }
 }
 
+/// URL the launcher's own window plays a clip from. On Linux WebKitGTK can't stream <video> from the
+/// asset:// scheme (the player fails even with every codec installed), so it goes through the local
+/// bridge; elsewhere the frontend keeps using asset://.
+#[tauri::command]
+pub fn clips_video_url(st: State<ClipsState>, path: String) -> Res<String> {
+    let p = inside_clips(&st, &path)?;
+    let (port, secret) = crate::bridge::info().ok_or("bridge not running")?;
+    Ok(format!("http://127.0.0.1:{port}/video?k={secret}&p={}", urlencoding::encode(&p.to_string_lossy())))
+}
+
+/// "Highlights of the week": the end of each recent clip (where the moment is) glued into one video.
+#[tauri::command]
+pub async fn clips_highlights(st: State<'_, ClipsState>, days: u32) -> Res<ClipInfo> {
+    let ff = ffmpeg::find(&st.settings.read().unwrap().ffmpeg_path).ok_or_else(no_ffmpeg)?;
+    let dir = clips_dir(&st);
+    let since = chrono::Utc::now().timestamp() - i64::from(days.clamp(1, 60)) * 86_400;
+    let mut picked: Vec<ClipInfo> = library::list(&dir)
+        .into_iter()
+        .filter(|c| c.modified >= since && c.duration >= 3.0 && !c.name.starts_with(library::HIGHLIGHTS_PREFIX))
+        .collect();
+    picked.sort_by_key(|c| c.modified);
+    // shortcut: the newest 12 clips at most; enough for a short video
+    if picked.len() > 12 {
+        picked.drain(..picked.len() - 12);
+    }
+    if picked.is_empty() {
+        return Err(tr("Za tohle období nemáš žádné klipy", "You have no clips from this period").into());
+    }
+    let info = tauri::async_runtime::spawn_blocking(move || library::highlights(&ff, &dir, &picked))
+        .await
+        .map_err(err)?
+        .map_err(err)?;
+    st.thumbs.ensure(&clips_dir(&st), std::slice::from_ref(&info));
+    Ok(info)
+}
+
+/// For the bridge: a clip video it may serve (only from the clips folder).
+pub fn servable_video(path: &str) -> Option<PathBuf> {
+    let app = crate::events::app()?;
+    let st = app.try_state::<ClipsState>()?;
+    inside_clips(&st, path).ok()
+}
+
 // ---------------- setup & game lifecycle ----------------
 
 pub fn init(app: &AppHandle) -> tauri::Result<()> {
@@ -176,7 +219,7 @@ pub fn game_started(instance_name: &str) {
         linfo!("clips: game started ({instance_name}), buffer on");
         st.rec.set_paused(false);
     }
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "linux"))]
     voice::sync(&app);
 }
 
@@ -189,7 +232,7 @@ pub fn game_stopped() {
         linfo!("clips: no game running, buffer off");
         st.rec.set_paused(true);
     }
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "linux"))]
     voice::sync(&app);
 }
 
@@ -229,7 +272,7 @@ pub fn clips_set_settings(app: AppHandle, st: State<ClipsState>, mut s: Settings
         register_hotkey(&app, &s.hotkey)?;
         update_tray(&app, &st.rec.status().state);
     }
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "linux"))]
     voice::sync(&app);
     Ok(s)
 }
@@ -251,10 +294,10 @@ pub struct StatusInfo {
     voice_installed: bool,
 }
 
-/// Windows: downloads voice recognition for the chosen language (progress as `voice-progress`).
+/// Windows/Linux: downloads voice recognition for the chosen language (progress as `voice-progress`).
 #[tauri::command]
 pub async fn clips_install_voice(app: AppHandle, lang: String) -> Res<()> {
-    #[cfg(windows)]
+    #[cfg(any(windows, target_os = "linux"))]
     {
         let a = app.clone();
         voice::install(&lang, move |done, total| {
@@ -267,10 +310,10 @@ pub async fn clips_install_voice(app: AppHandle, lang: String) -> Res<()> {
         let _ = app.emit("clips-status", serde_json::json!({}));
         Ok(())
     }
-    #[cfg(not(windows))]
+    #[cfg(not(any(windows, target_os = "linux")))]
     {
         let _ = (app, lang);
-        Err("Voice clips are Windows only".into())
+        Err("Voice clips need Windows or Linux".into())
     }
 }
 
@@ -313,9 +356,9 @@ pub fn clips_status(st: State<ClipsState>) -> StatusInfo {
         recorder_missing: false,
         #[cfg(not(windows))]
         recorder_missing: gsr::binary().is_none(),
-        #[cfg(windows)]
+        #[cfg(any(windows, target_os = "linux"))]
         voice_installed: voice::installed(&st.settings.read().unwrap().voice_lang),
-        #[cfg(not(windows))]
+        #[cfg(not(any(windows, target_os = "linux")))]
         voice_installed: false,
     }
 }
@@ -342,11 +385,13 @@ pub fn clips_set_recording(app: AppHandle, st: State<ClipsState>, on: bool) {
 }
 
 #[tauri::command]
-pub fn clips_list(st: State<ClipsState>) -> Vec<ClipInfo> {
+pub async fn clips_list(st: State<'_, ClipsState>) -> Res<Vec<ClipInfo>> {
     let dir = clips_dir(&st);
-    let l = library::list(&dir);
+    // reads every clip's length from the file: off the UI thread, or the whole window stutters
+    let d2 = dir.clone();
+    let l = tauri::async_runtime::spawn_blocking(move || library::list(&d2)).await.map_err(err)?;
     st.thumbs.ensure(&dir, &l);
-    l
+    Ok(l)
 }
 
 #[tauri::command]
@@ -556,28 +601,18 @@ fn trigger_save(app: &AppHandle, from_hotkey: bool) {
             "starting" => tr("Nahrávání se teprve spouští", "Recording is still starting"),
             _ => tr("Nahrávání neběží", "Recording is not running"),
         };
-        if s.overlay && from_hotkey {
-            overlay_show(
-                app,
-                Overlay { kind: "error".into(), title: tr("Klip neuložen", "Clip not saved").into(), sub: msg.into() },
-                fg.work,
-            );
+        if from_hotkey {
+            notify(app, s.overlay, Overlay { kind: "error".into(), title: tr("Klip neuložen", "Clip not saved").into(), sub: msg.into() }, fg.work);
         }
         let _ = app.emit("clips-toast", Toast { kind: "error".into(), text: msg.into() });
         return;
     }
     linfo!("clips: saving clip of {game}");
-    if s.overlay {
-        overlay_show(
-            app,
-            Overlay {
+    notify(app, s.overlay, Overlay {
                 kind: "saving".into(),
                 title: tr("Ukládám klip…", "Saving clip…").into(),
                 sub: l!("{} · posledních {} s", "{} · last {} s", game, s.buffer_secs),
-            },
-            fg.work,
-        );
-    }
+            }, fg.work);
     let _ = app.emit("clips-saving", ());
     let app = app.clone();
     std::thread::spawn(move || {
@@ -613,17 +648,11 @@ fn trigger_save(app: &AppHandle, from_hotkey: bool) {
                 if s.sound {
                     sys::play_blip();
                 }
-                if s.overlay {
-                    overlay_show(
-                        &app,
-                        Overlay {
+                notify(&app, s.overlay, Overlay {
                             kind: "saved".into(),
                             title: tr("Klip uložen", "Clip saved").into(),
                             sub: format!("{} · {:.0} s · {:.0} MB", info.game, info.duration, info.size as f64 / 1_048_576.0),
-                        },
-                        fg.work,
-                    );
-                }
+                        }, fg.work);
                 linfo!("clips: saved {} ({:.1} s, {} B)", info.path, info.duration, info.size);
                 st.thumbs.ensure(&clips, std::slice::from_ref(&info));
                 let _ = app.emit("clips-saved", info);
@@ -631,13 +660,7 @@ fn trigger_save(app: &AppHandle, from_hotkey: bool) {
             Err(e) => {
                 let text = format!("{e:#}");
                 lwarn!("clips: saving failed: {text}");
-                if s.overlay {
-                    overlay_show(
-                        &app,
-                        Overlay { kind: "error".into(), title: tr("Uložení selhalo", "Saving failed").into(), sub: text.clone() },
-                        fg.work,
-                    );
-                }
+                notify(&app, s.overlay, Overlay { kind: "error".into(), title: tr("Uložení selhalo", "Saving failed").into(), sub: text.clone() }, fg.work);
                 let _ = app.emit("clips-toast", Toast { kind: "error".into(), text: l!("Uložení klipu selhalo: {}", "Saving the clip failed: {}", text) });
             }
         }
@@ -665,6 +688,16 @@ static OVERLAY_GEN: AtomicU64 = AtomicU64::new(0);
 /// over exclusive fullscreen, and Linux notifications hide behind the game).
 fn game_toast(msg: &Overlay) {
     crate::social::emit(serde_json::json!({ "type": "clip", "kind": msg.kind, "title": msg.title, "sub": msg.sub }));
+}
+
+/// Shows a clips message: the desktop overlay when it is on, and always a toast in the game
+/// (Kuubl Mod), because the overlay can't draw over exclusive fullscreen.
+fn notify(app: &AppHandle, overlay: bool, msg: Overlay, work: (i32, i32, i32, i32)) {
+    if overlay {
+        overlay_show(app, msg, work);
+    } else {
+        game_toast(&msg);
+    }
 }
 
 #[cfg(not(windows))]

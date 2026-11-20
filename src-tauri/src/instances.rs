@@ -19,6 +19,8 @@ pub struct Instance {
     pub ram_mb: Option<u32>,
     pub java_path: String,
     pub jvm_args: String,
+    /// Overrides the global wrapper command when not empty.
+    pub wrapper_command: String,
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub created: i64,

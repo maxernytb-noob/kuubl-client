@@ -4,6 +4,7 @@ import { Icon } from "../icons";
 import { tr } from "../i18n";
 import { errText, fmtAgo, useStore } from "../store";
 import { Modal } from "./common";
+import { askConfirm, askText } from "./AskDialog";
 
 const splitTags = (s: string) =>
   s.split(/[\s,]+/).map((t) => t.trim().replace(/^[#@]/, "")).filter(Boolean).slice(0, 10);
@@ -21,7 +22,7 @@ export function PublishClip({ clip, onClose, onPublished }: { clip: Clip; onClos
     setBusy(true);
     try {
       await clipsApi.publish(clip.path, title.trim(), desc.trim(), splitTags(players), splitTags(hashtags), Math.round((clip.duration || 0) * 1000), Math.round(clip.modified / 1000));
-      toast(tr("Klip je ve feedu 🎉", "Your clip is in the feed 🎉"), "success");
+      toast(tr("Klip je ve feedu", "Your clip is in the feed"), "success");
       onPublished();
       onClose();
     } catch (e) {
@@ -126,11 +127,12 @@ export default function ClipsFeed() {
     }
   };
   const report = async (c: FeedClip) => {
-    const reason = prompt(tr("Proč klip nahlašuješ?", "Why are you reporting this clip?")) ?? "";
+    const reason = await askText({ title: tr("Nahlásit klip", "Report clip"), label: tr("Proč klip nahlašuješ?", "Why are you reporting this clip?"), multiline: true, ok: tr("Nahlásit", "Report") });
+    if (reason === null) return;
     try { await clipsApi.report(c.id, reason); toast(tr("Nahlášeno, díky", "Reported, thanks"), "success"); } catch (e) { toast(errText(e), "error"); }
   };
   const del = async (c: FeedClip) => {
-    if (!confirm(tr("Smazat tenhle klip z feedu?", "Delete this clip from the feed?"))) return;
+    if (!(await askConfirm(tr("Smazat klip?", "Delete clip?"), tr("Klip zmizí z feedu pro všechny.", "The clip disappears from the feed for everyone."), tr("Smazat", "Delete"), true))) return;
     try { await clipsApi.feedDelete(c.id); setClips((cs) => (cs ?? []).filter((x) => x.id !== c.id)); } catch (e) { toast(errText(e), "error"); }
   };
 

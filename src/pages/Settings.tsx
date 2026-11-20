@@ -623,6 +623,13 @@ export default function SettingsPage({ section }: { section?: string }) {
             </div>
             <input className="input mono" style={{ width: 300, fontSize: 12 }} value={s.jvmArgs} onChange={(e) => saveSettings({ jvmArgs: e.target.value })} />
           </div>
+          <div className="setting">
+            <div className="txt">
+              <b>{tr("Wrapper příkaz (všechny instance)", "Wrapper command (all instances)")}</b>
+              <span>{tr("Spustí hru přes jiný příkaz, např. prime-run (hra na dedikované grafice místo iGPU), gamemoderun nebo mangohud. Proměnné jdou dát dopředu: DRI_PRIME=1 gamemoderun.", "Starts the game through another command, e.g. prime-run (dedicated GPU instead of the iGPU), gamemoderun or mangohud. Variables can go first: DRI_PRIME=1 gamemoderun.")}</span>
+            </div>
+            <input className="input mono" style={{ width: 300, fontSize: 12 }} placeholder="prime-run" value={s.wrapperCommand ?? ""} onChange={(e) => saveSettings({ wrapperCommand: e.target.value })} />
+          </div>
         </div>
 
         <div className="section-title" id="set-integrations">{tr("Integrace", "Integrations")}</div>

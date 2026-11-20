@@ -7,6 +7,8 @@ import { Modal, Switch, InstIcon } from "./common";
 import { tr } from "../i18n";
 import IconPicker from "./IconPicker";
 import Select from "./Select";
+import LunarImport from "./LunarImport";
+import type { Instance } from "../api";
 
 const PACKS = [
   { id: "cinematic", icon: "film", title: "Cinematic", titleEn: "Cinematic", text: "Flashback, Iris, Distant Horizons, Freecam, voicechat", textEn: "Flashback, Iris, Distant Horizons, Freecam, voice chat" },
@@ -111,6 +113,21 @@ export default function CreateInstance({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const runImport = async (f: () => Promise<Instance>) => {
+    setBusy(true);
+    try {
+      const inst = await f();
+      await reloadInstances();
+      toast(`${tr("Importováno", "Imported")}: ${inst.name}`, "success");
+      onClose();
+      go({ page: "instance", id: inst.id });
+    } catch (e) {
+      toast(errText(e), "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const importCode = async () => {
     setBusy(true);
     try {
@@ -165,6 +182,7 @@ export default function CreateInstance({ onClose }: { onClose: () => void }) {
               </button>
             </div>
           </div>
+          <LunarImport versions={versions} busy={busy} run={runImport} />
           <div className="card pad col">
             <b>{tr("Ze sdíleného kódu", "From a share code")}</b>
             <span className="muted small">{tr("Kamarád ti poslal kód začínající KUUBL1: — vlož ho sem a dostaneš stejné mody.", "A friend sent you a code starting with KUUBL1: — paste it here to get the same mods.")}</span>

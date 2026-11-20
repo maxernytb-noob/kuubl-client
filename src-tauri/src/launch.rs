@@ -236,6 +236,61 @@ fn split_user_args(s: &str) -> Vec<String> {
     s.split_whitespace().map(String::from).collect()
 }
 
+/// Splits a wrapper command like `DRI_PRIME=1 prime-run` into leading environment variables and
+/// the program with its arguments. Quotes group words (`"/opt/my tool/run" --x`).
+fn parse_wrapper(s: &str) -> (Vec<(String, String)>, Vec<String>) {
+    let mut words = Vec::new();
+    let (mut cur, mut quote, mut any) = (String::new(), None::<char>, false);
+    for c in s.trim().chars() {
+        match (quote, c) {
+            (Some(q), c) if c == q => quote = None,
+            (Some(_), c) => cur.push(c),
+            (None, '"' | '\'') => {
+                quote = Some(c);
+                any = true;
+            }
+            (None, c) if c.is_whitespace() => {
+                if any || !cur.is_empty() {
+                    words.push(std::mem::take(&mut cur));
+                }
+                any = false;
+            }
+            (None, c) => cur.push(c),
+        }
+    }
+    if any || !cur.is_empty() {
+        words.push(cur);
+    }
+    let mut env = Vec::new();
+    let mut rest = words.into_iter().peekable();
+    while let Some(w) = rest.peek() {
+        match w.split_once('=') {
+            Some((k, v)) if !k.is_empty() && k.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') && !k.starts_with(|c: char| c.is_ascii_digit()) => {
+                env.push((k.to_string(), v.to_string()));
+                rest.next();
+            }
+            _ => break,
+        }
+    }
+    (env, rest.collect())
+}
+
+#[cfg(test)]
+mod wrapper_tests {
+    use super::parse_wrapper;
+
+    #[test]
+    fn parses_env_and_program() {
+        let (env, cmd) = parse_wrapper("DRI_PRIME=1 __NV_PRIME_RENDER_OFFLOAD=1 prime-run --flag");
+        assert_eq!(env, vec![("DRI_PRIME".into(), "1".into()), ("__NV_PRIME_RENDER_OFFLOAD".into(), "1".into())]);
+        assert_eq!(cmd, vec!["prime-run".to_string(), "--flag".into()]);
+        let (env, cmd) = parse_wrapper("  \"/opt/my tool/run\" a  ");
+        assert!(env.is_empty());
+        assert_eq!(cmd, vec!["/opt/my tool/run".to_string(), "a".into()]);
+        assert_eq!(parse_wrapper(""), (vec![], vec![]));
+    }
+}
+
 pub async fn launch(instance_id: &str, server: Option<String>) -> Result<()> {
     if RUNNING.lock().unwrap().contains_key(instance_id) {
         bail!(l!("Tahle instance už běží", "This instance is already running"));
@@ -378,7 +433,19 @@ async fn launch_inner(instance_id: &str, server: Option<String>) -> Result<()> {
         }
         ldebug!("command: {}", shown.join(" "));
     }
-    let mut cmd = tokio::process::Command::new(&javaw);
+    // Optional wrapper (prime-run, gamemoderun, mangohud…): the instance's own one wins over the global one.
+    let wrapper = if inst.wrapper_command.trim().is_empty() { &s.wrapper_command } else { &inst.wrapper_command };
+    let (wrap_env, wrap_cmd) = parse_wrapper(wrapper);
+    let mut cmd = match wrap_cmd.split_first() {
+        Some((prog, rest)) => {
+            linfo!("wrapper: {}", wrapper.trim());
+            let mut c = tokio::process::Command::new(prog);
+            c.args(rest).arg(&javaw);
+            c
+        }
+        None => tokio::process::Command::new(&javaw),
+    };
+    cmd.envs(wrap_env);
     cmd.args(&args)
         .current_dir(&game_dir)
         .stdout(Stdio::piped())
@@ -441,6 +508,7 @@ async fn launch_inner(instance_id: &str, server: Option<String>) -> Result<()> {
     }
 
     let started = std::time::Instant::now();
+    let started_at = chrono::Utc::now().timestamp();
     let id = instance_id.to_string();
     tokio::spawn(async move {
         let status = child.wait().await.ok();
@@ -449,6 +517,20 @@ async fn launch_inner(instance_id: &str, server: Option<String>) -> Result<()> {
         if let Ok(mut i) = instances::load(&id) {
             i.playtime_secs += seconds;
             let _ = instances::save(&i);
+            // a session worth remembering for the profile / Wrapped (not a crash on start)
+            if seconds >= 30 {
+                let place = instances::last_place(&id);
+                crate::history::record(&crate::history::Session {
+                    instance: id.clone(),
+                    name: i.name.clone(),
+                    mc: i.mc_version.clone(),
+                    loader: i.loader.clone(),
+                    place_kind: place.as_ref().map(|p| p.kind.clone()).unwrap_or_default(),
+                    place: place.map(|p| p.name).unwrap_or_default(),
+                    start: started_at,
+                    secs: seconds,
+                });
+            }
             integrations::game_stopped(&i).await;
         }
         crate::clips::game_stopped();

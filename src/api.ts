@@ -2,12 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 
 export type Loader = "vanilla" | "fabric" | "quilt" | "forge" | "neoforge";
 export type ContentKind = "mod" | "resourcepack" | "shader" | "modpack";
-export type LinuxPackage = "appimage" | "deb" | "arch" | "other";
+export type LinuxPackage = "appimage" | "deb" | "arch" | "aur" | "other";
 
 export interface Settings {
   dataDir: string;
   ramMb: number;
   jvmArgs: string;
+  wrapperCommand: string;
   onLaunch: "hide" | "close" | "keep";
   language: "cs" | "en";
   curseforgeKey: string;
@@ -55,6 +56,7 @@ export interface Instance {
   ramMb: number | null;
   javaPath: string;
   jvmArgs: string;
+  wrapperCommand: string;
   width: number | null;
   height: number | null;
   created: number;
@@ -284,6 +286,30 @@ export interface Server {
   instance: string;
   pinned: boolean;
 }
+/** A Lunar Client profile with Fabric mods. */
+export interface LunarProfile {
+  path: string;
+  name: string;
+  mcVersion: string | null;
+  mods: number;
+}
+
+/** "Discover servers" entry (ertenix.net/kuubl/discover.json). */
+export interface DiscoverServer {
+  name: string;
+  address: string;
+  tags: string[];
+  lang: string;
+  description: { cs: string; en: string };
+  icon?: string;
+  web?: string;
+  accent?: string;
+}
+export interface DiscoverList {
+  featured: DiscoverServer[];
+  servers: DiscoverServer[];
+}
+
 export interface ServerStatus {
   online: number;
   max: number;
@@ -365,6 +391,17 @@ export interface Presence {
   mc?: string;
   loader?: string;
   server?: string | null;
+}
+/** One game run (history.rs). */
+export interface PlaySession {
+  instance: string;
+  name: string;
+  mc: string;
+  loader: string;
+  placeKind: "server" | "world" | "";
+  place: string;
+  start: number;
+  secs: number;
 }
 export interface PvpStats {
   kills: number;
@@ -461,6 +498,8 @@ export const clips = {
   setRecording: (on: boolean) => invoke<void>("clips_set_recording", { on }),
   list: () => invoke<Clip[]>("clips_list"),
   strip: (path: string) => invoke<string>("clips_strip", { path }),
+  videoUrl: (path: string) => invoke<string>("clips_video_url", { path }),
+  highlights: (days: number) => invoke<Clip>("clips_highlights", { days }),
   remove: (path: string) => invoke<void>("clips_delete", { path }),
   rename: (path: string, name: string) => invoke<Clip>("clips_rename", { path, name }),
   reveal: (path: string) => invoke<void>("clips_reveal", { path }),
@@ -643,6 +682,8 @@ export const api = {
   importCode: (code: string) => invoke<Instance>("import_code", { code }),
   exportPack: (instance: string, dest: string) => invoke<void>("export_pack", { instance, dest }),
   importPack: (path: string) => invoke<Instance>("import_pack", { path }),
+  lunarProfiles: () => invoke<LunarProfile[]>("lunar_profiles"),
+  importLunar: (path: string, mcVersion: string, name: string) => invoke<Instance>("import_lunar", { path, mcVersion, name }),
   /** Modrinth / CurseForge modpack -> new instance. */
   installModpack: (source: string, project: string, version?: string) => invoke<Instance>("install_modpack", { source, project, version }),
   downloadModpack: (source: string, project: string, name: string, version?: string) => invoke<number>("download_modpack", { source, project, name, version: version ?? null }),
@@ -659,8 +700,12 @@ export const api = {
   saveServer: (server: Partial<Server>) => invoke<Server>("save_server", { server }),
   removeServer: (id: string) => invoke<void>("remove_server", { id }),
   pingServer: (address: string) => invoke<ServerStatus>("ping_server", { address }),
+  discoverServers: () => invoke<DiscoverList | null>("discover_servers"),
 
   log: (level: "debug" | "info" | "warn" | "error", message: string) => invoke<void>("log_frontend", { level, message }).catch(() => {}),
   logPath: () => invoke<string>("log_path"),
+  installUpdateLinux: () => invoke<void>("install_update_linux"),
+  titlePanorama: (version: string) => invoke<string[]>("title_panorama", { version }),
+  playHistory: () => invoke<PlaySession[]>("play_history"),
   checkUpdateManual: () => invoke<{ version: string; notes: string; url: string; kind: LinuxPackage } | null>("check_update_manual"),
 };

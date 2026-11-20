@@ -51,13 +51,39 @@ export interface UiPrefs {
   sounds: boolean;
   /** Soft click/hover ticks on buttons and toggles (on top of the master sound toggle). */
   clickSounds: boolean;
+  /** clickSounds was set by the user (the old default "on" is ignored: ticks are opt-in now). */
+  clickSoundsSet: boolean;
+  /** Which click/hover sounds: built-in sets, or the user's own files (data: URLs). */
+  clickPack: ClickPack;
+  customClick: string;
+  customHover: string;
   /** 0–1. */
   soundVolume: number;
+  /** Whole-launcher look: the v3 "classic" one or a v4 design (life / forge / arcade). */
+  design: Design;
+  /** Asked once with the design picker (new users after onboarding, existing ones after the update). */
+  designPicked: boolean;
+  /** What stands behind the player on the v4 Home. */
+  heroBg: HeroBg;
+  /** Picture for heroBg "custom" (a file path). */
+  heroBgImage: string;
   /** Home sections the user turned off. */
   homeHidden: HomeSection[];
   /** The drop's art behind the whole window on Home. */
   homeArt: boolean;
 }
+
+export type Design = "classic" | "life" | "forge" | "arcade";
+export type HeroBg = "sunset" | "panorama" | "drop" | "shot" | "custom";
+
+/** Surfaces of each v4 design (the accent stays the user's); classic keeps the theme's own. */
+export const DESIGN_PALETTE: Record<Exclude<Design, "classic">, { bg: string; bg2: string; panel: string; panel2: string; panel3: string; line: string; line2: string; font: string; radius: [number, number] }> = {
+  life: { bg: "#0b0a10", bg2: "#100f16", panel: "#14131b", panel2: "#1a1922", panel3: "#22212b", line: "#25232e", line2: "#33313d", font: `"Inter", "Segoe UI", system-ui, sans-serif`, radius: [10, 14] },
+  forge: { bg: "#0a0a0b", bg2: "#0e0e10", panel: "#111113", panel2: "#17171a", panel3: "#202024", line: "#232328", line2: "#2f2f35", font: `"Inter Tight", "Inter", "Segoe UI", system-ui, sans-serif`, radius: [8, 12] },
+  arcade: { bg: "#0b0c0f", bg2: "#0f1115", panel: "#12141a", panel2: "#181b22", panel3: "#20232c", line: "#1f222b", line2: "#2c303b", font: `"Barlow", "Inter", "Segoe UI", system-ui, sans-serif`, radius: [6, 10] },
+};
+
+export type ClickPack = "soft" | "pop" | "wood" | "retro" | "custom";
 
 export type HomeSection = "versions" | "instances" | "friends" | "news";
 
@@ -81,8 +107,16 @@ export const DEFAULT_UI: UiPrefs = {
   sidebar: "full",
   density: "comfortable",
   sounds: true,
-  clickSounds: true,
+  clickSounds: false,
+  clickSoundsSet: false,
+  clickPack: "soft",
+  customClick: "",
+  customHover: "",
   soundVolume: 0.5,
+  design: "life",
+  designPicked: false,
+  heroBg: "sunset",
+  heroBgImage: "",
   homeHidden: [],
   homeArt: true,
 };
@@ -101,6 +135,8 @@ export function uiPrefs(raw: unknown): UiPrefs {
   p.scale = Math.min(1.25, Math.max(0.85, Number(p.scale) || 1));
   p.soundVolume = Math.min(1, Math.max(0, Number(p.soundVolume ?? 0.5)));
   p.homeHidden = Array.isArray(p.homeHidden) ? p.homeHidden : [];
+  if (!["classic", "life", "forge", "arcade"].includes(p.design)) p.design = "life";
+  if (!p.clickSoundsSet) p.clickSounds = false;
   return p;
 }
 
@@ -122,7 +158,18 @@ export function applyUi(p: UiPrefs) {
   root.classList.toggle("ui-round", p.radius === "round");
   root.classList.toggle("ui-noanim", !p.animations);
   root.classList.toggle("ui-dense", p.density === "compact");
-  setSoundPrefs(p.sounds, p.soundVolume, p.clickSounds);
+  root.dataset.design = p.design;
+  // v4 designs bring their own surfaces and font (applyTheme already set the accent)
+  if (p.design !== "classic") {
+    const d = DESIGN_PALETTE[p.design];
+    for (const [k, v] of [["--bg", d.bg], ["--bg-2", d.bg2], ["--panel", d.panel], ["--panel-2", d.panel2], ["--panel-3", d.panel3], ["--line", d.line], ["--line-2", d.line2]]) s.setProperty(k, v);
+    if (p.font === "inter") s.setProperty("--font", d.font);
+    if (p.radius === "normal") {
+      s.setProperty("--radius", `${d.radius[0]}px`);
+      s.setProperty("--radius-lg", `${d.radius[1]}px`);
+    }
+  }
+  setSoundPrefs(p.sounds, p.soundVolume, p.clickSounds, p.clickPack, p.customClick, p.customHover);
   // Animations off also means light mode (main.tsx turns it on for Linux regardless).
   const forcedLow = (/Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)) || new URLSearchParams(location.search).has("lowfx");
   root.classList.toggle("lowfx", forcedLow || !p.animations);

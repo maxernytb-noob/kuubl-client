@@ -63,14 +63,19 @@ async fn handle(mut s: TcpStream, secret: &str) -> Result<()> {
     let (method, target) = (first.next().unwrap_or("").to_string(), first.next().unwrap_or("").to_string());
     let mut len = 0usize;
     let mut auth = String::new();
+    let mut range = String::new();
     for l in lines {
         if let Some((k, v)) = l.split_once(':') {
             match k.trim().to_ascii_lowercase().as_str() {
                 "content-length" => len = v.trim().parse().unwrap_or(0).min(256 * 1024),
                 "x-kuubl-secret" => auth = v.trim().to_string(),
+                "range" => range = v.trim().to_string(),
                 _ => {}
             }
         }
+    }
+    if method == "GET" && target.starts_with("/video?") {
+        return serve_video(&mut s, &target, &range, secret).await;
     }
     let mut body = buf[head_end + 4..].to_vec();
     while body.len() < len {
@@ -97,6 +102,69 @@ async fn handle(mut s: TcpStream, secret: &str) -> Result<()> {
     );
     s.write_all(resp.as_bytes()).await?;
     Ok(())
+}
+
+/// Clip videos for the launcher's <video> on Linux (see clips::clips_video_url), with Range support so
+/// the player can seek. The secret is in the URL because a <video> can't send headers.
+async fn serve_video(s: &mut TcpStream, target: &str, range: &str, secret: &str) -> Result<()> {
+    let query = target.split_once('?').map(|(_, q)| q).unwrap_or("");
+    let q = |k: &str| query.split('&').find_map(|p| p.strip_prefix(&format!("{k}="))).unwrap_or("").to_string();
+    let path = urlencoding::decode(&q("p")).map(|p| p.into_owned()).unwrap_or_default();
+    let file = if q("k") == secret { crate::clips::servable_video(&path) } else { None };
+    let Some(file) = file else {
+        s.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").await?;
+        return Ok(());
+    };
+    let mut f = tokio::fs::File::open(&file).await?;
+    let size = f.metadata().await?.len();
+    let (start, end) = parse_range(range, size).unwrap_or((0, size.saturating_sub(1)));
+    let partial = !range.is_empty() && start <= end && end < size;
+    let len = if size == 0 { 0 } else { end - start + 1 };
+    let head = if partial {
+        format!("HTTP/1.1 206 Partial Content\r\nContent-Type: video/mp4\r\nAccept-Ranges: bytes\r\nContent-Range: bytes {start}-{end}/{size}\r\nContent-Length: {len}\r\nConnection: close\r\n\r\n")
+    } else {
+        format!("HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\nAccept-Ranges: bytes\r\nContent-Length: {size}\r\nConnection: close\r\n\r\n")
+    };
+    s.write_all(head.as_bytes()).await?;
+    use tokio::io::AsyncSeekExt;
+    f.seek(std::io::SeekFrom::Start(if partial { start } else { 0 })).await?;
+    let mut left = if partial { len } else { size };
+    let mut buf = vec![0u8; 256 * 1024];
+    while left > 0 {
+        let n = f.read(&mut buf[..left.min(256 * 1024) as usize]).await?;
+        if n == 0 {
+            break;
+        }
+        s.write_all(&buf[..n]).await?;
+        left -= n as u64;
+    }
+    Ok(())
+}
+
+/// `bytes=START-[END]` or `bytes=-SUFFIX` against a file of `size` bytes.
+fn parse_range(h: &str, size: u64) -> Option<(u64, u64)> {
+    let r = h.strip_prefix("bytes=")?.split(',').next()?.trim();
+    let (a, b) = r.split_once('-')?;
+    if a.is_empty() {
+        let n: u64 = b.parse().ok()?;
+        return Some((size.saturating_sub(n), size.checked_sub(1)?));
+    }
+    let start: u64 = a.parse().ok()?;
+    let end = if b.is_empty() { size.checked_sub(1)? } else { b.parse::<u64>().ok()?.min(size.checked_sub(1)?) };
+    Some((start, end))
+}
+
+#[cfg(test)]
+mod range_tests {
+    #[test]
+    fn ranges() {
+        use super::parse_range as p;
+        assert_eq!(p("bytes=0-", 100), Some((0, 99)));
+        assert_eq!(p("bytes=10-19", 100), Some((10, 19)));
+        assert_eq!(p("bytes=90-500", 100), Some((90, 99)));
+        assert_eq!(p("bytes=-10", 100), Some((90, 99)));
+        assert_eq!(p("", 100), None);
+    }
 }
 
 async fn route(method: &str, target: &str, body: Value) -> Result<Value> {

@@ -64,6 +64,22 @@ export default function ClipsPage() {
   const [view, setView] = useState<"mine" | "feed">("mine");
   const [publishing, setPublishing] = useState<Clip | null>(null);
   const [sharing, setSharing] = useState<Clip | null>(null);
+  const [cutting, setCutting] = useState(false);
+  /** Glues the end of every clip from the last 7 days into one video and opens it in the editor. */
+  const makeHighlights = async () => {
+    setCutting(true);
+    try {
+      const c = await clipsApi.highlights(7);
+      toast(tr("Sestřih týdne je hotový", "Your week's highlights are ready"), "success");
+      await reload();
+      setFresh(c.path);
+      setEditing(c);
+    } catch (e) {
+      toast(errText(e), "error");
+    } finally {
+      setCutting(false);
+    }
+  };
 
   const reload = useCallback(() => clipsApi.list().then(setList).catch((e) => toast(errText(e), "error")), [toast]);
   const refreshStatus = useCallback(() => clipsApi.status().then(setStatus).catch(() => {}), []);
@@ -159,6 +175,9 @@ export default function ClipsPage() {
           <button className={view === "mine" ? "on" : ""} onClick={() => setView("mine")}>{tr("Moje klipy", "My clips")}</button>
           <button className={view === "feed" ? "on" : ""} onClick={() => setView("feed")}>{tr("Feed", "Feed")}</button>
         </div>
+        <button className="btn" disabled={cutting} onClick={makeHighlights} title={tr("Slepí konce klipů z posledních 7 dní do jednoho videa", "Glues the ends of your clips from the last 7 days into one video")}>
+          {cutting ? <span className="spinner" /> : <Icon name="film" size={16} />} {cutting ? tr("Stříhám…", "Cutting…") : tr("Sestřih týdne", "Week's highlights")}
+        </button>
         <button className="btn" onClick={() => clipsApi.openDir()}>
           <Icon name="folder" size={16} /> {tr("Složka", "Folder")}
         </button>
@@ -409,6 +428,7 @@ function ClipEditor({ clip, onClose, onChanged, onDelete, onPublish }: { clip: C
   const [strip, setStrip] = useState<string | null>(null);
   const [name, setName] = useState(clip.name);
   const [codecErr, setCodecErr] = useState(false);
+  const [videoSrc, setVideoSrc] = useState("");
   const selRef = useRef(sel);
   selRef.current = sel;
 
@@ -416,6 +436,10 @@ function ClipEditor({ clip, onClose, onChanged, onDelete, onPublish }: { clip: C
     setName(clip.name);
     setStrip(null);
     clipsApi.strip(clip.path).then((p) => setStrip(convertFileSrc(p))).catch(() => {});
+    // Linux: WebKitGTK can't stream <video> from asset://, the launcher serves it over localhost
+    setCodecErr(false);
+    if (IS_LINUX) clipsApi.videoUrl(clip.path).then(setVideoSrc).catch(() => setVideoSrc(convertFileSrc(clip.path)));
+    else setVideoSrc(convertFileSrc(clip.path));
     const t = setTimeout(() => video.current?.play().catch(() => {}), 250);
     return () => clearTimeout(t);
   }, [clip.path, clip.name]);
@@ -586,7 +610,7 @@ function ClipEditor({ clip, onClose, onChanged, onDelete, onPublish }: { clip: C
         <div className={`ce-player ${playing ? "playing" : ""}`}>
           <video
             ref={video}
-            src={convertFileSrc(clip.path)}
+            src={videoSrc || undefined}
             muted={muted}
             onClick={() => play(!playing)}
             onPlay={() => setPlaying(true)}
@@ -608,8 +632,8 @@ function ClipEditor({ clip, onClose, onChanged, onDelete, onPublish }: { clip: C
             <div className="codec-warn">
               {IS_LINUX
                 ? tr(
-                    "Launcher tohle video neumí přehrát (chybí GStreamer „libav“). Otevři ho tlačítkem ▶ nahoře v přehrávači — klip samotný je v pořádku.",
-                    "The launcher can't play this video (GStreamer “libav” is missing). Open it with the ▶ button at the top in your video player — the clip itself is fine.",
+                    "Launcher tohle video nedokázal přehrát. Otevři ho tlačítkem ▶ nahoře ve svém přehrávači — klip samotný je v pořádku.",
+                    "The launcher couldn't play this video. Open it with the ▶ button at the top in your own player — the clip itself is fine.",
                   )
                 : tr(
                     "Video je v HEVC (H.265). Pro přehrání v launcheru nainstaluj „Rozšíření videa HEVC“ z Microsoft Storu — klip samotný je v pořádku.",
@@ -766,7 +790,7 @@ function FfmpegDownload() {
   );
 }
 
-/** Windows: downloads offline voice recognition (Vosk + a ≈40 MB model) for voice clips. */
+/** Windows/Linux: downloads offline voice recognition (Vosk + a ≈40 MB model) for voice clips. */
 function VoiceDownload({ lang }: { lang: string }) {
   const { toast } = useStore();
   const [pct, setPct] = useState<number | null>(null);
@@ -869,22 +893,22 @@ function ClipsSettingsModal({ settings: s, status, save, onClose }: { settings: 
         >
           <HotkeyButton value={s.hotkey} onChange={(k) => save({ hotkey: k })} />
         </Row>
-        {!IS_LINUX && (
+        {(
           <>
             <Row
               title={tr("Uložit klip hlasem", "Save clips by voice")}
               text={
                 s.voiceLang === "cs"
-                  ? tr("„Kuubl, natoč to“ uloží klip, „Kuubl, udělej fotku“ screenshot. Rozpoznávání běží offline v počítači, jen když hraješ.", "“Kuubl, natoč to” saves a clip, “Kuubl, udělej fotku” a screenshot. Recognition runs offline on your PC, only while you play.")
-                  : tr("„Kuubl, clip that“ uloží klip, „Kuubl, screenshot“ screenshot. Rozpoznávání běží offline v počítači, jen když hraješ.", "“Kuubl, clip that” saves a clip, “Kuubl, screenshot” takes a screenshot. Recognition runs offline on your PC, only while you play.")
+                  ? tr("„Natoč to“, „uložit to“ nebo „zachytit“ uloží klip, „udělej fotku“ screenshot. Řekni to samostatně, „Kuubl“ na začátku není potřeba. Rozpoznávání běží offline v počítači, jen když hraješ.", "“Natoč to”, “uložit to” or “zachytit” saves a clip, “udělej fotku” a screenshot. Say it on its own; “Kuubl” in front is optional. Recognition runs offline on your PC, only while you play.")
+                  : tr("„Clip that“, „save that“ nebo „grab that“ uloží klip, „screenshot“ nebo „take a picture“ screenshot. „Kuubl“ na začátku není potřeba. Rozpoznávání běží offline v počítači, jen když hraješ.", "“Clip that”, “save that” or “grab that” saves a clip, “screenshot” or “take a picture” takes a screenshot. “Kuubl” in front is optional. Recognition runs offline on your PC, only while you play.")
               }
             >
               {s.voice && !status?.voiceInstalled ? <VoiceDownload lang={s.voiceLang} /> : <Switch checked={s.voice} onChange={(x) => save({ voice: x })} />}
             </Row>
             <Row title={tr("Jazyk hlasového příkazu", "Voice command language")} sub disabled={!s.voice}>
               <Select className="input" value={s.voiceLang} onChange={(e) => save({ voiceLang: e.target.value as "en" | "cs" })}>
-                <option value="en">English – „Kuubl, clip that“</option>
-                <option value="cs">Čeština – „Kuubl, natoč to“ (řekni to samostatně)</option>
+                <option value="en">English – „clip that“</option>
+                <option value="cs">Čeština – „natoč to“ (řekni to samostatně)</option>
               </Select>
             </Row>
           </>

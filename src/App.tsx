@@ -28,6 +28,10 @@ import { PartyPrompts } from "./components/Party";
 import MusicPlayer, { MusicNavButton } from "./components/MusicPlayer";
 import LogoButton, { useSecrets } from "./components/Secrets";
 import CommandPalette, { openPalette } from "./components/CommandPalette";
+import AskDialog from "./components/AskDialog";
+import NavTip from "./components/NavTip";
+import DesignPicker from "./components/DesignPicker";
+import HomeV4 from "./pages/HomeV4";
 import { sound } from "./sounds";
 import NotificationBell from "./components/Notifications";
 
@@ -39,6 +43,17 @@ export const NAV: Record<NavPage, { icon: string; label: string }> = {
   servers: { icon: "server", label: "Servery" },
   friends: { icon: "users", label: "Přátelé" },
   clips: { icon: "clips", label: "Klipy" },
+};
+
+/** Each section's own colour (used by the Life design's rail and anywhere a page wants its colour). */
+export const NAV_COLOR: Record<NavPage, string> = {
+  home: "#ff7a2f",
+  instances: "#22d3ee",
+  browse: "#a78bfa",
+  recording: "#fb7185",
+  servers: "#60a5fa",
+  friends: "#4ade80",
+  clips: "#f87171",
 };
 
 /** Sidebar sections, OneConfig-style. Pages keep the user's order and hiding from Customize. */
@@ -180,7 +195,9 @@ export default function App() {
   useSecrets();
   const prefs = uiPrefs(settings?.ui);
   const narrow = useNarrow();
-  const wide = prefs.sidebar === "full" && !narrow;
+  const design = prefs.design;
+  // Life is an icon rail, Forge a labelled sidebar, Arcade a top bar (labels shown); Classic keeps the user's choice.
+  const wide = design === "life" ? false : design === "classic" ? prefs.sidebar === "full" && !narrow : !narrow || design === "arcade";
   const [, force] = useState(0);
   useEffect(() => force((x) => x + 1), [settings?.language]);
 
@@ -188,7 +205,7 @@ export default function App() {
   const unread = useSocialNotifications(current === "friends");
   let page;
   switch (nav.page) {
-    case "home": page = <Home />; break;
+    case "home": page = design === "classic" ? <Home /> : <HomeV4 design={design} />; break;
     case "instances": page = <Instances />; break;
     case "instance": page = <InstanceView key={nav.id} id={nav.id!} tab={nav.tab} />; break;
     case "browse": page = <Browse key={`${nav.id ?? "browse"}|${nav.q ?? ""}`} instanceId={nav.id} initialKind={nav.tab} initialQuery={nav.q} />; break;
@@ -201,7 +218,7 @@ export default function App() {
   }
 
   return (
-    <div className="shell">
+    <div className={`shell d-${design}`}>
       <nav className={`sidebar ${wide ? "wide" : ""}`}>
         <div className="brand">
           <LogoButton />
@@ -225,7 +242,7 @@ export default function App() {
             <div className="nav-sec" key={si}>
               {sec.label && (wide ? <div className="nav-head">{tr(...sec.label)}</div> : <div className="nav-sep" />)}
               {pages.map((p) => (
-                <button key={p} className={`navbtn ${current === p ? "active" : ""}`} onClick={() => go({ page: p })}>
+                <button key={p} className={`navbtn ${current === p ? "active" : ""}`} style={{ "--c": NAV_COLOR[p] } as React.CSSProperties} onClick={() => go({ page: p })}>
                   <Icon name={NAV[p].icon} size={20} />
                   <span className="label">{t(NAV[p].label)}</span>
                   {p === "friends" && unread > 0 && current !== "friends" && <span className="nav-badge">{unread > 9 ? "9+" : unread}</span>}
@@ -280,9 +297,12 @@ export default function App() {
         <MusicPlayer />
         <PartyPrompts />
         <Toasts />
+        <AskDialog />
+        <NavTip />
         <CrashDialog />
         <LaunchOverlay />
         {settings && !settings.onboarded && <Onboarding />}
+        {settings && settings.onboarded && !prefs.designPicked && <DesignPicker />}
       </main>
       <Splash />
     </div>

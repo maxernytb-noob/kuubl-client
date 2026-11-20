@@ -8,12 +8,42 @@ let enabled = true;
 let volume = 0.5;
 let clicks = true;
 let ctx: AudioContext | null = null;
+let pack = "soft";
+const custom: Record<"click" | "hover", string> = { click: "", hover: "" };
+const decoded = new Map<string, AudioBuffer | null>();
 
 /** Called by applyUi whenever the preferences change. */
-export function setSoundPrefs(on: boolean, vol: number, clickLayer = true) {
+export function setSoundPrefs(on: boolean, vol: number, clickLayer = true, clickPack = "soft", customClick = "", customHover = "") {
   enabled = on;
   volume = vol;
   clicks = clickLayer;
+  pack = clickPack;
+  custom.click = customClick;
+  custom.hover = customHover;
+}
+
+/** Plays the user's own sound (a data: URL kept in the UI prefs), decoded once. */
+function playCustom(a: AudioContext, url: string, gain: number) {
+  const buf = decoded.get(url);
+  if (buf === undefined) {
+    decoded.set(url, null);
+    fetch(url)
+      .then((r) => r.arrayBuffer())
+      .then((b) => a.decodeAudioData(b))
+      .then((b) => {
+        decoded.set(url, b);
+        playCustom(a, url, gain);
+      })
+      .catch(() => {});
+    return;
+  }
+  if (!buf) return;
+  const src = a.createBufferSource();
+  const g = a.createGain();
+  src.buffer = buf;
+  g.gain.value = gain * volume;
+  src.connect(g).connect(a.destination);
+  src.start();
 }
 
 function ac(): AudioContext | null {
@@ -81,6 +111,27 @@ export function uiTick(kind: "click" | "hover" | "toggle") {
   if (document.documentElement.classList.contains("snd-off")) return;
   const a = ac();
   if (!a) return;
+  if (pack === "custom") {
+    // a toggle uses the click sound; no hover file = silent hover
+    const url = kind === "hover" ? custom.hover : custom.click;
+    if (url) playCustom(a, url, kind === "hover" ? 0.5 : 1);
+    return;
+  }
+  if (pack === "pop") {
+    if (kind === "hover") note(a, 1600, 0, 0.025, 0.012, "sine");
+    else note(a, kind === "toggle" ? 660 : 520, 0, 0.08, 0.09, "sine"), note(a, kind === "toggle" ? 990 : 780, 0.02, 0.06, 0.05, "sine");
+    return;
+  }
+  if (pack === "wood") {
+    if (kind === "hover") note(a, 420, 0, 0.025, 0.02, "triangle");
+    else note(a, kind === "toggle" ? 330 : 260, 0, 0.06, 0.12, "triangle"), note(a, 140, 0, 0.04, 0.08, "square");
+    return;
+  }
+  if (pack === "retro") {
+    if (kind === "hover") note(a, 1760, 0, 0.02, 0.01, "square");
+    else note(a, 880, 0, 0.04, 0.04, "square"), note(a, kind === "toggle" ? 1760 : 1320, 0.04, 0.05, 0.035, "square");
+    return;
+  }
   switch (kind) {
     case "hover":
       note(a, 2100, 0, 0.03, 0.016, "sine");

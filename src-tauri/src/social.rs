@@ -1,4 +1,4 @@
-//! Friends & chat (Kuubl Social on justiceclient.online). Sign-in proves the Minecraft account the same
+//! Friends & chat (Kuubl Social on ertenix.net/justice/social). Sign-in proves the Minecraft account the same
 //! way joining a server does: Mojang `join` with our access token, the server checks `hasJoined`.
 //! The server never sees the access token. A WebSocket delivers messages/presence as
 //! `social-event` events to the UI.
@@ -15,9 +15,9 @@ use std::sync::Mutex;
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-const BASE: &str = "https://justiceclient.online/social";
-const WS: &str = "wss://justiceclient.online/social/ws";
-pub const RELAY: &str = "wss://justiceclient.online/social/relay";
+const BASE: &str = "https://ertenix.net/justice/social";
+const WS: &str = "wss://ertenix.net/justice/social/ws";
+pub const RELAY: &str = "wss://ertenix.net/justice/social/relay";
 
 /// Plays a clip a friend shared. Only our own upload URLs, so neither chat can open arbitrary links.
 /// On Linux the file is downloaded and handed to the system player: WebKitGTK and Linux browsers

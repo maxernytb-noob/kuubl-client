@@ -14,7 +14,7 @@ use std::collections::HashMap;
 use tokio::sync::Mutex;
 
 const BASE: &str = "https://launchercontent.mojang.com";
-const HD_BASE: &str = "https://justiceclient.online/art/";
+const HD_BASE: &str = "https://ertenix.net/kuubl/art/";
 /// Used when art.json can't be fetched: drop name (lowercase) -> file in HD_BASE.
 const HD_BUILTIN: &[(&str, &str)] = &[
     ("wilderness bound", "wilderness-bound.jpg"),

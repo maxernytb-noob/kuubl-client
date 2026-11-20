@@ -101,14 +101,17 @@ fn merge(parent: Value, child: Value) -> Value {
     let mut out = parent.as_object().cloned().unwrap_or_default();
     let child = child.as_object().cloned().unwrap_or_default();
 
+    // A child library replaces the parent's one with the same group:artifact. Duplicates inside the
+    // parent itself stay: vanilla 1.18 lists LWJGL 3.2.1 (macOS only) *and* 3.2.2 (everything else),
+    // and keeping only the first one left Windows/Linux with no LWJGL at all.
     let mut libs: Vec<Value> = vec![];
-    let mut seen = HashSet::new();
+    let mut from_child = HashSet::new();
     for l in child.get("libraries").and_then(|v| v.as_array()).into_iter().flatten() {
-        seen.insert(lib_key(l["name"].as_str().unwrap_or_default()));
+        from_child.insert(lib_key(l["name"].as_str().unwrap_or_default()));
         libs.push(l.clone());
     }
     for l in out.get("libraries").and_then(|v| v.as_array()).into_iter().flatten() {
-        if seen.insert(lib_key(l["name"].as_str().unwrap_or_default())) {
+        if !from_child.contains(&lib_key(l["name"].as_str().unwrap_or_default())) {
             libs.push(l.clone());
         }
     }
@@ -394,4 +397,22 @@ pub fn client_jar_path(jar_id: &str) -> PathBuf {
 
 pub fn java_major(version: &Value) -> u32 {
     version["javaVersion"]["majorVersion"].as_u64().map(|v| v as u32).unwrap_or(8)
+}
+
+#[cfg(test)]
+mod merge_tests {
+    use super::merge;
+    use serde_json::json;
+
+    #[test]
+    fn keeps_parent_duplicates_with_os_rules() {
+        let parent = json!({ "libraries": [
+            { "name": "org.lwjgl:lwjgl:3.2.1", "rules": [{ "action": "allow", "os": { "name": "osx" } }] },
+            { "name": "org.lwjgl:lwjgl:3.2.2" },
+            { "name": "org.ow2.asm:asm:9.1" },
+        ] });
+        let child = json!({ "libraries": [{ "name": "org.ow2.asm:asm:9.2" }] });
+        let names: Vec<String> = merge(parent, child)["libraries"].as_array().unwrap().iter().map(|l| l["name"].as_str().unwrap().to_string()).collect();
+        assert_eq!(names, ["org.ow2.asm:asm:9.2", "org.lwjgl:lwjgl:3.2.1", "org.lwjgl:lwjgl:3.2.2"]);
+    }
 }
