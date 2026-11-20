@@ -61,8 +61,8 @@
 .bell-btn.has { color: var(--text); }
 .bell-btn.has svg { animation: v3ring 1.2s var(--spring) 1; transform-origin: 50% 10%; }
 .bell-dot { position: absolute; top: 4px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 99px; background: var(--red); color: #fff; font-size: 10px; font-weight: 800; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg); }
-.bell-pop { position: fixed; left: 16px; bottom: 74px; width: 320px; max-height: 420px; display: flex; flex-direction: column; border-radius: 14px; background: #121216; border: 1px solid var(--line-2); box-shadow: 0 24px 60px rgba(0, 0, 0, .55); z-index: 120; overflow: hidden; animation: v3pop .22s var(--spring); }
-.sidebar.wide .bell-pop { left: 200px; }
+.bell-pop { position: fixed; width: 320px; max-height: 420px; display: flex; flex-direction: column; border-radius: 14px; background: #121216; border: 1px solid var(--line-2); box-shadow: 0 24px 60px rgba(0, 0, 0, .55); z-index: 950; overflow: hidden; animation: v3pop .22s var(--spring); }
+
 .bell-head { padding: 12px 14px; font-weight: 700; border-bottom: 1px solid var(--line); }
 .bell-list { overflow-y: auto; padding: 6px; }
 .bell-item { display: flex; gap: 10px; padding: 9px 10px; border-radius: 10px; color: var(--text-3); }
