@@ -410,7 +410,12 @@ impl Resampler {
 fn recognise(lang: &str, rx: mpsc::Receiver<Vec<i16>>, stop: &AtomicBool, mut on_heard: impl FnMut(&str), mut on_hit: impl FnMut(Hit)) -> anyhow::Result<()> {
     let mut v = Vosk::open(lang)?;
     while !stop.load(Ordering::Relaxed) {
-        let Ok(pcm) = rx.recv_timeout(Duration::from_millis(300)) else { continue };
+        let pcm = match rx.recv_timeout(Duration::from_millis(300)) {
+            Ok(p) => p,
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
+            // the microphone stream ended (device gone, capture tool exited)
+            Err(mpsc::RecvTimeoutError::Disconnected) => anyhow::bail!("the microphone stopped sending sound"),
+        };
         let Some(words) = v.feed(&pcm) else { continue };
         let text = words.iter().map(|(w, _)| w.as_str()).filter(|w| *w != "[unk]").collect::<Vec<_>>().join(" ");
         if !text.is_empty() {
@@ -428,7 +433,107 @@ fn recognise(lang: &str, rx: mpsc::Receiver<Vec<i16>>, stop: &AtomicBool, mut on
 /// shown in the Clips settings instead of only in the log.
 pub static LAST_ERROR: Mutex<Option<String>> = Mutex::new(None);
 
+fn on_heard(app: &AppHandle, text: &str) {
+    ldebug!("voice clips: recognised \"{text}\"");
+    let _ = app.emit("voice-heard", text.to_string());
+}
+
+fn on_hit(app: &AppHandle, hit: Hit) {
+    linfo!("voice clips: heard {hit:?}");
+    let in_game = app.try_state::<ClipsState>().is_some_and(|st| st.games.load(Ordering::SeqCst) > 0);
+    match hit {
+        Hit::Verity => {
+            let _ = app.emit("secret-found", "verity");
+        }
+        // in the launcher (no game) only the easter egg does something
+        _ if !in_game => {}
+        // Kuubl Mod takes it (it long-polls these events)
+        Hit::Screenshot => crate::social::emit(serde_json::json!({ "type": "voice", "action": "screenshot" })),
+        Hit::Secret => {
+            let _ = app.emit("secret-found", "clipwall");
+            super::trigger_save(app, true);
+        }
+        Hit::Clip => super::trigger_save(app, true),
+    }
+}
+
+/// Linux: the mic straight from PipeWire/PulseAudio as 16 kHz mono s16, which is what Vosk wants.
+/// ALSA's "default" often has no route to PipeWire (no pipewire-alsa) and hands out silence.
+#[cfg(target_os = "linux")]
+fn pulse_capture(mic: &str) -> Option<(std::process::Child, &'static str)> {
+    use std::process::{Command, Stdio};
+    let mut parec = vec!["--format=s16le".to_string(), "--rate=16000".into(), "--channels=1".into(), "--latency-msec=100".into()];
+    let mut pw = vec!["--rate".to_string(), "16000".into(), "--channels".into(), "1".into(), "--format".into(), "s16".into()];
+    if !mic.is_empty() {
+        parec.push(format!("--device={mic}"));
+        pw.extend(["--target".to_string(), mic.to_string()]);
+    }
+    pw.push("-".into());
+    for (bin, args) in [("parec", parec), ("pw-record", pw)] {
+        match Command::new(bin).args(&args).stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn() {
+            Ok(mut c) => {
+                // no PipeWire/PulseAudio server: it exits right away, try the next one
+                std::thread::sleep(Duration::from_millis(300));
+                if matches!(c.try_wait(), Ok(Some(_))) {
+                    ldebug!("voice clips: {bin} exited right away");
+                    continue;
+                }
+                return Some((c, bin));
+            }
+            Err(e) => ldebug!("voice clips: {bin} not available: {e}"),
+        }
+    }
+    None
+}
+
+#[cfg(target_os = "linux")]
+fn listen_pulse(app: AppHandle, lang: String, mut child: std::process::Child, bin: &str, stop: Arc<AtomicBool>) -> anyhow::Result<()> {
+    use std::io::Read;
+    let mut out = child.stdout.take().ok_or_else(|| anyhow::anyhow!("{bin}: no output"))?;
+    let (tx, rx) = mpsc::channel::<Vec<i16>>();
+    let level_app = app.clone();
+    let stop2 = stop.clone();
+    // reader: 100 ms chunks -> recognizer, plus the level meter and a check for a silent mic
+    std::thread::spawn(move || {
+        let mut buf = vec![0u8; 3200];
+        let started = std::time::Instant::now();
+        let (mut loudest, mut warned, mut last_level) = (0f32, false, std::time::Instant::now());
+        while !stop2.load(Ordering::Relaxed) {
+            if out.read_exact(&mut buf).is_err() {
+                break;
+            }
+            let pcm: Vec<i16> = buf.chunks_exact(2).map(|b| i16::from_le_bytes([b[0], b[1]])).collect();
+            let rms = (pcm.iter().map(|&x| (x as f32 / 32768.0).powi(2)).sum::<f32>() / pcm.len() as f32).sqrt();
+            loudest = loudest.max(rms);
+            if last_level.elapsed() >= Duration::from_millis(200) {
+                last_level = std::time::Instant::now();
+                let _ = level_app.emit("voice-level", (rms * 4.0).min(1.0));
+            }
+            if !warned && started.elapsed() > Duration::from_secs(10) && loudest < 0.002 {
+                warned = true;
+                lwarn!("voice clips: the microphone only sends silence");
+                *LAST_ERROR.lock().unwrap() = Some(l!("Mikrofon posílá jen ticho. Vyber v nastavení klipů jiný mikrofon nebo zkontroluj, jestli není ztlumený.", "The microphone only sends silence. Pick another microphone in the Clips settings or check it isn't muted."));
+                let _ = level_app.emit("clips-status", serde_json::json!({}));
+            }
+            if tx.send(pcm).is_err() {
+                break;
+            }
+        }
+    });
+    linfo!("voice clips: listening ({lang}, {bin}, 16000 Hz)");
+    *LAST_ERROR.lock().unwrap() = None;
+    let heard_app = app.clone();
+    let res = recognise(&lang, rx, &stop, move |t| on_heard(&heard_app, t), |hit| on_hit(&app, hit));
+    let _ = child.kill();
+    let _ = child.wait();
+    res
+}
+
 fn listen(app: AppHandle, lang: String, mic: String, stop: Arc<AtomicBool>) -> anyhow::Result<()> {
+    #[cfg(target_os = "linux")]
+    if let Some((child, bin)) = pulse_capture(&mic) {
+        return listen_pulse(app, lang, child, bin, stop);
+    }
     let host = cpal::default_host();
     let dev = (!mic.is_empty())
         .then(|| host.input_devices().ok().and_then(|mut i| i.find(|d| d.name().ok().as_deref() == Some(mic.as_str()))))
@@ -493,28 +598,7 @@ fn listen(app: AppHandle, lang: String, mic: String, stop: Arc<AtomicBool>) -> a
     linfo!("voice clips: listening ({lang}, {}, {:?} {} Hz)", dev.name().unwrap_or_default(), cfg.sample_format(), cfg.sample_rate().0);
     *LAST_ERROR.lock().unwrap() = None;
     let heard_app = app.clone();
-    let on_heard = move |text: &str| {
-        ldebug!("voice clips: recognised \"{text}\"");
-        let _ = heard_app.emit("voice-heard", text.to_string());
-    };
-    let res = recognise(&lang, rx, &stop, on_heard, |hit| {
-        linfo!("voice clips: heard {hit:?}");
-        let in_game = app.try_state::<ClipsState>().is_some_and(|st| st.games.load(Ordering::SeqCst) > 0);
-        match hit {
-            Hit::Verity => {
-                let _ = app.emit("secret-found", "verity");
-            }
-            // in the launcher (no game) only the easter egg does something
-            _ if !in_game => {}
-            // Kuubl Mod takes it (it long-polls these events)
-            Hit::Screenshot => crate::social::emit(serde_json::json!({ "type": "voice", "action": "screenshot" })),
-            Hit::Secret => {
-                let _ = app.emit("secret-found", "clipwall");
-                super::trigger_save(&app, true);
-            }
-            Hit::Clip => super::trigger_save(&app, true),
-        }
-    });
+    let res = recognise(&lang, rx, &stop, move |t| on_heard(&heard_app, t), |hit| on_hit(&app, hit));
     drop(stream);
     res
 }

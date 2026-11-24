@@ -47,19 +47,38 @@ pub fn version_json_path(id: &str) -> PathBuf {
     settings::meta_dir().join("versions").join(id).join(format!("{id}.json"))
 }
 
-/// Make sure the vanilla version JSON for `id` is on disk.
+/// Make sure the vanilla version JSON for `id` is on disk and matches Mojang's manifest. Mojang
+/// re-publishes these (e.g. Nov 2026: a security fix in lwjgl-freetype), so a copy downloaded earlier
+/// is replaced when its sha1 no longer matches; the new libraries then download on launch.
+/// Loader versions (Fabric, Forge…) aren't in the manifest and are left as they are; offline, the
+/// local copy is used.
 pub async fn ensure_vanilla_json(id: &str) -> Result<()> {
     let path = version_json_path(id);
+    let m = match manifest().await {
+        Ok(m) => m,
+        Err(e) if path.exists() => {
+            ldebug!("version manifest unavailable, using the local {id}.json: {e:#}");
+            return Ok(());
+        }
+        Err(e) => return Err(e),
+    };
+    let Some(entry) = m["versions"].as_array().and_then(|a| a.iter().find(|v| v["id"] == id)) else {
+        if path.exists() {
+            return Ok(());
+        }
+        bail!(l!("Verze {id} neexistuje", "Version {id} doesn't exist"));
+    };
+    let want = entry["sha1"].as_str().map(String::from);
     if path.exists() {
-        return Ok(());
+        let have = net::sha1_file(&path).ok();
+        if want.is_none() || have == want {
+            return Ok(());
+        }
+        linfo!("{id}.json changed at Mojang (sha1 {have:?} -> {want:?}), downloading it again");
+        std::fs::remove_file(&path)?;
     }
-    let m = manifest().await?;
-    let entry = m["versions"]
-        .as_array()
-        .and_then(|a| a.iter().find(|v| v["id"] == id))
-        .ok_or_else(|| anyhow!(l!("Verze {id} neexistuje", "Version {id} doesn't exist")))?;
     let mut job = Job::new(entry["url"].as_str().unwrap_or_default(), path);
-    job.sha1 = entry["sha1"].as_str().map(String::from);
+    job.sha1 = want;
     net::download(&job).await
 }
 
@@ -69,9 +88,8 @@ pub async fn load_merged(id: &str) -> Result<Value> {
     let mut cur = id.to_string();
     loop {
         let p = version_json_path(&cur);
-        if !p.exists() {
-            ensure_vanilla_json(&cur).await?;
-        }
+        // downloads it when missing and refreshes a vanilla JSON Mojang has updated since
+        ensure_vanilla_json(&cur).await?;
         let v = net::read_json(&p)?;
         let parent = v["inheritsFrom"].as_str().map(String::from);
         chain.push(v);
